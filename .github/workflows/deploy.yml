@@ -1,0 +1,65 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches-ignore:
+      - documents  # Exclude pushes to the "documents" branch
+
+jobs:
+  build-and-test:
+    runs-on: self-hosted  # Use Windows runner
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: Code/Frontend/package-lock.json  # Ensure correct caching
+
+      - name: Install Dependencies
+        working-directory: ./Code/Frontend
+        run: npm i
+
+      - name: Build the Project
+        working-directory: ./Code/Frontend
+        run: npm run build
+
+      - name: Run Unit Tests
+        working-directory: ./Code/Frontend
+        run: npm run test:unit
+
+  docker-build-and-push:
+    needs: build-and-test  # Runs only if tests pass
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry (Windows)
+        shell: pwsh
+        run: |
+          # $env:GHCR_PAT = "${{ secrets.GHCR_PAT }}"
+          $logFile = "C:\\actions-runner\docker_login_debug.txt"
+         
+          echo '${{ secrets.GHCR_PAT }}' | docker login ghcr.io -u 'TechXplorerFR' --password-stdin
+
+          "echo '${{ secrets.GHCR_PAT }}' | docker login ghcr.io -u 'TechXplorerFR' --password-stdin" | Out-File -FilePath $logFile -Encoding utf8 -Append
+          
+          # Check if login succeeded
+          if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ Docker login failed."
+              "❌ Docker login failed."
+              exit 1
+          } else {
+              Write-Host "✅ Docker login successful."
+              "✅ Docker login successful."
+          }
+
+      - name: Build Docker Image
+        run: docker build -t ghcr.io/techxplorerfr/test-actions/myapp:latest -f Dockerfile .
+
+      - name: Push Docker Image to GitHub Container Registry
+        run: docker push ghcr.io/techxplorerfr/test-actions/myapp:latest
