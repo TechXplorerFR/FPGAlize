@@ -1,76 +1,50 @@
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { Button } from "./components/ui/button";
+import { ChevronRight, ChevronLeft } from "lucide-react"; // Using Lucide for icons
 
 function App() {
   return (
-    <div className="h-screen w-screen flex justify-center items-center">
-      <Tabs defaultValue="student" className="w-[25vw]">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="student">Student</TabsTrigger>
-          <TabsTrigger value="teacher">Teacher</TabsTrigger>
-        </TabsList>
-        <TabsContent value="student">
-          <Card>
-            <CardHeader>
-              <CardTitle>Student</CardTitle>
-              <CardDescription>
-                Please fill in the following fields to join your room:
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="name">Room ID:</Label>
-                <Input id="name" />
+    <>
+      <Drawer direction="left">
+        <DrawerTrigger asChild>
+          <button className="fixed left-0 top-1/2 h-[10vh] transform -translate-y-1/2 bg-gray-100 p-2 rounded-r-lg shadow-md hover:bg-gray-200">
+            <ChevronRight size={20} />
+          </button>
+        </DrawerTrigger>
+        <DrawerContent>
+          <div className="relative">
+            <DrawerHeader>
+              <DrawerTitle>Loaded Examples</DrawerTitle>
+              <DrawerDescription>
+                This action cannot be undone.
+              </DrawerDescription>
+            </DrawerHeader>
+            <DrawerFooter>
+              <Button>Submit</Button>
+              <DrawerClose>
+                <Button variant="outline">Cancel</Button>
+              </DrawerClose>
+            </DrawerFooter>
+            <DrawerClose asChild>
+              <div className="absolute top-[50vh] right-[-36px] h-[10vh] transform -translate-y-1/2 bg-gray-100 p-2 rounded-r-lg shadow-md hover:bg-gray-200 flex jsutify-center items-center">
+                <button>
+                  <ChevronLeft size={20} />
+                </button>
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="username">Name:</Label>
-                <Input id="username" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="password">Password:</Label>
-                <Input id="password" />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Join Room</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        <TabsContent value="teacher">
-          <Card>
-            <CardHeader>
-              <CardTitle>Teacher</CardTitle>
-              <CardDescription>
-                Fill in the follwing fields to create your room
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="current">Room Name:</Label>
-                <Input id="current" type="password" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="new">Password (optional):</Label>
-                <Input id="new" type="password" />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Create Room</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+            </DrawerClose>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }
 
