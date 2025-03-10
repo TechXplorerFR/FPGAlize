@@ -42,7 +42,7 @@
 
 ## 1. Introduction 
 
-### 1.1. Project overview
+### 1.1. Project Overview
 
 This project focuses on developing a web interface that allows users to learn FPGA concepts through a simulated environment.
 
@@ -53,7 +53,7 @@ Our goal is to deliver an intuitive and reliable platform that accurately repres
 
 #### 1.2.2 Objectives
 
-- Web interface : The software must be accessible through a web interface.
+- Web interface: The software must be accessible through a web interface.
 - Role system: The software must be separated into two distinct roles:
   - Student
   - Teacher
@@ -64,7 +64,7 @@ Our goal is to deliver an intuitive and reliable platform that accurately repres
 This software must include:
 - An interface to display and simulate the different elements in an FPGA board or connected to it.
 - An interface to allow users to write and run their code.
-- A teacher role allowing the creation of "rooms" to share with their student. This role should also be able to import their own examples to the "rooms".
+- A teacher's role allows the creation of "rooms" to share with their student. This role should also be able to import their own examples to the "rooms".
 - A student role able to add, read, update and delete elements from either the code or the simulation interface.
 
 #### 1.2.4. Target audience
@@ -80,7 +80,7 @@ The target audience includes:
 | Functional specifications | Detailed documentation of the features used and their non-technical aspects.                                                                                  |
 | Technical specifications  | Detailed documentation on the technical implementation of software.                                                                                           |
 | Source code               | The source code of the program.                                                                                                                               |
-| Test plan & Test cases    | A set of scenarios validating the software's performance, responsivity along with the UI with a defined strategy to run tests more accuratly and efficiently. |
+| Test plan & Test cases    | A set of scenarios validating the software's performance, and responsivity along with the UI with a defined strategy to run tests more accurately and efficiently. |
 | Project charter           | A document to organize a project's objectives and deadlines.                                                                                                  |
 | Weekly reports            | A group of documents written at the end of each week to report the progress made during a week.                                                               |
 | User manual               | The end-user documentation for the software.                                                                                                                  |
@@ -109,12 +109,20 @@ The target audience includes:
 
 External project reviewers have been appointed by the school director to review our specifications and provide us with feedback.
 
-#### 1.4. Project plan
+#### 1.4. Project Plan
 
 
 ## 2. Personas and use cases
 
 ### 2.1. Personas
 
-#### 2.1.1.
+#### 2.1.1. William
+![William](https://github.com/user-attachments/assets/b8028eb3-a2f4-4e13-8510-7b0d720c89e4)
+
+#### 2.1.2. Julie
+![Julie](https://github.com/user-attachments/assets/b7e9e88a-e2b9-4bfc-9d95-87d8e725485b)
+
+#### 2.1.3. Justin
+![Justin](https://github.com/user-attachments/assets/adcc5793-bf1c-4352-9718-61f0986151f5)
+
 
