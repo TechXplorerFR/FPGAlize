@@ -95,14 +95,14 @@ Our goal is to deliver an intuitive and reliable platform that accurately repres
 - Role system: The software must be separated into two distinct roles:
   - Student
   - Teacher
-- Representation of an FPGA board along with elements such as LEDs, buttons and wires in order to interact with it.
+- Representation of an FPGA board along with elements such as LEDs, buttons and wires to interact with it.
 
 #### 1.2.3. Scope
 
 This software must include:
 - An interface to display and simulate the different elements in an FPGA board or connected to it.
 - An interface to allow users to write and run their code.
-- A teacher's role allows the creation of "rooms" to share with their student. This role should also be able to import their own examples to the "rooms".
+- A teacher's role allows the creation of "rooms" to share with their student. This role should also be able to import their examples to the "rooms".
 - A student role able to add, read, update and delete elements from either the code or the simulation interface.
 
 #### 1.2.4. Target Audience
@@ -120,7 +120,7 @@ The target audience includes:
 | Source code               | The source code of the program.                                                                                                                                    |
 | Test plan & Test cases    | A set of scenarios validating the software's performance, and responsivity along with the UI with a defined strategy to run tests more accurately and efficiently. |
 | Project charter           | A document to organize a project's objectives and deadlines.                                                                                                       |
-| Weekly reports            | A group of documents written at the end of each week to report the progress made during a week.                                                                    |
+| Weekly reports            | A group of documents written at the end of each week to report the progress made during the week.                                                                    |
 | User manual               | The end-user documentation for the software.                                                                                                                       |
 
 ### 1.3. Project Organisation
@@ -180,8 +180,8 @@ Planning will follow an iterative approach, with each iteration focused on speci
 
 | Constraint               | Description                                                                                                                         |
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Data Storage             | Files uploaded by the user may be stored temporaly locally for processing but will not be permanently saved due to privacy concerns |
-| User Interaction Methods | The web application will be mouse and keyboard driven, with limited to no support for touchscreen interactions                      |
+| Data Storage             | Files uploaded by the user may be stored temporarily locally for processing but will not be permanently saved due to privacy concerns |
+| User Interaction Methods | The web application will be mouse and keyboard-driven, with limited to no support for touchscreen interactions                      |
 
 ## 2. Mockups
 
@@ -189,21 +189,49 @@ Planning will follow an iterative approach, with each iteration focused on speci
 
 #### 2.1.1. Extended 
 
+![Extended simulation](https://github.com/user-attachments/assets/87c8a69a-57d0-413c-a3ae-751fd93dc589)
+
 #### 2.1.2. Collapsed 
+
+![Retracted simulation](https://github.com/user-attachments/assets/9f1bebb7-796f-4fab-8066-62affbf2dc0d)
 
 ### 2.2. Code Display
 
 #### 2.2.1. Expanded 
 
-#### 2.2.2. Collapsed 
+![Code extended](https://github.com/user-attachments/assets/032815f4-f24f-4411-b8c2-d1240bf29a50)
+
+#### 2.2.2. Collapsed
+
+![Code retracted](https://github.com/user-attachments/assets/38c5455b-cbdf-4811-b00d-022d68e3ef96)
 
 ### 2.3. Extantion And Collapsing Animation
 
+![Expanding](https://github.com/user-attachments/assets/0903f550-2987-47c0-9e45-e15dce41ec7f)
+
+![Collapsing](https://github.com/user-attachments/assets/0d5001a7-7a76-4f5a-89a4-055a10f47006)
+
 ### 2.4. Commands
+
+![Commands](https://github.com/user-attachments/assets/95c311ab-0b35-4688-a234-4c324047ee07)
 
 ### 2.5. Adding An Example
 
+![Add-example](https://github.com/user-attachments/assets/1e003c8d-30ad-4f96-8213-b1a38b89e1fc)
+
 ### 2.6. Exporting An example
+
+![Exporting](https://github.com/user-attachments/assets/459b074a-39ef-427a-afbb-8b9e21c087a7)
+
+### 2.7. Running simulation
+
+![Running-simulation](https://github.com/user-attachments/assets/96b40555-e5f2-4427-9c09-6ee097dacfcd)
+
+### 2.8. Errors
+
+![error1](https://github.com/user-attachments/assets/7ed830fc-106d-4f39-9d05-21a6b8be2632)
+
+![error2](https://github.com/user-attachments/assets/45b4d65b-59ec-4c50-86d8-49d64a61e36e)
 
 ## 3. Personas And Use Cases
 
@@ -244,10 +272,10 @@ Prebuilt examples are available for users to explore. Users can also import thei
 
 | Scenario                   | Description                                                     | Software Response                                                                               |
 | -------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Loading an example         | The user loads a prebuilt example.                              | The code and the simulation of the example will appear and can be run or updated by the user.   |
+| Loading an example         | The user loads a prebuilt example.                              | The code and the example simulation will appear and can be run or updated by the user.   |
 | Importing  an example      | The user uploads a .V file and a .SDF file.                     | The components and the connections will be created on the simulation side.                      |
 | Exporting  an example      | The user exports a scenario.                                    | The system generates a .zip file containing the .V and .SDF files, making the example reusable. |
-| Importing  an invalid file | The user uploads a file that is not one of the required format. | The system displays an error message specifying the unsupported file type.                      |
+| Importing  an invalid file | The user uploads a file that is not one of the required formats. | The system displays an error message specifying the unsupported file type.                      |
 
 ### 4.2. FPGA Display & Interaction
   
@@ -277,17 +305,17 @@ Users can view, edit, and execute Verilog code for the FPGA example. The system 
 ### 4.4. Error Handling
 
 #### 4.4.1 Overview
-Errors can be caught by the program and must be signalled to the user.
+The program can catch errors and must be signalled to the user.
 
 #### 4.4.2 Scenarios
 
 | Scenario                                      | Description                                                        | Software response                                                                                                   |
 | --------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Code error                                    | The user runs or exports the code with an error.                   | The simulation will not run/export, and a banner will appear on the top-right displaying the error and line number. |
+| Code error                                    | The user runs or exports the code with an error.                   | The simulation will not run/export, and a banner will appear on the top right displaying the error and line number. |
 | Incorrect file type when importing an example | The user imports a file with an incorrect format.                  | The system rejects the import and specifies which file type is invalid.                                             |
-| Missing required files                        | The user provides only a .V or .SDF file when both are required.   | The system prompts the user to upload the missing file before proceeding.                                           |
+| Missing required files                        | The user provides only a .V or.SDF file when both are required.   | The system prompts the user to upload the missing file before proceeding.                                           |
 | Incorrect connection                          | The user connects incompatible nodes and runs the simulation.      | The system halts execution and highlights the error with a message describing the issue.                            |
-| Simulation failure due to logic error         | The simulation runs but produces incorrect or unexpected behavior. | The system logs warnings, highlights problematic signals, and suggests debugging steps.                             |
+| Simulation failure due to logic error         | The simulation runs but produces incorrect or unexpected behaviour. | The system logs warnings, highlights problematic signals, and suggests debugging steps.                             |
 
 ## 5. Non-functional Requirements
 
@@ -295,10 +323,10 @@ Errors can be caught by the program and must be signalled to the user.
 
 - The web application must respond to user actions within **100 milliseconds** to ensure a seamless user experience.
 
-### 5.2. Scalabilty
+### 5.2. Scalability
 
 - The web application must efficiently handle large FPGA examples without significant performance degradation that could impact user experience.
-- The system should support FPGA designs with **at least 10 components and 30 connections (3 per components)** while maintaining a response time below Z milliseconds for key interactions (e.g., dragging, zooming, and simulation updates).
+- The system should support FPGA designs with **at least 10 components and 30 connections (3 per component)** while maintaining a response time below Z milliseconds for key interactions (e.g., dragging, zooming, and simulation updates).
 
 ### 5.3. Usability
 
@@ -308,9 +336,9 @@ Errors can be caught by the program and must be signalled to the user.
 ### 5.4. Reliability
 
 - The system must ensure **high availability**, minimizing downtime and disruptions.
-- The application must implement **robust error handling** to manage invalid inputs and unexpected behaviors gracefully.
+- The application must implement **robust error handling** to gracefully manage invalid inputs and unexpected behaviours.
 
-### 5.5. Maintanability 
+### 5.5. Maintainability 
 
-- The codebase must follow **best practices** for readability and maintability, with **sufficient inline comments** and comprehensive documentation.
+- The codebase must follow **best practices** for readability and maintainability, with **sufficient inline comments** and comprehensive documentation.
 - The architecture should allow for future updates and improvements to the simulation algorithms.
