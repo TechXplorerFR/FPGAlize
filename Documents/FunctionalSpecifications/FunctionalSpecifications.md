@@ -26,27 +26,54 @@
       - [1.2.1. Vision](#121-vision)
       - [1.2.2 Objectives](#122-objectives)
       - [1.2.3. Scope](#123-scope)
-      - [1.2.4. Target audience](#124-target-audience)
+      - [1.2.4. Target Audience](#124-target-audience)
       - [1.2.5. Deliverables](#125-deliverables)
-    - [1.3. Project organisation](#13-project-organisation)
-      - [1.3.1. Project representatives](#131-project-representatives)
+    - [1.3. Project Organisation](#13-project-organisation)
+      - [1.3.1. Project Representatives](#131-project-representatives)
       - [1.3.2. Stakeholders](#132-stakeholders)
-      - [1.3.2. Project reviewers](#132-project-reviewers)
-  - [2. Personas and use cases](#2-personas-and-use-cases)
-    - [2.1. Personas](#21-personas)
-      - [2.1.1. William](#211-william)
-      - [2.1.2. Julie](#212-julie)
-      - [2.1.3. Justin](#213-justin)
-    - [2.2. Use Cases](#22-use-cases)
-  - [3. Functional Requirements](#3-functional-requirements)
-    - [3.1. Examples](#31-examples)
-      - [3.2.1. Overview](#321-overview)
-      - [3.1.2. Scenarios](#312-scenarios)
-    - [3.2. FPGA display](#32-fpga-display)
-      - [3.2.1. Overview](#321-overview-1)
-      - [3.2.2. Scenarios](#322-scenarios)
-    - [3.3. Code display](#33-code-display)
-      - [3.3.1 Overview](#331-overview)
+      - [1.3.3. Project Reviewers](#133-project-reviewers)
+    - [1.4. Project Plan](#14-project-plan)
+      - [1.4.1. Planning](#141-planning)
+      - [1.4.2. Deliverables](#142-deliverables)
+      - [1.4.3. Dependencies](#143-dependencies)
+      - [1.4.4. Assumptions and Constraints](#144-assumptions-and-constraints)
+        - [Assumptions](#assumptions)
+        - [Constraints](#constraints)
+  - [2. Mockups](#2-mockups)
+    - [2.1. Simulation display](#21-simulation-display)
+      - [2.1.1. Extended](#211-extended)
+      - [2.1.2. Collapsed](#212-collapsed)
+    - [2.2. Code Display](#22-code-display)
+      - [2.2.1. Expanded](#221-expanded)
+      - [2.2.2. Collapsed](#222-collapsed)
+    - [2.3. Extantion And Collapsing Animation](#23-extantion-and-collapsing-animation)
+    - [2.4. Commands](#24-commands)
+    - [2.5. Adding An Example](#25-adding-an-example)
+    - [2.6. Exporting An example](#26-exporting-an-example)
+  - [3. Personas And Use Cases](#3-personas-and-use-cases)
+    - [3.1. Personas](#31-personas)
+      - [3.1.1. William](#311-william)
+      - [3.1.2. Julie](#312-julie)
+      - [3.1.3. Justin](#313-justin)
+    - [3.2. Use Cases](#32-use-cases)
+  - [4. Functional Requirements](#4-functional-requirements)
+    - [4.1. Examples](#41-examples)
+      - [4.1.1. Overview](#411-overview)
+      - [4.1.2. Scenarios](#412-scenarios)
+    - [4.2. FPGA Display \& Interaction](#42-fpga-display--interaction)
+      - [4.2.1. Overview](#421-overview)
+      - [4.2.2. Scenarios](#422-scenarios)
+    - [4.3. Code Display \& Execution](#43-code-display--execution)
+      - [4.3.1 Overview](#431-overview)
+    - [4.4. Error Handling](#44-error-handling)
+      - [4.4.1 Overview](#441-overview)
+      - [4.4.2 Scenarios](#442-scenarios)
+  - [5. Non-functional Requirements](#5-non-functional-requirements)
+    - [5.1. Performance](#51-performance)
+    - [5.2. Scalabilty](#52-scalabilty)
+    - [5.3. Usability](#53-usability)
+    - [5.4. Reliability](#54-reliability)
+    - [5.5. Maintanability](#55-maintanability)
 
 </details>
 
@@ -55,7 +82,7 @@
 
 ### 1.1. Project Overview
 
-This project focuses on developing a web interface that allows users to learn FPGA concepts through a simulated environment.
+This project focuses on developing a web application that allows users to learn FPGA concepts through a simulated environment.
 
 ### 1.2. Project Definitions
 
@@ -64,7 +91,7 @@ Our goal is to deliver an intuitive and reliable platform that accurately repres
 
 #### 1.2.2 Objectives
 
-- Web interface: The software must be accessible through a web interface.
+- Web application: The software must be accessible through a web application.
 - Role system: The software must be separated into two distinct roles:
   - Student
   - Teacher
@@ -78,12 +105,12 @@ This software must include:
 - A teacher's role allows the creation of "rooms" to share with their student. This role should also be able to import their own examples to the "rooms".
 - A student role able to add, read, update and delete elements from either the code or the simulation interface.
 
-#### 1.2.4. Target audience
+#### 1.2.4. Target Audience
 
 The target audience includes:
-- IT teachers and their students,
-- FPGA programmers looking to test their program,
-
+- IT teachers and students interested in FPGA technology.
+- Individuals seeking to understand how FPGAs work.
+  
 #### 1.2.5. Deliverables
 
 | Deliverable               | Purpose                                                                                                                                                            |
@@ -96,9 +123,9 @@ The target audience includes:
 | Weekly reports            | A group of documents written at the end of each week to report the progress made during a week.                                                                    |
 | User manual               | The end-user documentation for the software.                                                                                                                       |
 
-### 1.3. Project organisation
+### 1.3. Project Organisation
 
-#### 1.3.1. Project representatives
+#### 1.3.1. Project Representatives
 
 | Full Name                            | Role               | Role Description                                                                                                                                                        |
 | ------------------------------------ | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -116,75 +143,174 @@ The target audience includes:
 | Client          | Florent MANNI  | Finished project meeting [requirements](https://github.com/LeFl0w/ALGOSUP_POC). |
 | School director | Franck JEANNIN | Clear documentation and management based on the skills learnt in class.         |
 
-#### 1.3.2. Project reviewers
+#### 1.3.3. Project Reviewers
 
 External project reviewers have been appointed by the school director to review our specifications and provide us with feedback.
 
-## 2. Personas and use cases
+### 1.4. Project Plan
 
-### 2.1. Personas
+#### 1.4.1. Planning
 
-#### 2.1.1. William
+Planning will follow an iterative approach, with each iteration focused on specific functionality, testing, and validation to ensure quality and performance.
+
+#### 1.4.2. Deliverables
+
+| Deliverables              | Date<br>(DD//MM/YYYY) |
+| ------------------------- | :-------------------: |
+| Functional Specifications |      13/03/2025       |
+| Techincal Specifications  |      25/03/2025       |
+| Test Plan                 |      25/03/2025       |
+| Code & User Manual        |      01/04/2025       |
+
+#### 1.4.3. Dependencies
+
+- An iteration of the project cannot start before tests are run on the current version.
+- A release of the project cannot occur before all tests of the current version are successful.
+
+#### 1.4.4. Assumptions and Constraints
+
+##### Assumptions
+| Assumption         | Description                                                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Internet access    | Users will have a stable internet connection while using the web application.                                                               |
+| Supported Browsers | The application will run on modern web browsers (e.g., Chrome, Firefox, Edge) but may not support outdated browsers like Internet Explorer. |
+| Processing Power   | Users will run the application on standard consumer-grade computers with reasonable CPU/GPU capabilities.                                   |
+
+##### Constraints
+
+| Constraint               | Description                                                                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Data Storage             | Files uploaded by the user may be stored temporaly locally for processing but will not be permanently saved due to privacy concerns |
+| User Interaction Methods | The web application will be mouse and keyboard driven, with limited to no support for touchscreen interactions                      |
+
+## 2. Mockups
+
+### 2.1. Simulation display
+
+#### 2.1.1. Extended 
+
+#### 2.1.2. Collapsed 
+
+### 2.2. Code Display
+
+#### 2.2.1. Expanded 
+
+#### 2.2.2. Collapsed 
+
+### 2.3. Extantion And Collapsing Animation
+
+### 2.4. Commands
+
+### 2.5. Adding An Example
+
+### 2.6. Exporting An example
+
+## 3. Personas And Use Cases
+
+### 3.1. Personas
+
+#### 3.1.1. William
 ![William](https://github.com/user-attachments/assets/b8028eb3-a2f4-4e13-8510-7b0d720c89e4)
 
-#### 2.1.2. Julie
+#### 3.1.2. Julie
 ![Julie](https://github.com/user-attachments/assets/b7e9e88a-e2b9-4bfc-9d95-87d8e725485b)
 
-#### 2.1.3. Justin
+#### 3.1.3. Justin
 ![Justin](https://github.com/user-attachments/assets/adcc5793-bf1c-4352-9718-61f0986151f5)
 
 
-### 2.2. Use Cases
+### 3.2. Use Cases
 
-| **ID** | **Title**                          | **Description**                                                                                        |
-| ------ | ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| 01     | Select an FPGA Application         | Users can browse and selects one of the preloaded FPGA application examples through the web interface. |
-| 02     | View 2D FPGA Layout                | Users can see a 2D representation of the FPGA, highlighting the used BELs and signal routes.           |
-| 03     | Navigate FPGA Layout               | Users can zoom in, zooms out, and moves around the FPGA layout for better visualization.               |
-| 04     | Simulate Signal Propagation        | Users can play the simulation to observe how signals propagate through the FPGA over time.             |
-| 05     | Adjust Simulation Speed            | Users can change the simulation speed (e.g., x1, x2, x4) for better understanding.                     |
-| 06     | Step Through Simulation            | Users can advance the simulation step by step to analyze signal changes in detail.                     |
-| 07     | Pause and Resume Simulation        | Users can pause and resume the simulation as needed.                                                   |
-| 08     | View Documentation & How-To Guides | Users can access documentation on how to use the system, run simulations, and add new FPGA designs.    |
+| **ID** | **Title**                          | **Description**                                                                                     |
+| ------ | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 01     | Select an FPGA example             | Users can browse and select one of the preloaded FPGA examples through the web application.         |
+| 02     | View 2D FPGA Layout                | Users can see a 2D representation of the FPGA, highlighting the used BELs and signal routes.        |
+| 03     | Navigate FPGA Layout               | Users can zoom in, zoom out, and move around the FPGA layout for better visualization.              |
+| 04     | Simulate Signal Propagation        | Users can play the simulation to observe how signals propagate through the FPGA over time.          |
+| 05     | Adjust Simulation Speed            | Users can change the simulation speed (e.g., x1, x2, x4) for better understanding.                  |
+| 06     | Step Through Simulation            | Users can advance the simulation step by step to analyze signal changes in detail.                  |
+| 07     | Pause and Resume Simulation        | Users can pause and resume the simulation as needed.                                                |
+| 08     | View Documentation & How-To Guides | Users can access documentation on how to use the system, run simulations, and add new FPGA designs. |
 
-## 3. Functional Requirements
+## 4. Functional Requirements
 
-### 3.1. Examples
+### 4.1. Examples
 
-#### 3.2.1. Overview
+#### 4.1.1. Overview
 
-Prebuild examples are available for the user to use. The user can also import its own examples.
+Prebuilt examples are available for users to explore. Users can also import their own FPGA examples.
 
-#### 3.1.2. Scenarios
+#### 4.1.2. Scenarios
 
-| Scenario                     | Description                                                     | Software Response                                                                             |
-| ---------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Loading of a example         | The user loads a prebuild example.                              | The code and the simulation of the example will appear and can be run or updated by the user. |
-| Importing of a example       | The user uploads a .V file and a .SDF file.                     | The components and the connections will be created on the simulation side.                    |
-| Importing of an invalid file | The user uploads a file that is not one of the required format. | The system displays an error message specifying the unsupported file type.                    |
+| Scenario                   | Description                                                     | Software Response                                                                               |
+| -------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Loading an example         | The user loads a prebuilt example.                              | The code and the simulation of the example will appear and can be run or updated by the user.   |
+| Importing  an example      | The user uploads a .V file and a .SDF file.                     | The components and the connections will be created on the simulation side.                      |
+| Exporting  an example      | The user exports a scenario.                                    | The system generates a .zip file containing the .V and .SDF files, making the example reusable. |
+| Importing  an invalid file | The user uploads a file that is not one of the required format. | The system displays an error message specifying the unsupported file type.                      |
 
-### 3.2. FPGA display
+### 4.2. FPGA Display & Interaction
   
-#### 3.2.1. Overview
+#### 4.2.1. Overview
 
-The display of FPGA components allows users to visually identify the different components of an example. Users can also move or changes the connections of a component.
+Users can view, edit, and execute Verilog code for the FPGA example. The system provides real-time error checking and feedback.
 
-#### 3.2.2. Scenarios
-| Scenario                 | Description                                                 | Software Response                                                                      |
-| ------------------------ | ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Dragging of a component  | The user clicks and drags a component using the mouse       | The component moves along with the cursor until released.                              |
-|                          |
-| Connection removal       | A user selects a wire and presses the delete key.           | The wire disappears, and the FPGA layout updates accordingly.                          |
-| Creation of a connection | A user clicks on a connection node and drags it on another. | A new wire will appear connecting the two components.                                  |
-| Invalid connection       | The user attempts to create an unsupported connection.      | The system prevents the connection and displays an error message explaining the issue. |
+#### 4.2.2. Scenarios
 
-### 3.3. Code display
+| Scenario                 | Description                                                   | Software Response                                                                      |
+| ------------------------ | ------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Dragging of a component  | The user clicks and drags a component using the mouse         | The component moves along with the cursor until released.                              |
+| Connection removal       | The user selects a wire and presses the delete key.           | The wire disappears, and the FPGA layout updates accordingly.                          |
+| Creation of a connection | The user clicks on a connection node and drags it on another. | A new wire will appear connecting the two components.                                  |
+| Invalid connection       | The user attempts to create an unsupported connection.        | The system prevents the connection and displays an error message explaining the issue. |
 
-#### 3.3.1 Overview
+### 4.3. Code Display & Execution
 
-The code can be displayed, updated and run by the user.
+#### 4.3.1 Overview
+
 | Scenario                    | Description                                                | Software response                                                                        |
 | --------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Run simulation              | The user presses the "Run" button.                         | The simulation executes, showing signal propagation and changes in the FPGA layout.      |
 | Modify and run updated code | The user edits the Verilog code and reruns the simulation. | The system compiles the new code and updates the FPGA visualization accordingly.         |
 | Run code with errors        | The user runs code that contains syntax errors.            | The system halts execution and highlights the error location with a descriptive message. |
+
+### 4.4. Error Handling
+
+#### 4.4.1 Overview
+Errors can be caught by the program and must be signalled to the user.
+
+#### 4.4.2 Scenarios
+
+| Scenario                                      | Description                                                        | Software response                                                                                                   |
+| --------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Code error                                    | The user runs or exports the code with an error.                   | The simulation will not run/export, and a banner will appear on the top-right displaying the error and line number. |
+| Incorrect file type when importing an example | The user imports a file with an incorrect format.                  | The system rejects the import and specifies which file type is invalid.                                             |
+| Missing required files                        | The user provides only a .V or .SDF file when both are required.   | The system prompts the user to upload the missing file before proceeding.                                           |
+| Incorrect connection                          | The user connects incompatible nodes and runs the simulation.      | The system halts execution and highlights the error with a message describing the issue.                            |
+| Simulation failure due to logic error         | The simulation runs but produces incorrect or unexpected behavior. | The system logs warnings, highlights problematic signals, and suggests debugging steps.                             |
+
+## 5. Non-functional Requirements
+
+### 5.1. Performance
+
+- The web application must respond to user actions within **100 milliseconds** to ensure a seamless user experience.
+
+### 5.2. Scalabilty
+
+- The web application must efficiently handle large FPGA examples without significant performance degradation that could impact user experience.
+- The system should support FPGA designs with **at least 10 components and 30 connections (3 per components)** while maintaining a response time below Z milliseconds for key interactions (e.g., dragging, zooming, and simulation updates).
+
+### 5.3. Usability
+
+- The web application must support **.V and .SDF formats** to load FPGA examples to meet client expectations.
+- Clear documentation to facilitate users' use of the web application.
+
+### 5.4. Reliability
+
+- The system must ensure **high availability**, minimizing downtime and disruptions.
+- The application must implement **robust error handling** to manage invalid inputs and unexpected behaviors gracefully.
+
+### 5.5. Maintanability 
+
+- The codebase must follow **best practices** for readability and maintability, with **sufficient inline comments** and comprehensive documentation.
+- The architecture should allow for future updates and improvements to the simulation algorithms.
