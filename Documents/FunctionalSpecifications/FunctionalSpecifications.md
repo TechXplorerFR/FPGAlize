@@ -56,6 +56,10 @@
     - [2.6.4. Exporting An example](#264-exporting-an-example)
     - [2.7. Running simulation](#27-running-simulation)
     - [2.8. Errors](#28-errors)
+    - [2.9. FPGA Elements](#29-fpga-elements)
+      - [2.9.1. Clock](#291-clock)
+      - [2.9.2. LUT](#292-lut)
+      - [2.9.3. Flip-Flop](#293-flip-flop)
   - [3. Personas And Use Cases](#3-personas-and-use-cases)
     - [3.1. Personas](#31-personas)
       - [3.1.1. William](#311-william)
@@ -133,14 +137,14 @@ The target audience includes:
 
 #### 1.3.1. Project Representatives
 
-| Full Name                            | Role               | Role Description                                                                                                                                                        |
-| ------------------------------------ | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pierre GORIN                         | Project manager    | Responsible for the overall planning, execution, and success of the project.                                                                                            |
-| Aurélien FERNANDEZ                   | Program manager    | Ensures the project meets expectations. <br> Is in charge of design. <br> Responsible for writing the Functional Specifications.                                        |
-| Abderrazaq MAKRAN                    | Tech lead          | Makes technical decisions for the project. <br> Translates the Functional Specification into Technical Specifications. <br> Performs code review.                       |
-| Enzo GUILLOUCHE <br> Antoine PREVOST | Software engineers | Writes the code. <br> Writes documentation. <br> Participates in the technical design.                                                                                  |  |
+| Full Name                            | Role               | Role Description                                                                                                                                                 |
+| ------------------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pierre GORIN                         | Project manager    | Responsible for the overall planning, execution, and success of the project.                                                                                     |
+| Aurélien FERNANDEZ                   | Program manager    | Ensures the project meets expectations. <br> Is in charge of design. <br> Responsible for writing the Functional Specifications.                                 |
+| Abderrazaq MAKRAN                    | Tech lead          | Makes technical decisions for the project. <br> Translates the Functional Specification into Technical Specifications. <br> Performs code review.                |
+| Enzo GUILLOUCHE <br> Antoine PREVOST | Software engineers | Writes the code. <br> Writes documentation. <br> Participates in the technical design.                                                                           |  |
 | Guillaume DERAMCHI                   | Quality assurance  | Tests the product's functionalities to find bugs and issues. <br> Documents bugs and issues. <br> Writes the test plan. <br> Checks that issues have been fixed. |
-| Max BERNARD                          | Technical writer   | Responsible for creating and maintaining the project's documentation.                                                                                                   |
+| Max BERNARD                          | Technical writer   | Responsible for creating and maintaining the project's documentation.                                                                                            |
 
 #### 1.3.2. Stakeholders
 
@@ -193,19 +197,19 @@ Planning will follow an iterative approach, with each iteration focused on speci
 
 ## 2.1. Color Codes
 
-| Element                                               | Image | Color Code |
-| ----------------------------------------------------- | ----- | ---------- |
-| Main background                                       |  ![main-bg](https://github.com/user-attachments/assets/5ca3710a-a4f6-4b50-927b-12ef6283c236) | #F7F7F7    |
-| Top bar and left bar background                       |![other-bg](https://github.com/user-attachments/assets/c0193931-bd66-4eef-97ef-df2b675bbe2c) | #FFFFFF    |
-| Text                                                  |![text](https://github.com/user-attachments/assets/089059be-2de4-4b3d-9241-7d0e83932ace) | #000000    |
-| Selected example and selected mode                                      |![selection](https://github.com/user-attachments/assets/d559198e-759f-4931-8c94-4956d0aa58a2) | #CBDFFE    |
-| Buttons (except run, pause and stop) when clicked     |![onClick](https://github.com/user-attachments/assets/52811a9b-548b-4d92-bd3d-cc5795210358) | #66A0FA    |
-| Run button                                            |![run](https://github.com/user-attachments/assets/62e38187-ea20-482a-9cac-a9b1c66d8439) | #5CDC2F    |
-| Pause button                                          |![pause](https://github.com/user-attachments/assets/a7d56798-ccd3-400f-9f3b-e2f1aa3dcf2c) | #E2E23B    |
-| Stop Button                                          |![stop](https://github.com/user-attachments/assets/a7535fed-a60a-440e-a73c-17ebd4956b98) | #FF4141    |
-| Highlighted FPGA elements when running the simulation | ![highlighted](https://github.com/user-attachments/assets/932bc91f-af55-4a3b-9ee4-1b25760c424b) | #FFFF00|
-|Error notification | ![error](https://github.com/user-attachments/assets/2799d379-b8a0-439f-a639-c7d3cd28c1d0)| #F9B7B7 |
-|Info notification| ![image](https://github.com/user-attachments/assets/3c5ef069-5ae9-4850-a546-f694ab11e808) | #B7D4F9 | 
+| Element                                               | Image                                                                                           | Color Code |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------- |
+| Main background                                       | ![main-bg](https://github.com/user-attachments/assets/5ca3710a-a4f6-4b50-927b-12ef6283c236)     | #F7F7F7    |
+| Top bar and left bar background                       | ![other-bg](https://github.com/user-attachments/assets/c0193931-bd66-4eef-97ef-df2b675bbe2c)    | #FFFFFF    |
+| Text                                                  | ![text](https://github.com/user-attachments/assets/089059be-2de4-4b3d-9241-7d0e83932ace)        | #000000    |
+| Selected example and selected mode                    | ![selection](https://github.com/user-attachments/assets/d559198e-759f-4931-8c94-4956d0aa58a2)   | #CBDFFE    |
+| Buttons (except run, pause and stop) when clicked     | ![onClick](https://github.com/user-attachments/assets/52811a9b-548b-4d92-bd3d-cc5795210358)     | #66A0FA    |
+| Run button                                            | ![run](https://github.com/user-attachments/assets/62e38187-ea20-482a-9cac-a9b1c66d8439)         | #5CDC2F    |
+| Pause button                                          | ![pause](https://github.com/user-attachments/assets/a7d56798-ccd3-400f-9f3b-e2f1aa3dcf2c)       | #E2E23B    |
+| Stop Button                                           | ![stop](https://github.com/user-attachments/assets/a7535fed-a60a-440e-a73c-17ebd4956b98)        | #FF4141    |
+| Highlighted FPGA elements when running the simulation | ![highlighted](https://github.com/user-attachments/assets/932bc91f-af55-4a3b-9ee4-1b25760c424b) | #FFFF00    |
+| Error notification                                    | ![error](https://github.com/user-attachments/assets/2799d379-b8a0-439f-a639-c7d3cd28c1d0)       | #F9B7B7    |
+| Info notification                                     | ![image](https://github.com/user-attachments/assets/3c5ef069-5ae9-4850-a546-f694ab11e808)       | #B7D4F9    |
 
 > [!CAUTION]
 > Colors and Mockups might evolve with the project. Do not assume them as definitive.
@@ -264,6 +268,23 @@ Planning will follow an iterative approach, with each iteration focused on speci
 ![error1](https://github.com/user-attachments/assets/7ed830fc-106d-4f39-9d05-21a6b8be2632)
 
 ![error2](https://github.com/user-attachments/assets/45b4d65b-59ec-4c50-86d8-49d64a61e36e)
+
+### 2.9. FPGA Elements
+
+#### 2.9.1. Clock
+#### 2.9.2. LUT
+
+A LUT (Look-Up Table) in an FPGA is a fundamental building block used to implement combinational logic functions. It is essentially a small, programmable memory that determines the output for any given input combination
+
+**LUT1**
+
+**LUT2**
+
+**LUT3**
+
+**LUT4**
+
+#### 2.9.3. Flip-Flop
 
 ## 3. Personas And Use Cases
 
