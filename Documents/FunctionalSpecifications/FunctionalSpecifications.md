@@ -205,7 +205,7 @@ Planning will follow an iterative approach, with each iteration focused on speci
 
 ![Code retracted](https://github.com/user-attachments/assets/38c5455b-cbdf-4811-b00d-022d68e3ef96)
 
-### 2.3. Extantion And Collapsing Animation
+### 2.3. Extansion And Collapsing Animation
 
 ![Expanding](https://github.com/user-attachments/assets/af4a52a8-adec-4639-8a1f-e4e92bdc5f6f)
 
