@@ -194,6 +194,11 @@ Planning will follow an iterative approach, with each iteration focused on speci
 | User Interaction Methods | The web application will be mouse and keyboard-driven, with limited to no support for touchscreen interactions                        |
 
 ## 2. Mockups
+> [!NOTE]
+> You can access the current Figma file holding all mockups (except for animations) [here](https://www.figma.com/design/voXhm4VJjOP2OZtRJaZc2D/Web-FPGA?node-id=143-696&t=tfPw4BMNYGFdiwuU-1).
+
+> [!CAUTION]
+> Colors and Mockups might evolve with the project. Do not assume them as definitive.
 
 ## 2.1. Color Codes
 
@@ -211,8 +216,6 @@ Planning will follow an iterative approach, with each iteration focused on speci
 | Error notification                                    | ![error](https://github.com/user-attachments/assets/2799d379-b8a0-439f-a639-c7d3cd28c1d0)       | #F9B7B7    |
 | Info notification                                     | ![image](https://github.com/user-attachments/assets/3c5ef069-5ae9-4850-a546-f694ab11e808)       | #B7D4F9    |
 
-> [!CAUTION]
-> Colors and Mockups might evolve with the project. Do not assume them as definitive.
 
 ### 2.2. Simulation Display
 
@@ -269,22 +272,46 @@ Planning will follow an iterative approach, with each iteration focused on speci
 
 ![error2](https://github.com/user-attachments/assets/45b4d65b-59ec-4c50-86d8-49d64a61e36e)
 
-### 2.9. FPGA Elements
+### 2.9. FPGA components
 
 #### 2.9.1. Clock
+A clock is a periodic signal used to synchronize operations across the digital circuit. It defines the timing for flip-flops, registers, and other sequential logic elements, ensuring coordinated data flow and processing.
+
+Unlike other components, the clock is not represented by a specific symbol but rather by a "wire" that originates on the far left of the schematic. Above this wire, "CLK" is written to indicate that it is specifically associated with the clock signal.
+
+![Clock](https://github.com/user-attachments/assets/57a1d5c0-533c-4289-85cd-e18c4e56ccbd)
+
 #### 2.9.2. LUT
 
-A LUT (Look-Up Table) in an FPGA is a fundamental building block used to implement combinational logic functions. It is essentially a small, programmable memory that determines the output for any given input combination
+A LUT (Look-Up Table) is a fundamental building block used to implement combinational logic functions. It is essentially a small, programmable memory that determines the output for any given input combination
 
 **LUT1**
 
+![LUT1](https://github.com/user-attachments/assets/f3538ad5-1744-439b-b999-424986c06f79)
+
 **LUT2**
+
+![LUT2](https://github.com/user-attachments/assets/9946f1ce-caac-456c-a995-d9cdfe070ae4)
 
 **LUT3**
 
+![LUT3](https://github.com/user-attachments/assets/6655ceaa-f90b-4daa-831f-904e12d5929f)
+
 **LUT4**
 
+![LUT4](https://github.com/user-attachments/assets/d449ffbe-a755-4d47-aa8c-ebbfe07b2ec4)
+
 #### 2.9.3. Flip-Flop
+
+A flip-flop is a basic digital storage element used to store one bit of data. It is a type of sequential logic circuit that changes state based on a clock signal. Flip-flops are commonly used in FPGAs for registers, counters, state machines, and data synchronization.
+
+**Without Enable**
+
+![D-Flip Flop](https://github.com/user-attachments/assets/07c29863-aaa5-403e-bcb7-c1e558cf5898)
+
+**With Enable**
+
+![D-Flip Flop with enable](https://github.com/user-attachments/assets/63aa2b5c-a933-48d2-83d2-c05697c4380d)
 
 ## 3. Personas And Use Cases
 
