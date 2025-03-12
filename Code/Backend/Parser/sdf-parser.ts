@@ -1,6 +1,19 @@
 import { promises as fs } from "fs";
+import { IDataStructure } from "./parser";
 
-type IElement = {
+/**
+ * Represents an electronic component or module in the design.
+ * @typedef {Object} IElement
+ * @property {number} id - Unique identifier for the element.
+ * @property {string} name - Name of the element (instance name in SDF, module name in Verilog).
+ * @property {string} type - Type of the element (e.g., module, gate, etc.).
+ * @property {string} innerText - Description or metadata about the element.
+ * @property {string} icon - Path to an icon representing the element.
+ * @property {boolean} clicked - Boolean flag for UI interaction.
+ * @property {string[]} inputs - List of input signals for the element.
+ * @property {string[]} outputs - List of output signals for the element.
+ */
+export type IElement = {
     id: number;
     name: string;
     type: string;
@@ -11,7 +24,18 @@ type IElement = {
     outputs: string[];
 };
 
-type IConnection = {
+/**
+ * Represents a connection between two electronic components.
+ * @typedef {Object} IConnection
+ * @property {number} id - Unique identifier for the connection.
+ * @property {string} from - Source signal name, including instance reference.
+ * @property {string} fromLabel - Label describing the source signal.
+ * @property {string} to - Destination signal name, including instance reference.
+ * @property {string} toLabel - Label describing the destination signal.
+ * @property {string} color - Visual color for the connection, typically for UI display.
+ * @property {number} time - Delay in the connection (extracted from SDF timing values).
+ */
+export type IConnection = {
     id: number;
     from: string;
     fromLabel: string;
@@ -21,20 +45,24 @@ type IConnection = {
     time: number;
 };
 
-type IDataStructure = {
-    elements: IElement[];
-    connections: IConnection[];
-};
-
-// Improved tokenizer for SDF parsing
+/**
+ * Tokenizes the content of an SDF file into an array of relevant tokens for easier parsing.
+ * @param {string} content - The raw content of an SDF file.
+ * @returns {string[]} - An array of tokenized words from the SDF content.
+ */
 function tokenizeSDF(content: string): string[] {
     return content
-        .replace(/\(|\)/g, " ") // Replace parentheses with spaces
-        .split(/\s+/)            // Split by whitespace
+        .replace(/\(|\)/g, " ")
+        .split(/\s+/)
         .filter(token => token.length > 0);
 }
 
-// Extract min, typical, max delays from SDF
+/**
+ * Extracts timing delays (min, typical, max) from an SDF token array starting at the given index.
+ * @param {string[]} tokens - Tokenized SDF content.
+ * @param {number} index - The current index in the token list where timing data might be located.
+ * @returns {{ min?: number, typical?: number, max?: number }} - The extracted delay values.
+ */
 function extractDelays(tokens: string[], index: number): { min?: number; typical?: number; max?: number } {
     let delays: { min?: number; typical?: number; max?: number } = {};
 
@@ -50,6 +78,11 @@ function extractDelays(tokens: string[], index: number): { min?: number; typical
     return delays;
 }
 
+/**
+ * Parses an SDF file and extracts electronic elements and connections.
+ * @param {string} filePath - Path to the SDF file to be parsed.
+ * @returns {Promise<IDataStructure>} - An object containing parsed elements and connections.
+ */
 async function parseSDFFile(filePath: string): Promise<IDataStructure> {
     let output: IDataStructure = { elements: [], connections: [] };
     let elementId = 1;
@@ -62,6 +95,7 @@ async function parseSDFFile(filePath: string): Promise<IDataStructure> {
         let currentInstance = "";
         let currentElement: IElement | null = null;
 
+        // Iterate through the tokens to parse the SDF content.
         for (let i = 0; i < tokens.length; i++) {
             if (tokens[i] === "CELLTYPE") {
                 currentCellType = tokens[i + 1].replace(/"/g, "");
@@ -83,16 +117,16 @@ async function parseSDFFile(filePath: string): Promise<IDataStructure> {
                 output.elements.push(currentElement);
             }
             if (tokens[i] === "IOPATH" && currentElement) {
-                const from = tokens[i + 1].replace(/\[|\]/g, ""); // Removing brackets
+                const from = tokens[i + 1].replace(/\[|\]/g, "");
                 const to = tokens[i + 2];
 
-                // Extract all timing values from the IOPATH
+                // Extract timing delay values (min, typical, max) for the connection.
                 const delayValues = extractDelays(tokens, i + 3);
-                const delay = delayValues.typical ?? 0.2; // Default delay
+                const delay = delayValues.typical ?? 0.2;
 
                 const connection: IConnection = {
                     id: connectionId++,
-                    from: `${currentInstance}.${from}`, // Ensure instance reference
+                    from: `${currentInstance}.${from}`,
                     fromLabel: "input",
                     to: `${currentInstance}.${to}`,
                     toLabel: "output",
@@ -109,22 +143,14 @@ async function parseSDFFile(filePath: string): Promise<IDataStructure> {
         console.error("Error reading or parsing file:", err);
     }
 
-    return output;
+    return output; // Return the parsed data structure.
 }
 
-function checkFileExtension(fileName: string): boolean {
-    let extension: string | undefined = fileName.split(`.`).pop();
-    if (extension !== `sdf`) {
-        return false;
-    }
-    return true;
-}
-
-export async function getJsonObjectFromSdfFile(path: string): Promise<string> {
-    if (checkFileExtension(path)) {
-        const result: IDataStructure = await parseSDFFile(path);
-        return JSON.stringify(result, null, 2);
-    }
-
-    return "Provided file is not a .sdf file.";
+/**
+ * Parses an SDF file and transforms it into a JSON object representing elements and connections.
+ * @param {string} sdfPath - Path to the SDF file to be parsed.
+ * @returns {Promise<IDataStructure>} - A promise that resolves to the parsed data structure.
+ */
+export async function getJsonObjectFromSdf(sdfPath: string): Promise<IDataStructure> {
+    return await parseSDFFile(sdfPath);
 }
