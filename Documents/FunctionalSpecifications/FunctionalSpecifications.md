@@ -40,16 +40,22 @@
         - [Assumptions](#assumptions)
         - [Constraints](#constraints)
   - [2. Mockups](#2-mockups)
-    - [2.1. Simulation display](#21-simulation-display)
-      - [2.1.1. Extended](#211-extended)
-      - [2.1.2. Collapsed](#212-collapsed)
-    - [2.2. Code Display](#22-code-display)
-      - [2.2.1. Expanded](#221-expanded)
+  - [2.1. Color Codes](#21-color-codes)
+    - [2.2. Simulation Display](#22-simulation-display)
+      - [2.2.1. Extended](#221-extended)
       - [2.2.2. Collapsed](#222-collapsed)
-    - [2.3. Extantion And Collapsing Animation](#23-extantion-and-collapsing-animation)
-    - [2.4. Commands](#24-commands)
-    - [2.5. Adding An Example](#25-adding-an-example)
-    - [2.6. Exporting An example](#26-exporting-an-example)
+    - [2.3. Code Display](#23-code-display)
+      - [2.3.1. Expanded](#231-expanded)
+      - [2.3.2. Collapsed](#232-collapsed)
+    - [2.4. Mix Of Simulation And Code](#24-mix-of-simulation-and-code)
+    - [2.5. Commands](#25-commands)
+    - [2.6. Animations](#26-animations)
+      - [2.6.1. Expanding Examples](#261-expanding-examples)
+      - [2.6.2. Collapsing Examples](#262-collapsing-examples)
+      - [2.6.3. Adding An Example](#263-adding-an-example)
+    - [2.6.4. Exporting An example](#264-exporting-an-example)
+    - [2.7. Running simulation](#27-running-simulation)
+    - [2.8. Errors](#28-errors)
   - [3. Personas And Use Cases](#3-personas-and-use-cases)
     - [3.1. Personas](#31-personas)
       - [3.1.1. William](#311-william)
@@ -70,10 +76,10 @@
       - [4.4.2 Scenarios](#442-scenarios)
   - [5. Non-functional Requirements](#5-non-functional-requirements)
     - [5.1. Performance](#51-performance)
-    - [5.2. Scalabilty](#52-scalabilty)
+    - [5.2. Scalability](#52-scalability)
     - [5.3. Usability](#53-usability)
     - [5.4. Reliability](#54-reliability)
-    - [5.5. Maintanability](#55-maintanability)
+    - [5.5. Maintainability](#55-maintainability)
 
 </details>
 
@@ -120,7 +126,7 @@ The target audience includes:
 | Source code               | The source code of the program.                                                                                                                                    |
 | Test plan & Test cases    | A set of scenarios validating the software's performance, and responsivity along with the UI with a defined strategy to run tests more accurately and efficiently. |
 | Project charter           | A document to organize a project's objectives and deadlines.                                                                                                       |
-| Weekly reports            | A group of documents written at the end of each week to report the progress made during the week.                                                                    |
+| Weekly reports            | A group of documents written at the end of each week to report the progress made during the week.                                                                  |
 | User manual               | The end-user documentation for the software.                                                                                                                       |
 
 ### 1.3. Project Organisation
@@ -178,48 +184,68 @@ Planning will follow an iterative approach, with each iteration focused on speci
 
 ##### Constraints
 
-| Constraint               | Description                                                                                                                         |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Constraint               | Description                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
 | Data Storage             | Files uploaded by the user may be stored temporarily locally for processing but will not be permanently saved due to privacy concerns |
-| User Interaction Methods | The web application will be mouse and keyboard-driven, with limited to no support for touchscreen interactions                      |
+| User Interaction Methods | The web application will be mouse and keyboard-driven, with limited to no support for touchscreen interactions                        |
 
 ## 2. Mockups
 
-### 2.1. Simulation display
+## 2.1. Color Codes
 
-#### 2.1.1. Extended 
+| Element                                               | Image | Color Code |
+| ----------------------------------------------------- | ----- | ---------- |
+| Main background                                       |       | #F7F7F7    |
+| Top bar and left bar bacgkround                       |       | #FFFFFF    |
+| Text                                                  |       | #000000    |
+| Selected example                                      |       | #CBDFFE    |
+| Buttons (except run, pause and stop) when clicked     |       | #66A0FA    |
+| Run button                                            |       | #5CDC2F    |
+| Pause button                                          |       | #E2E23B    |
+| Stop Bbutton                                          |       | #FF4141    |
+| Highlighted FPGA elements when running the simulation |       |            |
+
+
+### 2.2. Simulation Display
+
+#### 2.2.1. Extended 
 
 ![Extended simulation](https://github.com/user-attachments/assets/87c8a69a-57d0-413c-a3ae-751fd93dc589)
 
-#### 2.1.2. Collapsed 
+#### 2.2.2. Collapsed 
 
 ![Retracted simulation](https://github.com/user-attachments/assets/9f1bebb7-796f-4fab-8066-62affbf2dc0d)
 
-### 2.2. Code Display
+### 2.3. Code Display
 
-#### 2.2.1. Expanded 
+#### 2.3.1. Expanded 
 
 ![Code extended](https://github.com/user-attachments/assets/032815f4-f24f-4411-b8c2-d1240bf29a50)
 
-#### 2.2.2. Collapsed
+#### 2.3.2. Collapsed
 
 ![Code retracted](https://github.com/user-attachments/assets/38c5455b-cbdf-4811-b00d-022d68e3ef96)
 
-### 2.3. Extansion And Collapsing Animation
+### 2.4. Mix Of Simulation And Code
 
-![Expanding](https://github.com/user-attachments/assets/af4a52a8-adec-4639-8a1f-e4e92bdc5f6f)
-
-![Collapsing](https://github.com/user-attachments/assets/f8166db2-c5fb-40cc-9b24-dee6f2dad95a)
-
-### 2.4. Commands
+### 2.5. Commands
 
 ![Commands](https://github.com/user-attachments/assets/95c311ab-0b35-4688-a234-4c324047ee07)
 
-### 2.5. Adding An Example
+### 2.6. Animations
+
+#### 2.6.1. Expanding Examples
+
+![Expanding](https://github.com/user-attachments/assets/af4a52a8-adec-4639-8a1f-e4e92bdc5f6f)
+
+#### 2.6.2. Collapsing Examples
+![Collapsing](https://github.com/user-attachments/assets/f8166db2-c5fb-40cc-9b24-dee6f2dad95a)
+
+#### 2.6.3. Adding An Example
 
 ![Add-example](https://github.com/user-attachments/assets/1e003c8d-30ad-4f96-8213-b1a38b89e1fc)
 
-### 2.6. Exporting An example
+### 2.6.4. Exporting An example
 
 ![Exporting](https://github.com/user-attachments/assets/459b074a-39ef-427a-afbb-8b9e21c087a7)
 
@@ -270,11 +296,11 @@ Prebuilt examples are available for users to explore. Users can also import thei
 
 #### 4.1.2. Scenarios
 
-| Scenario                   | Description                                                     | Software Response                                                                               |
-| -------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Loading an example         | The user loads a prebuilt example.                              | The code and the example simulation will appear and can be run or updated by the user.   |
-| Importing  an example      | The user uploads a .V file and a .SDF file.                     | The components and the connections will be created on the simulation side.                      |
-| Exporting  an example      | The user exports a scenario.                                    | The system generates a .zip file containing the .V and .SDF files, making the example reusable. |
+| Scenario                   | Description                                                      | Software Response                                                                               |
+| -------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Loading an example         | The user loads a prebuilt example.                               | The code and the example simulation will appear and can be run or updated by the user.          |
+| Importing  an example      | The user uploads a .V file and a .SDF file.                      | The components and the connections will be created on the simulation side.                      |
+| Exporting  an example      | The user exports a scenario.                                     | The system generates a .zip file containing the .V and .SDF files, making the example reusable. |
 | Importing  an invalid file | The user uploads a file that is not one of the required formats. | The system displays an error message specifying the unsupported file type.                      |
 
 ### 4.2. FPGA Display & Interaction
@@ -309,12 +335,12 @@ The program can catch errors and must be signalled to the user.
 
 #### 4.4.2 Scenarios
 
-| Scenario                                      | Description                                                        | Software response                                                                                                   |
-| --------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Code error                                    | The user runs or exports the code with an error.                   | The simulation will not run/export, and a banner will appear on the top right displaying the error and line number. |
-| Incorrect file type when importing an example | The user imports a file with an incorrect format.                  | The system rejects the import and specifies which file type is invalid.                                             |
-| Missing required files                        | The user provides only a .V or.SDF file when both are required.   | The system prompts the user to upload the missing file before proceeding.                                           |
-| Incorrect connection                          | The user connects incompatible nodes and runs the simulation.      | The system halts execution and highlights the error with a message describing the issue.                            |
+| Scenario                                      | Description                                                         | Software response                                                                                                   |
+| --------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Code error                                    | The user runs or exports the code with an error.                    | The simulation will not run/export, and a banner will appear on the top right displaying the error and line number. |
+| Incorrect file type when importing an example | The user imports a file with an incorrect format.                   | The system rejects the import and specifies which file type is invalid.                                             |
+| Missing required files                        | The user provides only a .V or.SDF file when both are required.     | The system prompts the user to upload the missing file before proceeding.                                           |
+| Incorrect connection                          | The user connects incompatible nodes and runs the simulation.       | The system halts execution and highlights the error with a message describing the issue.                            |
 | Simulation failure due to logic error         | The simulation runs but produces incorrect or unexpected behaviour. | The system logs warnings, highlights problematic signals, and suggests debugging steps.                             |
 
 ## 5. Non-functional Requirements
