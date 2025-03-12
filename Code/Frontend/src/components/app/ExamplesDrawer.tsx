@@ -17,7 +17,7 @@ function ExamplesDrawer() {
     <>
       <Drawer direction="left">
         <DrawerTrigger asChild>
-          <button className="fixed left-0 top-1/2 h-[10vh] transform -translate-y-1/2 bg-gray-100 p-2 rounded-r-lg border-y border-r border-solid border-gray-300 shadow-md hover:bg-gray-200 dark:bg-neutral-900 dark:border-neutral-800">
+          <button className="fixed left-0 top-1/2 h-[10vh] transform -translate-y-1/2 bg-gray-100 p-2 rounded-r-lg border-y border-r border-solid border-gray-300 shadow-md hover:bg-gray-200 dark:bg-neutral-900 dark:border-neutral-800 z-10">
             <ChevronRight size={20} />
           </button>
         </DrawerTrigger>
