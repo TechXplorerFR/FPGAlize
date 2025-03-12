@@ -1,7 +1,8 @@
 import * as sdf_parser from "./sdf-parser";
 
-function main() {
-    sdf_parser.getJsonObejctFromSdfFile();
+async function main() {
+    let parsedData: string = await sdf_parser.getJsonObjectFromSdfFile("test.sdf");
+    console.log(parsedData);
 }
 
 main();
