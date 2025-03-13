@@ -12,19 +12,50 @@ export default function SimulationCanvas() {
 
   useEffect(() => {
     sessionStorage.setItem("elements", JSON.stringify(elements));
+    drawCanvas();
+  }, [elements]);
 
+  const drawCanvas = () => {
     const canvasRef = canvas.current;
     if (!canvasRef) return;
     const ctx = canvasRef.getContext("2d");
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
-    
+
+    // Draw wires with only horizontal and vertical paths
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
     elements.forEach((el) => {
-        ctx.fillStyle = "red";
-        ctx.fillRect(el.x, el.y, 50, 50);
+      el.connectedTo.forEach((connectedId) => {
+        const connectedEl = elements.find(e => e.id === connectedId);
+        if (connectedEl) {
+          const startX = el.x + 25;
+          const startY = el.y + 25;
+          const endX = connectedEl.x + 25;
+          const endY = connectedEl.y + 25;
+          
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          if (startX !== endX) ctx.lineTo(endX, startY);
+          if (startY !== endY) ctx.lineTo(endX, endY);
+          ctx.stroke();
+        }
+      });
     });
-  }, [elements]);
+
+    // Draw elements
+    elements.forEach((el) => {
+      ctx.fillStyle = "red";
+      ctx.fillRect(el.x, el.y, 50, 50);
+
+      ctx.fillStyle = "white";
+      ctx.font = "20px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(el.id.toString(), el.x + 25, el.y + 25);
+    });
+  };
 
   const handleMouseDown = (event: React.MouseEvent) => {
     const { offsetX, offsetY } = event.nativeEvent;
@@ -34,11 +65,6 @@ export default function SimulationCanvas() {
 
     if (element) {
       setDraggingElement(element.id);
-      setElements((prev) =>
-        prev.map((el) =>
-          el.id === element.id ? { ...el, isDragging: true } : el
-        )
-      );
     }
   };
 
@@ -55,9 +81,6 @@ export default function SimulationCanvas() {
 
   const handleMouseUp = () => {
     setDraggingElement(null);
-    setElements((prev) =>
-      prev.map((el) => ({ ...el, isDragging: false }))
-    );
   };
 
   return (
