@@ -38,7 +38,7 @@
       - [1.5.2. Deliverables](#152-deliverables)
       - [1.5.3. Dependencies](#153-dependencies)
       - [1.5.4. Assumptions and Constraints](#154-assumptions-and-constraints)
-      - [1.5.5. Deployement Strategy](#155-deployement-strategy)
+      - [1.5.5. Deployment Strategy](#155-deployment-strategy)
   - [2. Mockups](#2-mockups)
     - [2.1. Color Codes](#21-color-codes)
     - [2.2. Simulation Display](#22-simulation-display)
@@ -141,7 +141,7 @@ This software must include:
 | Deliverable               | Purpose                                                                                                                                                            |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Functional specifications | Detailed documentation of the features used and their non-technical aspects.                                                                                       |
-| Technical specifications  | Detailed documentation on the technical implementation of software.                                                                                                |
+| Technical Specifications  | Detailed documentation on the technical implementation of software.                                                                                                |
 | Source code               | The source code of the program.                                                                                                                                    |
 | Test plan & Test cases    | A set of scenarios validating the software's performance, and responsivity along with the UI with a defined strategy to run tests more accurately and efficiently. |
 | Project charter           | A document to organize a project's objectives and deadlines.                                                                                                       |
@@ -208,7 +208,7 @@ Planning will follow an iterative approach, with each iteration focused on speci
 | Data Storage             | Files uploaded by the user may be stored temporarily locally for processing but will not be permanently saved due to privacy concerns |
 | User Interaction Methods | The web application will be mouse and keyboard-driven, with limited to no support for touchscreen interactions                        |
 
-#### 1.5.5. Deployement Strategy
+#### 1.5.5. Deployment Strategy
 
 The application adopts a **local-first** approach, where most functionalities are executed on the **client** side, ensuring a fast and responsive user experience. While the user needs an internet connection to access the website, the application minimizes server dependencies by processing the majority of tasks **locally** on the user's device. The server's role is primarily to store pre-built examples and provide them when needed. This approach offers **flexibility** in deployment across different environments:
 
@@ -501,7 +501,7 @@ The system detects and reports errors during code execution, file imports, and F
 ### 5.2. Scalability
 
 - The web application must efficiently handle large FPGA examples without significant performance degradation that could impact user experience.
-- The system should support FPGA designs with **at least 10 components and 30 connections (3 per component)** while maintaining a response time below Z milliseconds for key interactions (e.g., dragging, zooming, and simulation updates).
+- The system should support FPGA designs with **at least 10 components and 30 connections (3 per component)** while maintaining a response time below 100 milliseconds for key interactions (e.g., dragging, zooming, and simulation updates).
 
 ### 5.3. Usability
 
