@@ -19,7 +19,7 @@ function Example({
     <>
     <Button
       onClick={() => {
-        console.log(index);
+        console.log(index, isHighlighted);
       }}
       className="flex w-full h-auto rounded-none text-left justify-start py-2 bg-white dark:bg-neutral-800 text-black hover:bg-neutral-200 dark:hover:bg-neutral-700 dark:text-white hover:cursor-pointer"
     >

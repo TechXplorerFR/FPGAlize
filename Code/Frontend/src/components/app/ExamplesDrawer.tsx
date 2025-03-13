@@ -26,7 +26,7 @@ function ExamplesDrawer() {
             <DrawerHeader>
               <DrawerTitle>Loaded Examples</DrawerTitle>
               <DrawerDescription>
-                Click on the follwing examples to see them
+                Click on the following examples to see them
               </DrawerDescription>
             </DrawerHeader>
             <Separator />

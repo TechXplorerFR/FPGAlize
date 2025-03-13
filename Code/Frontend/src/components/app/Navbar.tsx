@@ -3,8 +3,12 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Square } from "lucide-react";
 
-export default function Navbar() {
-  const [activeTab, setActiveTab] = useState("Code");
+interface NavbarProps {
+  activeTab: string;
+  setActiveTab: (value: string) => void; // Define the prop type for state setter
+}
+
+export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
   const [playing, setPlaying] = useState(false);
 
   return (
@@ -13,7 +17,8 @@ export default function Navbar() {
       <ToggleGroup
         type="single"
         value={activeTab}
-        onValueChange={(value) => value && setActiveTab(value)}
+        onValueChange={(value) => {value && setActiveTab(value); console.log(value);
+        }}
         className="rounded-lg p-1 ml-[30vw]"
       >
         <ToggleGroupItem value="Code" className="px-8 border">
