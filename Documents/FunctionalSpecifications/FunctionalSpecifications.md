@@ -56,7 +56,7 @@
     - [2.6.4. Exporting An example](#264-exporting-an-example)
     - [2.7. Running simulation](#27-running-simulation)
     - [2.8. Errors](#28-errors)
-    - [2.9. FPGA Elements](#29-fpga-elements)
+    - [2.9. FPGA components](#29-fpga-components)
       - [2.9.1. Clock](#291-clock)
       - [2.9.2. LUT](#292-lut)
       - [2.9.3. Flip-Flop](#293-flip-flop)
@@ -221,57 +221,96 @@ Planning will follow an iterative approach, with each iteration focused on speci
 
 #### 2.2.1. Extended 
 
+<center>
+
 ![Extended simulation](https://github.com/user-attachments/assets/87c8a69a-57d0-413c-a3ae-751fd93dc589)
+</center>
 
 #### 2.2.2. Collapsed 
 
+<center>
+
 ![Retracted simulation](https://github.com/user-attachments/assets/9f1bebb7-796f-4fab-8066-62affbf2dc0d)
+</center>
 
 ### 2.3. Code Display
 
 #### 2.3.1. Expanded 
 
+<center>
+
 ![Code extended](https://github.com/user-attachments/assets/032815f4-f24f-4411-b8c2-d1240bf29a50)
+</center>
 
 #### 2.3.2. Collapsed
 
+<center>
+
 ![Code retracted](https://github.com/user-attachments/assets/38c5455b-cbdf-4811-b00d-022d68e3ef96)
+</center>
 
 ### 2.4. Mix Of Simulation And Code
 
+<center>
+
 ![Mix](https://github.com/user-attachments/assets/48b077c8-ff78-4f9c-b23b-9a85a137d797)
+</center>
 
 ### 2.5. Commands
 
+<center>
+
 ![Commands](https://github.com/user-attachments/assets/95c311ab-0b35-4688-a234-4c324047ee07)
+</center>
 
 ### 2.6. Animations
 
 #### 2.6.1. Expanding Examples
 
+<center>
+
 ![Expanding](https://github.com/user-attachments/assets/af4a52a8-adec-4639-8a1f-e4e92bdc5f6f)
+</center>
 
 #### 2.6.2. Collapsing Examples
+
+<center>
+
 ![Collapsing](https://github.com/user-attachments/assets/f8166db2-c5fb-40cc-9b24-dee6f2dad95a)
+</center>
 
 #### 2.6.3. Adding An Example
 
+<center>
+
 ![Add-example](https://github.com/user-attachments/assets/1e003c8d-30ad-4f96-8213-b1a38b89e1fc)
+</center>
 
 ### 2.6.4. Exporting An example
 
-![Exporting](https://github.com/user-attachments/assets/459b074a-39ef-427a-afbb-8b9e21c087a7)
+<center>
 
+![Exporting](https://github.com/user-attachments/assets/459b074a-39ef-427a-afbb-8b9e21c087a7)
+</center>
 ### 2.7. Running simulation
 
+<center>
+
 ![Running-simulation](https://github.com/user-attachments/assets/96b40555-e5f2-4427-9c09-6ee097dacfcd)
+</center>
+
 
 ### 2.8. Errors
 
+<center>
+
 ![error1](https://github.com/user-attachments/assets/7ed830fc-106d-4f39-9d05-21a6b8be2632)
+</center>
+
+<center>
 
 ![error2](https://github.com/user-attachments/assets/45b4d65b-59ec-4c50-86d8-49d64a61e36e)
-
+</center>
 ### 2.9. FPGA components
 
 #### 2.9.1. Clock
@@ -279,27 +318,42 @@ A clock is a periodic signal used to synchronize operations across the digital c
 
 Unlike other components, the clock is not represented by a specific symbol but rather by a "wire" that originates on the far left of the schematic. Above this wire, "CLK" is written to indicate that it is specifically associated with the clock signal.
 
+<center>
+
 ![Clock](https://github.com/user-attachments/assets/57a1d5c0-533c-4289-85cd-e18c4e56ccbd)
+</center>
 
 #### 2.9.2. LUT
 
 A LUT (Look-Up Table) is a fundamental building block used to implement combinational logic functions. It is essentially a small, programmable memory that determines the output for any given input combination
-
 **LUT1**
 
+<center>
+
 ![LUT1](https://github.com/user-attachments/assets/f3538ad5-1744-439b-b999-424986c06f79)
+</center>
 
 **LUT2**
 
+<center>
+
 ![LUT2](https://github.com/user-attachments/assets/9946f1ce-caac-456c-a995-d9cdfe070ae4)
+</center>
 
 **LUT3**
 
+<center>
+
 ![LUT3](https://github.com/user-attachments/assets/6655ceaa-f90b-4daa-831f-904e12d5929f)
+</center>
 
 **LUT4**
 
+<center>
+
 ![LUT4](https://github.com/user-attachments/assets/d449ffbe-a755-4d47-aa8c-ebbfe07b2ec4)
+</center>
+
 
 #### 2.9.3. Flip-Flop
 
@@ -307,11 +361,17 @@ A flip-flop is a basic digital storage element used to store one bit of data. It
 
 **Without Enable**
 
+<center>
+
 ![D-Flip Flop](https://github.com/user-attachments/assets/07c29863-aaa5-403e-bcb7-c1e558cf5898)
+</center>
 
 **With Enable**
 
+<center>
+
 ![D-Flip Flop with enable](https://github.com/user-attachments/assets/63aa2b5c-a933-48d2-83d2-c05697c4380d)
+</center>
 
 ## 3. Personas And Use Cases
 
