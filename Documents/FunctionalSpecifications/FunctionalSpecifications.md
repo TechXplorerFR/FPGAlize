@@ -21,23 +21,24 @@
 
 - [Functional Specifications](#functional-specifications)
   - [1. Introduction](#1-introduction)
-    - [1.1. Project Overview](#11-project-overview)
-    - [1.2. Project Definitions](#12-project-definitions)
-      - [1.2.1. Vision](#121-vision)
-      - [1.2.2 Objectives](#122-objectives)
-      - [1.2.3. Scope](#123-scope)
-      - [1.2.4. Target Audience](#124-target-audience)
-      - [1.2.5. Deliverables](#125-deliverables)
-    - [1.3. Project Organisation](#13-project-organisation)
-      - [1.3.1. Project Representatives](#131-project-representatives)
-      - [1.3.2. Stakeholders](#132-stakeholders)
-      - [1.3.3. Project Reviewers](#133-project-reviewers)
-    - [1.4. Project Plan](#14-project-plan)
-      - [1.4.1. Planning](#141-planning)
-      - [1.4.2. Deliverables](#142-deliverables)
-      - [1.4.3. Dependencies](#143-dependencies)
-      - [1.4.4. Assumptions and Constraints](#144-assumptions-and-constraints)
-      - [1.4.5. Deployement Strategy](#145-deployement-strategy)
+  - [1.1. Glossary](#11-glossary)
+    - [1.2. Project Overview](#12-project-overview)
+    - [1.3. Project Definitions](#13-project-definitions)
+      - [1.3.1. Vision](#131-vision)
+      - [1.3.2 Objectives](#132-objectives)
+      - [1.3.3. Scope](#133-scope)
+      - [1.3.4. Target Audience](#134-target-audience)
+      - [1.3.5. Deliverables](#135-deliverables)
+    - [1.4. Project Organisation](#14-project-organisation)
+      - [1.4.1. Project Representatives](#141-project-representatives)
+      - [1.4.2. Stakeholders](#142-stakeholders)
+      - [1.4.3. Project Reviewers](#143-project-reviewers)
+    - [1.5. Project Plan](#15-project-plan)
+      - [1.5.1. Planning](#151-planning)
+      - [1.5.2. Deliverables](#152-deliverables)
+      - [1.5.3. Dependencies](#153-dependencies)
+      - [1.5.4. Assumptions and Constraints](#154-assumptions-and-constraints)
+      - [1.5.5. Deployement Strategy](#155-deployement-strategy)
   - [2. Mockups](#2-mockups)
     - [2.1. Color Codes](#21-color-codes)
     - [2.2. Simulation Display](#22-simulation-display)
@@ -91,21 +92,36 @@
 
 ## 1. Introduction 
 
-### 1.1. Project Overview
+## 1.1. Glossary 
+
+| Term | Definition |
+|------|------------|
+| FPGA (Field-Programmable Gate Array) | A type of integrated circuit that can be programmed after manufacturing to perform specific tasks. |
+| LUT (Look-Up Table) | A basic building block in FPGAs that can implement various logic functions. |
+| Flip-Flop | A circuit element that stores a single bit of data, often used in sequential logic designs. |
+| HDL (Hardware Description Language) | A specialized programming language used to describe the structure and behavior of electronic circuits. |
+| Simulation | A process of testing and verifying the behavior of a digital design before implementing it on actual hardware. |
+| Clock | A signal that synchronizes the operations within a digital circuit. |
+| LED (Light-Emitting Diode) | A small light on an FPGA board often used to indicate the status of various signals or operations. |
+| Wire | A connection between different components in a digital circuit. |
+| Component | A functional unit within an FPGA design, such as a LUT, flip-flop, or more complex custom-designed module. |
+
+
+### 1.2. Project Overview
 
 This project focuses on developing a web application that allows users to learn FPGA concepts through a simulated environment.
 
-### 1.2. Project Definitions
+### 1.3. Project Definitions
 
-#### 1.2.1. Vision
+#### 1.3.1. Vision
 Our goal is to deliver an intuitive and reliable platform that accurately represents the inner workings of an FPGA. 
 
-#### 1.2.2 Objectives
+#### 1.3.2 Objectives
 
 - Web application: The software must be accessible through a web application.
 - Representation and manipulation of an FPGA board along with components such as LEDs, buttons and wires to interact with it.
 
-#### 1.2.3. Scope
+#### 1.3.3. Scope
 
 This software must include:
 - An interface to display and simulate the different components in an FPGA board or connected to it.
@@ -113,14 +129,14 @@ This software must include:
 - Load, modify and export examples.
 - Manipulate components displayed on screen (add or remove connections and components).
 
-#### 1.2.4. Target Audience
+#### 1.3.4. Target Audience
 
 | User Group               | Description                                              | Primary Needs                                                   |
 | ------------------------ | -------------------------------------------------------- | --------------------------------------------------------------- |
 | **Students**             | Individuals learning FPGA concepts and design principles | Visual learning tools, intuitive interface, pre-loaded examples |
 | **Teachers/Instructors** | Educators teaching FPGA concepts in classroom settings   | Ability to upload custom examples, demonstration tools          |
   
-#### 1.2.5. Deliverables
+#### 1.3.5. Deliverables
 
 | Deliverable               | Purpose                                                                                                                                                            |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -132,9 +148,9 @@ This software must include:
 | Weekly reports            | A group of documents written at the end of each week to report the progress made during the week.                                                                  |
 | User manual               | The end-user documentation for the software.                                                                                                                       |
 
-### 1.3. Project Organisation
+### 1.4. Project Organisation
 
-#### 1.3.1. Project Representatives
+#### 1.4.1. Project Representatives
 
 | Full Name                            | Role               | Role Description                                                                                                                                                 |
 | ------------------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -145,24 +161,24 @@ This software must include:
 | Guillaume DERAMCHI                   | Quality assurance  | Tests the product's functionalities to find bugs and issues. <br> Documents bugs and issues. <br> Writes the test plan. <br> Checks that issues have been fixed. |
 | Max BERNARD                          | Technical writer   | Responsible for creating and maintaining the project's documentation.                                                                                            |
 
-#### 1.3.2. Stakeholders
+#### 1.4.2. Stakeholders
 
 | Role            | Representative | Expectations                                                                    |
 | --------------- | -------------- | ------------------------------------------------------------------------------- |
 | Client          | Florent MANNI  | Finished project meeting [requirements](https://github.com/LeFl0w/ALGOSUP_POC). |
 | School director | Franck JEANNIN | Clear documentation and management based on the skills learnt in class.         |
 
-#### 1.3.3. Project Reviewers
+#### 1.4.3. Project Reviewers
 
 The school director has appointed external project reviewers to review our specifications and provide us with feedback.
 
-### 1.4. Project Plan
+### 1.5. Project Plan
 
-#### 1.4.1. Planning
+#### 1.5.1. Planning
 
 Planning will follow an iterative approach, with each iteration focused on specific functionality, testing, and validation to ensure quality and performance.
 
-#### 1.4.2. Deliverables
+#### 1.5.2. Deliverables
 
 | Deliverables              | Date<br>(DD//MM/YYYY) |
 | ------------------------- | :-------------------: |
@@ -171,12 +187,12 @@ Planning will follow an iterative approach, with each iteration focused on speci
 | Test Plan                 |      25/03/2025       |
 | Code & User Manual        |      01/04/2025       |
 
-#### 1.4.3. Dependencies
+#### 1.5.3. Dependencies
 
 - An iteration of the project cannot start before tests are run on the current version.
 - A project release cannot occur before all tests of the current version are successful.
 
-#### 1.4.4. Assumptions and Constraints
+#### 1.5.4. Assumptions and Constraints
 
 **Assumptions**
 | Assumption         | Description                                                                                                                                 |
@@ -192,7 +208,7 @@ Planning will follow an iterative approach, with each iteration focused on speci
 | Data Storage             | Files uploaded by the user may be stored temporarily locally for processing but will not be permanently saved due to privacy concerns |
 | User Interaction Methods | The web application will be mouse and keyboard-driven, with limited to no support for touchscreen interactions                        |
 
-#### 1.4.5. Deployement Strategy
+#### 1.5.5. Deployement Strategy
 
 The application adopts a **local-first** approach, where most functionalities are executed on the **client** side, ensuring a fast and responsive user experience. While the user needs an internet connection to access the website, the application minimizes server dependencies by processing the majority of tasks **locally** on the user's device. The server's role is primarily to store pre-built examples and provide them when needed. This approach offers **flexibility** in deployment across different environments:
 
