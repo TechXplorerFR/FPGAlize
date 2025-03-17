@@ -6,26 +6,21 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Undo2, Redo2, RotateCcw } from "lucide-react";
-import { useState } from "react";
 
-const CanvasActionBar = () => {
-  const [zoom, setZoom] = useState(100);
+interface CanvasActionBarProps {
+  zoom: number;
+  onZoomChange: (delta: number) => void;
+  onResetZoom: () => void;
+}
 
-  const handleZoomChange = (delta: number) => {
-    setZoom((prev) => Math.max(10, Math.min(200, prev + delta)));
-  };
-
-  const resetZoom = () => {
-    setZoom(100);
-  };
-
+const CanvasActionBar = ({ zoom, onZoomChange, onResetZoom }: CanvasActionBarProps) => {
   return (
     <div className="flex gap-2 max-h-[4.5vh]">
       <div className="flex items-center bg-gray-100 rounded-lg p-1">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => handleZoomChange(-10)}
+          onClick={() => onZoomChange(-10)}
           className="cursor-pointer"
         >
           -
@@ -33,7 +28,7 @@ const CanvasActionBar = () => {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="px-2 cursor-pointer" onClick={resetZoom}>
+              <span className="px-2 cursor-pointer" onClick={onResetZoom}>
                 {zoom}%
               </span>
             </TooltipTrigger>
@@ -43,7 +38,7 @@ const CanvasActionBar = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => handleZoomChange(10)}
+          onClick={() => onZoomChange(10)}
           className="cursor-pointer"
         >
           +
@@ -75,7 +70,7 @@ const CanvasActionBar = () => {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="cursor-pointer">
+              <Button variant="ghost" size="icon" className="cursor-pointer" onClick={onResetZoom}>
                 <RotateCcw className="w-5 h-5 text-gray-400" />
               </Button>
             </TooltipTrigger>

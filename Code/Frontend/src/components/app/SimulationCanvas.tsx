@@ -28,6 +28,7 @@ export default function SimulationCanvas() {
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = 100%
 
   // Memoize drawCanvas to prevent recreation on each render
   const drawCanvas = useCallback(() => {
@@ -37,18 +38,23 @@ export default function SimulationCanvas() {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
-
+    
+    // Apply transformations (scale and translate)
+    ctx.save();
+    ctx.translate(panOffset.x, panOffset.y);
+    ctx.scale(zoomLevel, zoomLevel);
+    
     // Draw wires with only horizontal and vertical paths
     ctx.strokeStyle = "black";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
     elements.forEach((el) => {
       el.connectedTo.forEach((connectedId) => {
         const connectedEl = elements.find((e) => e.id === connectedId);
         if (connectedEl) {
-          const startX = el.x + panOffset.x + 25;
-          const startY = el.y + panOffset.y + 25;
-          const endX = connectedEl.x + panOffset.x + 25;
-          const endY = connectedEl.y + panOffset.y + 25;
+          const startX = el.x + 25;
+          const startY = el.y + 25;
+          const endX = connectedEl.x + 25;
+          const endY = connectedEl.y + 25;
 
           ctx.beginPath();
           ctx.moveTo(startX, startY);
@@ -62,19 +68,21 @@ export default function SimulationCanvas() {
     // Draw elements
     elements.forEach((el) => {
       ctx.fillStyle = "red";
-      ctx.fillRect(el.x + panOffset.x, el.y + panOffset.y, 50, 50);
+      ctx.fillRect(el.x, el.y, 50, 50);
 
       ctx.fillStyle = "white";
-      ctx.font = "20px Arial";
+      ctx.font = `${20 / zoomLevel}px Arial`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(
         el.id.toString(),
-        el.x + panOffset.x + 25,
-        el.y + panOffset.y + 25
+        el.x + 25,
+        el.y + 25
       );
     });
-  }, [elements, panOffset]);
+    
+    ctx.restore();
+  }, [elements, panOffset, zoomLevel]);
 
   // Store elements in sessionStorage whenever they change
   useEffect(() => {
@@ -138,12 +146,16 @@ export default function SimulationCanvas() {
       return;
     }
 
+    // Convert screen coordinates to canvas coordinates
+    const canvasX = (offsetX - panOffset.x) / zoomLevel;
+    const canvasY = (offsetY - panOffset.y) / zoomLevel;
+
     const element = elements.find(
       (el) =>
-        offsetX - panOffset.x >= el.x &&
-        offsetX - panOffset.x <= el.x + 50 &&
-        offsetY - panOffset.y >= el.y &&
-        offsetY - panOffset.y <= el.y + 50
+        canvasX >= el.x &&
+        canvasX <= el.x + 50 &&
+        canvasY >= el.y &&
+        canvasY <= el.y + 50
     );
 
     if (element) {
@@ -165,13 +177,17 @@ export default function SimulationCanvas() {
     if (draggingElement === null) return;
     const { offsetX, offsetY } = event.nativeEvent;
 
+    // Convert screen coordinates to canvas coordinates
+    const canvasX = (offsetX - panOffset.x) / zoomLevel;
+    const canvasY = (offsetY - panOffset.y) / zoomLevel;
+
     setElements((prev) =>
       prev.map((el) =>
         el.id === draggingElement
           ? {
               ...el,
-              x: offsetX - panOffset.x - 10,
-              y: offsetY - panOffset.y - 10,
+              x: canvasX - 25, // Center element on cursor
+              y: canvasY - 25,
             }
           : el
       )
@@ -185,15 +201,55 @@ export default function SimulationCanvas() {
     setDraggingElement(null);
   };
 
-  // Add wheel event handler for scroll-based panning
+  // Modified wheel handler for both zoom and pan
   const handleWheel = (event: React.WheelEvent) => {
     event.preventDefault(); // Prevent default scrolling behavior
 
-    // Update pan offset based on wheel delta values
-    setPanOffset((prev) => ({
-      x: prev.x - event.deltaX,
-      y: prev.y - event.deltaY,
-    }));
+    // Check if Ctrl key is pressed for zooming
+    if (event.ctrlKey) {
+      const delta = -event.deltaY * 0.01; // Adjust sensitivity
+      const newZoom = Math.max(0.1, Math.min(5, zoomLevel + delta)); // Limit zoom between 10% and 500%
+      
+      // Get mouse position relative to canvas
+      const rect = canvas.current?.getBoundingClientRect();
+      if (!rect) return;
+      
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+      
+      // Calculate zoom center point (where mouse is pointing)
+      const mouseCanvasX = (mouseX - panOffset.x) / zoomLevel;
+      const mouseCanvasY = (mouseY - panOffset.y) / zoomLevel;
+      
+      // Calculate new pan offset to keep the point under mouse fixed
+      const newPanOffsetX = mouseX - mouseCanvasX * newZoom;
+      const newPanOffsetY = mouseY - mouseCanvasY * newZoom;
+      
+      setPanOffset({
+        x: newPanOffsetX,
+        y: newPanOffsetY
+      });
+      
+      setZoomLevel(newZoom);
+    } else {
+      // Regular panning with wheel
+      setPanOffset((prev) => ({
+        x: prev.x - event.deltaX,
+        y: prev.y - event.deltaY,
+      }));
+    }
+  };
+
+  // Function to handle zoom from the action bar
+  const handleZoomChange = (newZoomPercent: number) => {
+    const newZoom = newZoomPercent / 100;
+    setZoomLevel(newZoom);
+  };
+
+  // Function to reset zoom
+  const resetZoom = () => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
   };
 
   return (
@@ -209,7 +265,11 @@ export default function SimulationCanvas() {
       />
       <div className="relative">
         <div className="absolute bottom-2 left-6">
-          <CanvasActionBar />
+          <CanvasActionBar 
+            zoom={Math.round(zoomLevel * 100)} 
+            onZoomChange={(delta) => handleZoomChange(Math.round(zoomLevel * 100) + delta)}
+            onResetZoom={resetZoom}
+          />
         </div>
       </div>
     </div>
