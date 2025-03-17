@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Element, elementList } from "./Element";
+import { type Element } from "@/lib/types";
+import { elementList } from "@/data/sample-elements";
 import CanvasActionBar from "./CanvasActionBar";
 
 // Debounce helper function

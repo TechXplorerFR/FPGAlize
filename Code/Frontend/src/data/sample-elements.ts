@@ -1,10 +1,4 @@
-export type Element = {
-  id: number;
-  x: number;
-  y: number;
-  isDragging: boolean;
-  connectedTo: number[];
-}
+import { type Element } from "@/lib/types";
 
 export let elementList: Element[] = [
     { 
