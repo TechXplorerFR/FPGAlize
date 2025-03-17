@@ -12,7 +12,7 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 import Example from "@/components/app/Example";
 import { exampleFiles } from "@/data/sample-files";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import AddExampleModal from "@/components/app/AddExampleModal";
 
 function ExamplesDrawer() {
   return (
@@ -46,7 +46,7 @@ function ExamplesDrawer() {
               <Separator />
             </div>
             <DrawerFooter className="p-4">
-              <Button className="px-4 py-2 rounded-md">Import</Button>
+              <AddExampleModal />
             </DrawerFooter>
             <DrawerClose asChild>
               <div className="absolute top-[50vh] right-[-37px] h-[10vh] transform -translate-y-1/2 bg-gray-100 p-2 rounded-r-lg border-y border-r border-solid border-gray-300 shadow-md hover:bg-gray-200 flex justify-center items-center dark:bg-neutral-900 dark:border-neutral-800">
