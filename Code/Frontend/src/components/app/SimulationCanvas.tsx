@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { Element, elementList } from "./Element";
+import CanvasActionBar from "./CanvasActionBar";
 
 // Debounce helper function
 function debounce<T extends (...args: any[]) => any>(
@@ -7,7 +8,7 @@ function debounce<T extends (...args: any[]) => any>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
-  
+
   return (...args: Parameters<T>) => {
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
@@ -90,17 +91,17 @@ export default function SimulationCanvas() {
     const debouncedResize = debounce(() => {
       const canvasRef = canvas.current;
       const containerElement = containerRef.current;
-      
+
       if (canvasRef && containerElement) {
         // Get the current size of the container
         const { width, height } = containerElement.getBoundingClientRect();
-        
+
         // Only update if dimensions actually changed
         if (width !== canvasSize.width || height !== canvasSize.height) {
           // Update the canvas dimensions
           canvasRef.width = width;
           canvasRef.height = height;
-          
+
           // Update the state (this will trigger redrawing)
           setCanvasSize({ width, height });
         }
@@ -110,15 +111,15 @@ export default function SimulationCanvas() {
     const resizeObserver = new ResizeObserver(() => {
       debouncedResize();
     });
-    
+
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
       // Initial size setup
       debouncedResize();
     }
-    
+
     window.addEventListener("resize", debouncedResize);
-    
+
     return () => {
       if (containerRef.current) {
         resizeObserver.disconnect();
@@ -187,7 +188,7 @@ export default function SimulationCanvas() {
   // Add wheel event handler for scroll-based panning
   const handleWheel = (event: React.WheelEvent) => {
     event.preventDefault(); // Prevent default scrolling behavior
-    
+
     // Update pan offset based on wheel delta values
     setPanOffset((prev) => ({
       x: prev.x - event.deltaX,
@@ -206,6 +207,11 @@ export default function SimulationCanvas() {
         onWheel={handleWheel}
         onContextMenu={(e) => e.preventDefault()}
       />
+      <div className="relative">
+        <div className="absolute bottom-2 left-6">
+          <CanvasActionBar />
+        </div>
+      </div>
     </div>
   );
 }
