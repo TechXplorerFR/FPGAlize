@@ -2,7 +2,13 @@ import { useState } from "react";
 import CodeEditor from "./CodeEditor";
 import SimulationCanvas from "./SimulationCanvas";
 
-export default function TabDisplayer({ activeTab }: { activeTab: string }) {
+export default function TabDisplayer({
+  activeView,
+  activeTabId,
+}: {
+  activeView: string;
+  activeTabId: string;
+}) {
   const [editorWidth, setEditorWidth] = useState<number>(50);
 
   const handleMouseDown = (event: React.MouseEvent) => {
@@ -29,12 +35,14 @@ export default function TabDisplayer({ activeTab }: { activeTab: string }) {
   return (
     <>
       {/* Conditional rendering */}
-      {activeTab === "Code" && <CodeEditor />}
-      {activeTab === "Simulation" && <SimulationCanvas />}
-      {activeTab === "Mix" && (
+      {activeView === "Code" && <CodeEditor activeTabId={activeTabId} />}
+      {activeView === "Simulation" && (
+        <SimulationCanvas activeTabId={activeTabId} />
+      )}
+      {activeView === "Mix" && (
         <div style={{ display: "flex", width: "100%", height: "88vh" }}>
           <div style={{ width: `${editorWidth}%`, overflow: "hidden" }}>
-            <CodeEditor />
+            <CodeEditor activeTabId={activeTabId} />
           </div>
           {/* Draggable Divider */}
           <div
@@ -47,8 +55,14 @@ export default function TabDisplayer({ activeTab }: { activeTab: string }) {
             onMouseDown={handleMouseDown}
           />
 
-          <div style={{ width: `${100 - editorWidth}%`, height: "88vh", overflow: "hidden" }}>
-            <SimulationCanvas />
+          <div
+            style={{
+              width: `${100 - editorWidth}%`,
+              height: "88vh",
+              overflow: "hidden",
+            }}
+          >
+            <SimulationCanvas activeTabId={activeTabId} />
           </div>
         </div>
       )}

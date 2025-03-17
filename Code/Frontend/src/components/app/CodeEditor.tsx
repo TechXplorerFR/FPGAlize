@@ -1,24 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { getTheme } from "../theme-provider";
+import { sampleCodes } from "@/data/sample-codes";
+import { tabs } from "@/data/sample-tabs";
 
-export default function CodeEditor() {
-  const [code, setCode] = useState(
-    `module ctr (input up_down, clk, rstn, output reg [2:0] out);
-    always @ (posedge clk)
-        if (!rstn)
-            out<= 0;
-        else begin
-            if (up_down)
-                out <= out+1;
-            else
-                out <= out-1;
-        end
-    endmodule`
-  );
+export default function CodeEditor({ activeTabId }: { activeTabId: string }) {
+  const [code, setCode] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // Update code content when the active tab changes
+  useEffect(() => {
+    if (!activeTabId) {
+      // Default to first code if no tab is selected
+      setCode(sampleCodes[0] || "");
+      return;
+    }
+
+    // Find the index of the active tab
+    const tabIndex = tabs.findIndex(tab => tab.id === activeTabId);
+    
+    // If the tab exists and there's corresponding code, set it
+    if (tabIndex !== -1 && tabIndex < sampleCodes.length) {
+      setCode(sampleCodes[tabIndex]);
+    } else {
+      // If no match found, default to first code sample
+      setCode(sampleCodes[0] || "");
+    }
+  }, [activeTabId]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);

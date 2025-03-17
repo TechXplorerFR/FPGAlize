@@ -85,13 +85,32 @@ export type IConnection = {
 
 /**
  * Represents the complete parsed data structure, including elements and connections.
- * This type defines the structure of the parsed data that combines elements 
+ * This type defines the structure of the parsed data that combines elements
  * from Verilog and connections from SDF.
  * @typedef {Object} IDataStructure
  * @property {IElement[]} elements - List of parsed elements from Verilog and SDF.
  * @property {IConnection[]} connections - List of parsed connections from SDF.
  */
 export type IDataStructure = {
-    elements: IElement[];
-    connections: IConnection[];
+  elements: IElement[];
+  connections: IConnection[];
+};
+
+/**
+ * Represents an example with its associated files and parsed JSON output.
+ * This type defines the structure of an example that includes the original
+ * Verilog file, post-synthesis Verilog file, post-synthesis SDF file, and
+ * the parsed JSON output from the combined Verilog and SDF files.
+ * @typedef {Object} Example
+ * @property {File} originalVerilogFile - Original Verilog file for the example.
+ * @property {File} postSynthesisVerilogFile - Post-synthesis Verilog file for the example.
+ * @property {File} postSynthesisSdfFile - Post-synthesis SDF file for the example.
+ * @property {IDataStructure | null} jsonOutput - Parsed JSON output from the example files.
+ */
+export type Example = {
+  originalVerilogFile: File;
+  postSynthesisVerilogFile: File;
+  postSynthesisSdfFile: File;
+  jsonOutput: IDataStructure | null;
+  originalVerilogFileInformation: FileInformation;
 };

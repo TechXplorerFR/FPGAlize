@@ -16,7 +16,7 @@ function debounce<T extends (...args: any[]) => any>(
   };
 }
 
-export default function SimulationCanvas() {
+export default function SimulationCanvas({activeTabId}: {activeTabId: string}) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [elements, setElements] = useState<Element[]>(() => {
@@ -199,6 +199,9 @@ export default function SimulationCanvas() {
     if (event.button === 1 || event.button === 2) {
       setIsPanning(false);
     }
+    // To remove
+    console.log(activeTabId);
+    // ---------------
     setDraggingElement(null);
   };
 
