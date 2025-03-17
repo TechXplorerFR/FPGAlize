@@ -11,7 +11,7 @@ export default function TabsBar() {
   };
 
   return (
-    <div className="flex border-b overflow-hidden shadow-md">
+    <div className="flex border-b overflow-hidden shadow-md h-[5vh]">
       {activeTabs.map((tab) => (
         <div
           key={tab.id}

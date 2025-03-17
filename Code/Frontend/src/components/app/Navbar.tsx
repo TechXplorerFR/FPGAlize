@@ -12,7 +12,7 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
   const [playing, setPlaying] = useState(false);
 
   return (
-    <div className="flex items-center justify-between p-2 border-b w-full">
+    <div className="flex items-center justify-between p-2 border-b w-full h-[7vh]">
       {/* Tab Selector */}
       <ToggleGroup
         type="single"
