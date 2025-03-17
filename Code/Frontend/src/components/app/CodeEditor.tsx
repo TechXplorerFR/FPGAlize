@@ -4,9 +4,17 @@ import { Copy, Check } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { getTheme } from "../theme-provider";
 import { sampleCodes } from "@/data/sample-codes";
-import { tabs } from "@/data/sample-tabs";
+import { Example, Tab } from "@/lib/types";
 
-export default function CodeEditor({ activeTabId }: { activeTabId: string }) {
+export default function CodeEditor({
+  activeTabId,
+  examples,
+  tabs,
+}: {
+  activeTabId: string;
+  examples: Example[];
+  tabs: Tab[];
+}) {
   const [code, setCode] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -19,8 +27,8 @@ export default function CodeEditor({ activeTabId }: { activeTabId: string }) {
     }
 
     // Find the index of the active tab
-    const tabIndex = tabs.findIndex(tab => tab.id === activeTabId);
-    
+    const tabIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+
     // If the tab exists and there's corresponding code, set it
     if (tabIndex !== -1 && tabIndex < sampleCodes.length) {
       setCode(sampleCodes[tabIndex]);
@@ -33,6 +41,7 @@ export default function CodeEditor({ activeTabId }: { activeTabId: string }) {
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
     setCopied(true);
+    console.log(examples);
     setTimeout(() => setCopied(false), 2000);
   };
 

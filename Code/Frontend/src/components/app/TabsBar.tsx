@@ -1,11 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { tabs } from "@/data/sample-tabs";
+import { Tab } from "@/lib/types";
 
-export default function TabsBar({ setActiveTabId }: { setActiveTabId: (id: string) => void }) {
-  const [activeTabs, setActiveTabs] = useState(tabs);
+export default function TabsBar({ 
+  setActiveTabId, 
+  tabs, 
+  setTabs 
+}: { 
+  setActiveTabId: (id: string) => void, 
+  tabs: Tab[],
+  setTabs: (tabs: Tab[]) => void
+}) {
+  // Keep a local state for selected tab only, use the tabs from props
   const [selectedTab, setSelectedTab] = useState<string>(tabs[0]?.id || "");
+
+  // Update selected tab when tabs change
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.some(tab => tab.id === selectedTab)) {
+      setSelectedTab(tabs[0].id);
+      setActiveTabId(tabs[0].id);
+    }
+  }, [tabs, selectedTab, setActiveTabId]);
 
   // When a tab is clicked, update both local state and parent component
   const handleTabClick = (id: string) => {
@@ -15,8 +31,10 @@ export default function TabsBar({ setActiveTabId }: { setActiveTabId: (id: strin
 
   const removeTab = (id: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent tab selection when removing
-    const newTabs = activeTabs.filter((tab) => tab.id !== id);
-    setActiveTabs(newTabs);
+    const newTabs = tabs.filter((tab) => tab.id !== id);
+    
+    // Update parent component's tabs state
+    setTabs(newTabs);
     
     // If the removed tab was selected, select another tab
     if (id === selectedTab && newTabs.length > 0) {
@@ -27,7 +45,7 @@ export default function TabsBar({ setActiveTabId }: { setActiveTabId: (id: strin
 
   return (
     <div className="flex border-b overflow-hidden shadow-md h-[5vh]">
-      {activeTabs.map((tab) => (
+      {tabs.map((tab) => (
         <div
           key={tab.id}
           className={cn(

@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { type Element } from "@/lib/types";
+import { Example, type Element } from "@/lib/types";
 import { elementList } from "@/data/sample-elements";
 import CanvasActionBar from "./CanvasActionBar";
 
@@ -16,7 +16,13 @@ function debounce<T extends (...args: any[]) => any>(
   };
 }
 
-export default function SimulationCanvas({activeTabId}: {activeTabId: string}) {
+export default function SimulationCanvas({
+  activeTabId,
+  examples,
+}: {
+  activeTabId: string;
+  examples: Example[];
+}) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [elements, setElements] = useState<Element[]>(() => {
@@ -39,12 +45,12 @@ export default function SimulationCanvas({activeTabId}: {activeTabId: string}) {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
-    
+
     // Apply transformations (scale and translate)
     ctx.save();
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(zoomLevel, zoomLevel);
-    
+
     // Draw wires with only horizontal and vertical paths
     ctx.strokeStyle = "black";
     ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
@@ -75,13 +81,9 @@ export default function SimulationCanvas({activeTabId}: {activeTabId: string}) {
       ctx.font = `${20 / zoomLevel}px Arial`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(
-        el.id.toString(),
-        el.x + 25,
-        el.y + 25
-      );
+      ctx.fillText(el.id.toString(), el.x + 25, el.y + 25);
     });
-    
+
     ctx.restore();
   }, [elements, panOffset, zoomLevel]);
 
@@ -200,7 +202,7 @@ export default function SimulationCanvas({activeTabId}: {activeTabId: string}) {
       setIsPanning(false);
     }
     // To remove
-    console.log(activeTabId);
+    console.log(activeTabId, examples);
     // ---------------
     setDraggingElement(null);
   };
@@ -213,27 +215,27 @@ export default function SimulationCanvas({activeTabId}: {activeTabId: string}) {
     if (event.ctrlKey) {
       const delta = -event.deltaY * 0.01; // Adjust sensitivity
       const newZoom = Math.max(0.1, Math.min(5, zoomLevel + delta)); // Limit zoom between 10% and 500%
-      
+
       // Get mouse position relative to canvas
       const rect = canvas.current?.getBoundingClientRect();
       if (!rect) return;
-      
+
       const mouseX = event.clientX - rect.left;
       const mouseY = event.clientY - rect.top;
-      
+
       // Calculate zoom center point (where mouse is pointing)
       const mouseCanvasX = (mouseX - panOffset.x) / zoomLevel;
       const mouseCanvasY = (mouseY - panOffset.y) / zoomLevel;
-      
+
       // Calculate new pan offset to keep the point under mouse fixed
       const newPanOffsetX = mouseX - mouseCanvasX * newZoom;
       const newPanOffsetY = mouseY - mouseCanvasY * newZoom;
-      
+
       setPanOffset({
         x: newPanOffsetX,
-        y: newPanOffsetY
+        y: newPanOffsetY,
       });
-      
+
       setZoomLevel(newZoom);
     } else {
       // Regular panning with wheel
@@ -269,9 +271,11 @@ export default function SimulationCanvas({activeTabId}: {activeTabId: string}) {
       />
       <div className="relative">
         <div className="absolute bottom-2 left-6">
-          <CanvasActionBar 
-            zoom={Math.round(zoomLevel * 100)} 
-            onZoomChange={(delta) => handleZoomChange(Math.round(zoomLevel * 100) + delta)}
+          <CanvasActionBar
+            zoom={Math.round(zoomLevel * 100)}
+            onZoomChange={(delta) =>
+              handleZoomChange(Math.round(zoomLevel * 100) + delta)
+            }
             onResetZoom={resetZoom}
           />
         </div>
