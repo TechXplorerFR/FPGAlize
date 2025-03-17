@@ -17,8 +17,7 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
       <ToggleGroup
         type="single"
         value={activeTab}
-        onValueChange={(value) => {value && setActiveTab(value); console.log(value);
-        }}
+        onValueChange={(value) => value && setActiveTab(value)}
         className="rounded-lg p-1 ml-[30vw]"
       >
         <ToggleGroupItem value="Code" className="px-8 border">

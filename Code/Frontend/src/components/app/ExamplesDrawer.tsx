@@ -3,6 +3,7 @@ import {
   DrawerClose,
   DrawerContent,
   DrawerDescription,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
@@ -11,6 +12,7 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 import Example from "@/components/app/Example";
 import { exampleFiles } from "@/data/sample-files";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 
 function ExamplesDrawer() {
   return (
@@ -22,24 +24,30 @@ function ExamplesDrawer() {
           </button>
         </DrawerTrigger>
         <DrawerContent>
-          <div className="relative">
-            <DrawerHeader>
-              <DrawerTitle>Loaded Examples</DrawerTitle>
-              <DrawerDescription>
-                Click on the following examples to see them
-              </DrawerDescription>
-            </DrawerHeader>
-            <Separator />
-            {exampleFiles.map((_example, index) => (
-              <Example
-                name={exampleFiles[index].name}
-                lineCount={exampleFiles[index].lineCount}
-                fileSize={exampleFiles[index].fileSize}
-                isHighlighted={index == 1}
-                index={index}
-              />
-            ))}
-            <Separator />
+          <div className="relative flex flex-col h-full">
+            <div className="flex-grow">
+              <DrawerHeader>
+                <DrawerTitle>Loaded Examples</DrawerTitle>
+                <DrawerDescription>
+                  Click on the following examples to see them
+                </DrawerDescription>
+              </DrawerHeader>
+              <Separator />
+              {exampleFiles.map((_example, index) => (
+                <Example
+                  key={index}
+                  name={exampleFiles[index].name}
+                  lineCount={exampleFiles[index].lineCount}
+                  fileSize={exampleFiles[index].fileSize}
+                  isHighlighted={index == 1}
+                  index={index}
+                />
+              ))}
+              <Separator />
+            </div>
+            <DrawerFooter className="p-4">
+              <Button className="px-4 py-2 rounded-md">Import</Button>
+            </DrawerFooter>
             <DrawerClose asChild>
               <div className="absolute top-[50vh] right-[-37px] h-[10vh] transform -translate-y-1/2 bg-gray-100 p-2 rounded-r-lg border-y border-r border-solid border-gray-300 shadow-md hover:bg-gray-200 flex justify-center items-center dark:bg-neutral-900 dark:border-neutral-800">
                 <button>
