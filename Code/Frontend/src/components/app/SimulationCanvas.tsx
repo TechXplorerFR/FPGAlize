@@ -37,6 +37,9 @@ export default function SimulationCanvas({
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = 100%
 
+  // New state to track the impulses
+  const [impulses, setImpulses] = useState<{ [key: string]: number }>({});
+
   // Memoize drawCanvas to prevent recreation on each render
   const drawCanvas = useCallback(() => {
     const canvasRef = canvas.current;
@@ -51,26 +54,59 @@ export default function SimulationCanvas({
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(zoomLevel, zoomLevel);
 
-    // Draw wires with only horizontal and vertical paths
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
-    elements.forEach((el) => {
-      el.connectedTo.forEach((connectedId) => {
-        const connectedEl = elements.find((e) => e.id === connectedId);
-        if (connectedEl) {
-          const startX = el.x + 25;
-          const startY = el.y + 25;
-          const endX = connectedEl.x + 25;
-          const endY = connectedEl.y + 25;
+    // Draw wires with horizontal and vertical paths
+ctx.strokeStyle = "black";
+ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
 
-          ctx.beginPath();
-          ctx.moveTo(startX, startY);
-          if (startX !== endX) ctx.lineTo(endX, startY);
-          if (startY !== endY) ctx.lineTo(endX, endY);
-          ctx.stroke();
+elements.forEach((el) => {
+  el.connectedTo.forEach((connectedId) => {
+    const connectedEl = elements.find((e) => e.id === connectedId);
+    if (connectedEl) {
+      const startX = el.x + 25;
+      const startY = el.y + 25;
+      const endX = connectedEl.x + 25;
+      const endY = connectedEl.y + 25;
+
+      // Draw the wire path (horizontal and then vertical)
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      if (startX !== endX) ctx.lineTo(endX, startY); // Horizontal segment
+      if (startY !== endY) ctx.lineTo(endX, endY); // Vertical segment
+      ctx.stroke();
+
+      // Draw the impulse (as a blue circle) along the wire
+      const impulsePosition: number = impulses[`${el.id}-${connectedId}`];
+
+      if (impulsePosition !== undefined) {
+        let impulseX = startX;
+        let impulseY = startY;
+
+        const horizontalDistance = Math.abs(endX - startX);
+        const verticalDistance = Math.abs(endY - startY);
+        const totalDistance = horizontalDistance + verticalDistance;
+
+        if (impulsePosition <= horizontalDistance / totalDistance) {
+          // Move along the horizontal segment
+          impulseX = startX + (endX - startX) * (impulsePosition * totalDistance / horizontalDistance);
+        } else {
+          // Move along the vertical segment
+          impulseX = endX;
+          impulseY = startY + (endY - startY) * ((impulsePosition * totalDistance - horizontalDistance) / verticalDistance);
         }
-      });
-    });
+
+        ctx.fillStyle = "blue";
+        ctx.beginPath();
+        ctx.arc(impulseX, impulseY, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // When impulse reaches the destination
+        if (impulsePosition >= 0.9) {
+          console.log(`Succeeded to go to ${connectedId}`);
+        }
+      }
+    }
+  });
+});
 
     // Draw elements
     elements.forEach((el) => {
@@ -85,7 +121,7 @@ export default function SimulationCanvas({
     });
 
     ctx.restore();
-  }, [elements, panOffset, zoomLevel]);
+  }, [elements, panOffset, zoomLevel, impulses]);
 
   // Store elements in sessionStorage whenever they change
   useEffect(() => {
@@ -117,7 +153,7 @@ export default function SimulationCanvas({
           setCanvasSize({ width, height });
         }
       }
-    }, 100); // 100ms debounce time
+    }, 10); // 100ms debounce time
 
     const resizeObserver = new ResizeObserver(() => {
       debouncedResize();
@@ -138,6 +174,38 @@ export default function SimulationCanvas({
       window.removeEventListener("resize", debouncedResize);
     };
   }, [canvasSize.width, canvasSize.height]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Move impulses along the wires
+      setImpulses((prev) => {
+        const newImpulses: { [key: string]: number } = {};
+        
+        // Move the impulses along their respective paths
+        Object.entries(prev).forEach(([key, position]) => {
+          const newPosition = position + 0.05; // Move the impulse along the wire
+          if (newPosition < 1) {
+            newImpulses[key] = newPosition;
+          }
+        });
+
+        // Add new impulses for wires that are not yet moving
+        elements.forEach((el) => {
+          el.connectedTo.forEach((connectedId) => {
+            const key = `${el.id}-${connectedId}`; // Use the string key to track impulse for wire
+            if (!(key in prev)) {
+              newImpulses[key] = 0; // Start new impulse from the beginning of the wire
+            }
+          });
+        });
+
+        return newImpulses;
+      });
+    }, 50); // impulses speed
+
+    return () => clearInterval(interval);
+  }, [elements]);  // This dependency ensures it reruns if elements change
+
 
   const handleMouseDown = (event: React.MouseEvent) => {
     const { offsetX, offsetY, button } = event.nativeEvent;
@@ -209,7 +277,7 @@ export default function SimulationCanvas({
 
   // Modified wheel handler for both zoom and pan
   const handleWheel = (event: React.WheelEvent) => {
-    event.preventDefault(); // Prevent default scrolling behavior
+    // event.preventDefault(); // Prevent default scrolling behavior
 
     // Check if Ctrl key is pressed for zooming
     if (event.ctrlKey) {
