@@ -31,34 +31,57 @@ function App() {
 
   async function loadExampleFiles() {
     try {
-      const originalVerilogFile1 = await readFileContent(
-        "/src/data/samples/1ff_no_rst_VTR/1ff_no_rst_VTR.v"
+      // Define all examples to load
+      const exampleConfigs = [
+        { name: "1ff_no_rst_VTR", index: 0 },
+        { name: "1ff_VTR", index: 1 },
+        { name: "2ffs_no_rst_VTR", index: 2 },
+        { name: "2ffs_VTR", index: 3 },
+        { name: "5ffs_VTR", index: 4 },
+        { name: "FULLLUT_VTR", index: 5 },
+        { name: "FULLLUT_VTR", index: 6 } // Same file used twice
+      ];
+      
+      // Process all examples in parallel
+      const loadedExamples = await Promise.all(
+        exampleConfigs.map(async ({ name, index }) => {
+          const basePath = `/src/data/samples/${name}`;
+          
+          // Load all files in parallel
+          const [originalVerilogFile, postSynthesisVerilogFile, postSynthesisSdfFile] = 
+            await Promise.all([
+              readFileContent(`${basePath}/${name}.v`),
+              readFileContent(`${basePath}/PS_${name}.v`),
+              readFileContent(`${basePath}/PS_${name}.sdf`)
+            ]);
+          
+          // Count lines
+          const lineCount = await countFileLines(originalVerilogFile);
+          
+          return {
+            index,
+            example: {
+              originalVerilogFile,
+              postSynthesisVerilogFile,
+              postSynthesisSdfFile,
+              jsonOutput: null,
+              originalVerilogFileInformation: {
+                name: originalVerilogFile.name.split(".")[0],
+                lineCount,
+                fileSize: originalVerilogFile.size,
+              }
+            }
+          };
+        })
       );
-      const postSynthesisverilogFile1 = await readFileContent(
-        "/src/data/samples/1ff_no_rst_VTR/PS_1ff_no_rst_VTR.v"
-      );
-      const postSynthesisSdfFile1 = await readFileContent(
-        "/src/data/samples/1ff_no_rst_VTR/PS_1ff_no_rst_VTR.sdf"
-      );
-
-      // Calculate line count first
-      const lineCount = await countFileLines(originalVerilogFile1);
-
-      // Update the state with the loaded files
-      setExamples((prevList) => {
-        const newList = [...prevList];
-        newList[0] = {
-          originalVerilogFile: originalVerilogFile1,
-          postSynthesisVerilogFile: postSynthesisverilogFile1,
-          postSynthesisSdfFile: postSynthesisSdfFile1,
-          jsonOutput: null,
-          originalVerilogFileInformation: {
-            name: "1ff_no_rst_VTR",
-            lineCount: lineCount,
-            fileSize: originalVerilogFile1.size,
-          },
-        };
-        return newList;
+      
+      // Update the examples state once with all loaded examples
+      setExamples(prevExamples => {
+        const newExamples = [...prevExamples];
+        loadedExamples.forEach(({ index, example }) => {
+          newExamples[index] = example;
+        });
+        return newExamples;
       });
 
       setIsLoading(false);
@@ -81,7 +104,12 @@ function App() {
         setTabs={setTabs}
         setActiveTabId={setActiveTabId}
       />
-      <Navbar activeView={activeView} setActiveView={setActiveView} activeTabId={activeTabId} examples={examples}/>
+      <Navbar
+        activeView={activeView}
+        setActiveView={setActiveView}
+        activeTabId={activeTabId}
+        examples={examples}
+      />
       <TabsBar setActiveTabId={setActiveTabId} tabs={tabs} setTabs={setTabs} />
       <TabDisplayer
         activeView={activeView}
