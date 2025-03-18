@@ -5,6 +5,7 @@ import Navbar from "./components/app/Navbar";
 import TabsBar from "./components/app/TabsBar";
 import { countFileLines, readFileContent } from "@/lib/utils";
 import type { Example, Tab } from "@/lib/types";
+import { Toaster } from "@/components/ui/sonner";
 
 function App() {
   const [activeView, setActiveView] = useState<string>("Code");
@@ -80,7 +81,7 @@ function App() {
         setTabs={setTabs}
         setActiveTabId={setActiveTabId}
       />
-      <Navbar activeView={activeView} setActiveView={setActiveView} />
+      <Navbar activeView={activeView} setActiveView={setActiveView} activeTabId={activeTabId} examples={examples}/>
       <TabsBar setActiveTabId={setActiveTabId} tabs={tabs} setTabs={setTabs} />
       <TabDisplayer
         activeView={activeView}
@@ -89,6 +90,7 @@ function App() {
         tabs={tabs}
         isLoading={isLoading}
       />
+      <Toaster />
     </>
   );
 }
