@@ -36,10 +36,15 @@ export default function TabsBar({
     // Update parent component's tabs state
     setTabs(newTabs);
     
-    // If the removed tab was selected, select another tab
-    if (id === selectedTab && newTabs.length > 0) {
+    // Always select the first tab if there are tabs remaining
+    // This ensures the code fetching useEffect is triggered in other components
+    if (newTabs.length > 0) {
       setSelectedTab(newTabs[0].id);
       setActiveTabId(newTabs[0].id);
+    } else {
+      // If no tabs left, reset the selected tab and active tab ID
+      setSelectedTab("");
+      setActiveTabId("");
     }
   };
 
