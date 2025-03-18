@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { Example, type Element } from "@/lib/types";
 import { elementList } from "@/data/sample-elements";
 import CanvasActionBar from "./CanvasActionBar";
+import { getTheme } from "../theme-provider";
 
 // Debounce helper function
 function debounce<T extends (...args: any[]) => any>(
@@ -30,6 +31,10 @@ export default function SimulationCanvas({
     return saved ? JSON.parse(saved) : elementList;
   });
 
+  // Get theme inside component body
+  const theme = getTheme();
+  const isDarkTheme = theme === "dark";
+
   const [draggingElement, setDraggingElement] = useState<number | null>(null);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -55,58 +60,65 @@ export default function SimulationCanvas({
     ctx.scale(zoomLevel, zoomLevel);
 
     // Draw wires with horizontal and vertical paths
-ctx.strokeStyle = "black";
-ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
+    ctx.strokeStyle = isDarkTheme ? "rgb(226,226,226)" : "black";
+    ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
 
-elements.forEach((el) => {
-  el.connectedTo.forEach((connectedId) => {
-    const connectedEl = elements.find((e) => e.id === connectedId);
-    if (connectedEl) {
-      const startX = el.x + 25;
-      const startY = el.y + 25;
-      const endX = connectedEl.x + 25;
-      const endY = connectedEl.y + 25;
+    elements.forEach((el) => {
+      el.connectedTo.forEach((connectedId) => {
+        const connectedEl = elements.find((e) => e.id === connectedId);
+        if (connectedEl) {
+          const startX = el.x + 25;
+          const startY = el.y + 25;
+          const endX = connectedEl.x + 25;
+          const endY = connectedEl.y + 25;
 
-      // Draw the wire path (horizontal and then vertical)
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      if (startX !== endX) ctx.lineTo(endX, startY); // Horizontal segment
-      if (startY !== endY) ctx.lineTo(endX, endY); // Vertical segment
-      ctx.stroke();
+          // Draw the wire path (horizontal and then vertical)
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          if (startX !== endX) ctx.lineTo(endX, startY); // Horizontal segment
+          if (startY !== endY) ctx.lineTo(endX, endY); // Vertical segment
+          ctx.stroke();
 
-      // Draw the impulse (as a blue circle) along the wire
-      const impulsePosition: number = impulses[`${el.id}-${connectedId}`];
+          // Draw the impulse (as a blue circle) along the wire
+          const impulsePosition: number = impulses[`${el.id}-${connectedId}`];
 
-      if (impulsePosition !== undefined) {
-        let impulseX = startX;
-        let impulseY = startY;
+          if (impulsePosition !== undefined) {
+            let impulseX = startX;
+            let impulseY = startY;
 
-        const horizontalDistance = Math.abs(endX - startX);
-        const verticalDistance = Math.abs(endY - startY);
-        const totalDistance = horizontalDistance + verticalDistance;
+            const horizontalDistance = Math.abs(endX - startX);
+            const verticalDistance = Math.abs(endY - startY);
+            const totalDistance = horizontalDistance + verticalDistance;
 
-        if (impulsePosition <= horizontalDistance / totalDistance) {
-          // Move along the horizontal segment
-          impulseX = startX + (endX - startX) * (impulsePosition * totalDistance / horizontalDistance);
-        } else {
-          // Move along the vertical segment
-          impulseX = endX;
-          impulseY = startY + (endY - startY) * ((impulsePosition * totalDistance - horizontalDistance) / verticalDistance);
+            if (impulsePosition <= horizontalDistance / totalDistance) {
+              // Move along the horizontal segment
+              impulseX =
+                startX +
+                (endX - startX) *
+                  ((impulsePosition * totalDistance) / horizontalDistance);
+            } else {
+              // Move along the vertical segment
+              impulseX = endX;
+              impulseY =
+                startY +
+                (endY - startY) *
+                  ((impulsePosition * totalDistance - horizontalDistance) /
+                    verticalDistance);
+            }
+
+            ctx.fillStyle = "blue";
+            ctx.beginPath();
+            ctx.arc(impulseX, impulseY, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // When impulse reaches the destination
+            if (impulsePosition >= 0.9) {
+              console.log(`Succeeded to go to ${connectedId}`);
+            }
+          }
         }
-
-        ctx.fillStyle = "blue";
-        ctx.beginPath();
-        ctx.arc(impulseX, impulseY, 5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // When impulse reaches the destination
-        if (impulsePosition >= 0.9) {
-          console.log(`Succeeded to go to ${connectedId}`);
-        }
-      }
-    }
-  });
-});
+      });
+    });
 
     // Draw elements
     elements.forEach((el) => {
@@ -121,7 +133,7 @@ elements.forEach((el) => {
     });
 
     ctx.restore();
-  }, [elements, panOffset, zoomLevel, impulses]);
+  }, [elements, panOffset, zoomLevel, impulses, isDarkTheme]);
 
   // Store elements in sessionStorage whenever they change
   useEffect(() => {
@@ -180,7 +192,7 @@ elements.forEach((el) => {
       // Move impulses along the wires
       setImpulses((prev) => {
         const newImpulses: { [key: string]: number } = {};
-        
+
         // Move the impulses along their respective paths
         Object.entries(prev).forEach(([key, position]) => {
           const newPosition = position + 0.05; // Move the impulse along the wire
@@ -204,8 +216,7 @@ elements.forEach((el) => {
     }, 50); // impulses speed
 
     return () => clearInterval(interval);
-  }, [elements]);  // This dependency ensures it reruns if elements change
-
+  }, [elements]); // This dependency ensures it reruns if elements change
 
   const handleMouseDown = (event: React.MouseEvent) => {
     const { offsetX, offsetY, button } = event.nativeEvent;
@@ -330,7 +341,7 @@ elements.forEach((el) => {
     <div ref={containerRef} className="w-full h-[88vh] bg-gray-100">
       <canvas
         ref={canvas}
-        className="border border-gray-400 bg-white w-full h-full"
+        className="border border-neutral-400 dark:border-neutral-900 bg-white dark:bg-neutral-900 w-full h-full"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
