@@ -1,5 +1,5 @@
 import { promises as fs } from "node:fs";
-import type { IDataStructure } from "@/lib/types";
+import type { IDataStructure } from "@/lib/types/types";
 
 /**
  * Tokenizes a Verilog file content into an array of relevant tokens.

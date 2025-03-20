@@ -1,4 +1,4 @@
-import { type IDataStructure } from "@/lib/types";
+import { type IDataStructure } from "@/lib/types/types";
 import * as v_parser from "@/lib/services/v-parser";
 import * as sdf_parser from "@/lib/services/sdf-parser";
 

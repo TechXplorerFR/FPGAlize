@@ -1,7 +1,7 @@
 import { useState } from "react";
 import CodeEditor from "./CodeEditor";
 import SimulationCanvas from "./SimulationCanvas";
-import type { Example, Tab } from "@/lib/types";
+import type { Example, Tab } from "@/lib/types/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface TabDisplayerProps {

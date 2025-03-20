@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Tab } from "@/lib/types";
+import { Tab } from "@/lib/types/types";
 
 export default function TabsBar({ 
   setActiveTabId, 

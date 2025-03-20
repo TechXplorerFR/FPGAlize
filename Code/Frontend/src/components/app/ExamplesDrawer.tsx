@@ -13,7 +13,7 @@ import Example from "@/components/app/Example";
 import { Separator } from "@/components/ui/separator";
 import AddExampleModal from "@/components/app/AddExampleModal";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Example as ExampleType, Tab } from "@/lib/types";
+import type { Example as ExampleType, Tab } from "@/lib/types/types";
 import { useState } from "react";
 import { toast } from "sonner";
 

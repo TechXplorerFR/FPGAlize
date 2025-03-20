@@ -1,4 +1,4 @@
-import type { IConnection, IElement, IDataStructure } from "@/lib/types";
+import type { IConnection, IElement, IDataStructure } from "@/lib/types/types";
 import fs from 'node:fs/promises';
 
 /**

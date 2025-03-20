@@ -4,7 +4,7 @@ import { saveAs } from "file-saver";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Square } from "lucide-react";
-import { Example } from "@/lib/types";
+import { Example } from "@/lib/types/types";
 import { toastMessage } from "@/lib/services/toast";
 
 interface NavbarProps {

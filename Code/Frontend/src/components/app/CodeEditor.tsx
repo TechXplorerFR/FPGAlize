@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { getTheme } from "../theme-provider";
-import { Example, Tab } from "@/lib/types";
+import { Example, Tab } from "@/lib/types/types";
 import { getFileContent } from "@/lib/utils";
 
 export default function CodeEditor({

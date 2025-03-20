@@ -1,4 +1,4 @@
-import { type Element } from "@/lib/types";
+import { type Element } from "@/lib/types/types";
 
 export let elementList: Element[] = [
     { 

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { type Element } from "@/lib/types";
+import { type Element } from "@/lib/types/types";
 
 export interface CanvasState {
   elements: Element[];

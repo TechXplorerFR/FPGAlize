@@ -4,7 +4,7 @@ import ExamplesDrawer from "./components/app/ExamplesDrawer";
 import Navbar from "./components/app/Navbar";
 import TabsBar from "./components/app/TabsBar";
 import { countFileLines, readFileContent } from "@/lib/utils";
-import type { Example, Tab } from "@/lib/types";
+import type { Example, Tab } from "@/lib/types/types";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {

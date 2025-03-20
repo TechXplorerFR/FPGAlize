@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Example, type Element } from "@/lib/types";
+import { Example, type Element } from "@/lib/types/types";
 import { elementList } from "@/data/sample-elements";
 import CanvasActionBar from "./CanvasActionBar";
 import { getTheme } from "../theme-provider";
