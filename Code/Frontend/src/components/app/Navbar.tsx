@@ -1,4 +1,3 @@
-import { useState } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -12,6 +11,8 @@ interface NavbarProps {
   setActiveView: (value: string) => void; // Define the prop type for state setter
   activeTabId: string;
   examples: Example[];
+  playing: boolean;
+  setPlaying: (value: boolean) => void;
 }
 
 export default function Navbar({
@@ -19,8 +20,9 @@ export default function Navbar({
   setActiveView,
   activeTabId,
   examples,
+  playing,
+  setPlaying
 }: NavbarProps) {
-  const [playing, setPlaying] = useState(false);
 
   const handleExport = () => {
     if (!activeTabId || activeTabId === "") {

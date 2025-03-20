@@ -12,6 +12,7 @@ function App() {
   const [activeTabId, setActiveTabId] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [tabs, setTabs] = useState<Tab[]>([]);
+  const [playing, setPlaying] = useState(false);
 
   // Initialize with empty files
   const emptyFile = new File([""], "empty.v", { type: "text/plain" });
@@ -108,19 +109,27 @@ function App() {
         setTabs={setTabs}
         setActiveTabId={setActiveTabId}
       />
-      <Navbar
-        activeView={activeView}
-        setActiveView={setActiveView}
-        activeTabId={activeTabId}
-        examples={examples}
+      <Navbar 
+        activeView={activeView} 
+        setActiveView={setActiveView} 
+        activeTabId={activeTabId} 
+        examples={examples} 
+        playing={playing} 
+        setPlaying={setPlaying} 
       />
-      <TabsBar setActiveTabId={setActiveTabId} tabs={tabs} setTabs={setTabs} activeTabId={activeTabId} />
+      <TabsBar 
+        setActiveTabId={setActiveTabId} 
+        tabs={tabs} 
+        activeTabId={activeTabId}
+        setTabs={setTabs} 
+      />
       <TabDisplayer
         activeView={activeView}
         activeTabId={activeTabId}
         examples={examples}
         tabs={tabs}
         isLoading={isLoading}
+        playing={playing}
       />
       <Toaster />
     </>

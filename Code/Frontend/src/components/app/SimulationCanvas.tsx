@@ -21,9 +21,11 @@ function debounce<T extends (...args: any[]) => any>(
 export default function SimulationCanvas({
   activeTabId,
   examples,
+  playing
 }: {
   activeTabId: string;
   examples: Example[];
+  playing: boolean;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -266,9 +268,9 @@ export default function SimulationCanvas({
 
         // Move the impulses along their respective paths
         Object.entries(prev).forEach(([key, position]) => {
-          const newPosition = position + 0.05; // Move the impulse along the wire
+          const newPosition =  position + 0.05; // Move the impulse along the wire
           if (newPosition < 1) {
-            newImpulses[key] = newPosition;
+            newImpulses[key] = playing ? newPosition : position;
           }
         });
 
