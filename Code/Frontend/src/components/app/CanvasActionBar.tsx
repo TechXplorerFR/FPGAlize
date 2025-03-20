@@ -11,12 +11,22 @@ interface CanvasActionBarProps {
   zoom: number;
   onZoomChange: (delta: number) => void;
   onResetZoom: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  onReset?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
 const CanvasActionBar = ({
   zoom,
   onZoomChange,
   onResetZoom,
+  onUndo,
+  onRedo,
+  onReset,
+  canUndo,
+  canRedo,
 }: CanvasActionBarProps) => {
   return (
     <div className="flex gap-2 max-h-[4.5vh]">
@@ -52,8 +62,14 @@ const CanvasActionBar = ({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="cursor-pointer">
-                <Undo2 className="w-5 h-5 text-gray-400" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="cursor-pointer"
+                onClick={onUndo}
+                disabled={!canUndo}
+              >
+                <Undo2 className={`w-5 h-5`} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Undo last action</TooltipContent>
@@ -62,8 +78,14 @@ const CanvasActionBar = ({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="cursor-pointer">
-                <Redo2 className="w-5 h-5 text-gray-400" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="cursor-pointer"
+                onClick={onRedo}
+                disabled={!canRedo}
+              >
+                <Redo2 className={`w-5 h-5`} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Redo last action</TooltipContent>
@@ -78,9 +100,9 @@ const CanvasActionBar = ({
                 variant="ghost"
                 size="icon"
                 className="cursor-pointer"
-                onClick={onResetZoom}
+                onClick={onReset || onResetZoom}
               >
-                <RotateCcw className="w-5 h-5 text-gray-400" />
+                <RotateCcw className="w-5 h-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Restore to default</TooltipContent>

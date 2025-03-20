@@ -3,6 +3,7 @@ import { Example, type Element } from "@/lib/types";
 import { elementList } from "@/data/sample-elements";
 import CanvasActionBar from "./CanvasActionBar";
 import { getTheme } from "../theme-provider";
+import { useCanvasHistory, type CanvasState } from "@/lib/services/canvas-history";
 
 // Debounce helper function
 function debounce<T extends (...args: any[]) => any>(
@@ -42,8 +43,78 @@ export default function SimulationCanvas({
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = 100%
 
+  // Track when elements are actually being modified by user actions
+  const [elementsModified, setElementsModified] = useState(false);
+
   // New state to track the impulses
   const [impulses, setImpulses] = useState<{ [key: string]: number }>({});
+
+  // Initialize the canvas history
+  const initialCanvasState: CanvasState = {
+    elements,
+    elementPositions: new Map(elements.map(el => [el.id.toString(), { x: el.x, y: el.y }])),
+    panOffset,
+    zoomLevel
+  };
+  
+  const { pushState, undo, redo, reset, canUndo, canRedo } = useCanvasHistory(initialCanvasState);
+
+  // Update history when canvas elements change (debounced to avoid too many history entries)
+  const debouncedPushState = useCallback(
+    debounce(() => {
+      // Only push state if elements were actually modified by user actions
+      if (elementsModified) {
+        const currentElementPositions = new Map(
+          elements.map(el => [el.id.toString(), { x: el.x, y: el.y }])
+        );
+        
+        const currentState: CanvasState = {
+          elements,
+          elementPositions: currentElementPositions,
+          panOffset,
+          zoomLevel
+        };
+        
+        pushState(currentState);
+        // Reset the modified flag after pushing state
+        setElementsModified(false);
+      }
+    }, 500), // 500ms debounce time
+    [elements, panOffset, zoomLevel, pushState, elementsModified]
+  );
+
+  // Make sure state is pushed to history after relevant operations
+  useEffect(() => {
+    debouncedPushState();
+  }, [elementsModified, debouncedPushState]);
+
+  // Handle undo action
+  const handleUndo = useCallback(() => {
+    const prevState = undo();
+    if (prevState) {
+      setElements(prevState.elements);
+      setPanOffset(prevState.panOffset);
+      setZoomLevel(prevState.zoomLevel);
+    }
+  }, [undo]);
+
+  // Handle redo action
+  const handleRedo = useCallback(() => {
+    const nextState = redo();
+    if (nextState) {
+      setElements(nextState.elements);
+      setPanOffset(nextState.panOffset);
+      setZoomLevel(nextState.zoomLevel);
+    }
+  }, [redo]);
+
+  // Handle reset action
+  const handleReset = useCallback(() => {
+    const initialState = reset();
+    setElements(initialState.elements);
+    setPanOffset(initialState.panOffset);
+    setZoomLevel(initialState.zoomLevel);
+  }, [reset]);
 
   // Memoize drawCanvas to prevent recreation on each render
   const drawCanvas = useCallback(() => {
@@ -113,7 +184,7 @@ export default function SimulationCanvas({
 
             // When impulse reaches the destination
             if (impulsePosition >= 0.9) {
-              console.log(`Succeeded to go to ${connectedId}`);
+              // console.log(`Succeeded to go to ${connectedId}`);
             }
           }
         }
@@ -225,6 +296,7 @@ export default function SimulationCanvas({
       // Middle or right-click to start panning
       setIsPanning(true);
       setStartPan({ x: offsetX, y: offsetY });
+      // Remove the setElementsModified call from here
       return;
     }
 
@@ -242,6 +314,7 @@ export default function SimulationCanvas({
 
     if (element) {
       setDraggingElement(element.id);
+      // Remove the setElementsModified call from here
     }
   };
 
@@ -253,6 +326,7 @@ export default function SimulationCanvas({
         y: prev.y + (offsetY - startPan.y),
       }));
       setStartPan({ x: offsetX, y: offsetY });
+      // No need to set elementsModified here as it was set in mouseDown
       return;
     }
 
@@ -274,12 +348,23 @@ export default function SimulationCanvas({
           : el
       )
     );
+    // No need to set elementsModified here as it was set in mouseDown
   };
 
   const handleMouseUp = (event: React.MouseEvent) => {
     if (event.button === 1 || event.button === 2) {
       setIsPanning(false);
+      // Set elements modified when panning ends
+      if (isPanning) {
+        setElementsModified(true);
+      }
     }
+    
+    // Set elements modified when dragging ends
+    if (draggingElement !== null) {
+      setElementsModified(true);
+    }
+    
     // To remove
     console.log(activeTabId, examples);
     // ---------------
@@ -292,6 +377,8 @@ export default function SimulationCanvas({
 
     // Check if Ctrl key is pressed for zooming
     if (event.ctrlKey) {
+      // Set elements modified when zooming
+      setElementsModified(true);
       const delta = -event.deltaY * 0.01; // Adjust sensitivity
       const newZoom = Math.max(0.1, Math.min(5, zoomLevel + delta)); // Limit zoom between 10% and 500%
 
@@ -317,6 +404,8 @@ export default function SimulationCanvas({
 
       setZoomLevel(newZoom);
     } else {
+      // Set elements modified when panning with wheel
+      setElementsModified(true);
       // Regular panning with wheel
       setPanOffset((prev) => ({
         x: prev.x - event.deltaX,
@@ -327,12 +416,16 @@ export default function SimulationCanvas({
 
   // Function to handle zoom from the action bar
   const handleZoomChange = (newZoomPercent: number) => {
+    // Set elements modified when changing zoom from action bar
+    setElementsModified(true);
     const newZoom = newZoomPercent / 100;
     setZoomLevel(newZoom);
   };
 
   // Function to reset zoom
   const resetZoom = () => {
+    // Set elements modified when resetting zoom
+    setElementsModified(true);
     setZoomLevel(1);
     setPanOffset({ x: 0, y: 0 });
   };
@@ -356,6 +449,11 @@ export default function SimulationCanvas({
               handleZoomChange(Math.round(zoomLevel * 100) + delta)
             }
             onResetZoom={resetZoom}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            onReset={handleReset}
+            canUndo={canUndo}
+            canRedo={canRedo}
           />
         </div>
       </div>
