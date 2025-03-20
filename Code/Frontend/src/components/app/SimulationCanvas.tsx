@@ -55,8 +55,6 @@ export default function SimulationCanvas({
   const initialCanvasState: CanvasState = {
     elements,
     elementPositions: new Map(elements.map(el => [el.id.toString(), { x: el.x, y: el.y }])),
-    panOffset,
-    zoomLevel
   };
   
   const { pushState, undo, redo, reset, canUndo, canRedo } = useCanvasHistory(initialCanvasState);
@@ -73,8 +71,6 @@ export default function SimulationCanvas({
         const currentState: CanvasState = {
           elements,
           elementPositions: currentElementPositions,
-          panOffset,
-          zoomLevel
         };
         
         pushState(currentState);
@@ -82,7 +78,7 @@ export default function SimulationCanvas({
         setElementsModified(false);
       }
     }, 500), // 500ms debounce time
-    [elements, panOffset, zoomLevel, pushState, elementsModified]
+    [elements, pushState, elementsModified]
   );
 
   // Make sure state is pushed to history after relevant operations
@@ -95,8 +91,6 @@ export default function SimulationCanvas({
     const prevState = undo();
     if (prevState) {
       setElements(prevState.elements);
-      setPanOffset(prevState.panOffset);
-      setZoomLevel(prevState.zoomLevel);
     }
   }, [undo]);
 
@@ -105,8 +99,6 @@ export default function SimulationCanvas({
     const nextState = redo();
     if (nextState) {
       setElements(nextState.elements);
-      setPanOffset(nextState.panOffset);
-      setZoomLevel(nextState.zoomLevel);
     }
   }, [redo]);
 
@@ -114,8 +106,6 @@ export default function SimulationCanvas({
   const handleReset = useCallback(() => {
     const initialState = reset();
     setElements(initialState.elements);
-    setPanOffset(initialState.panOffset);
-    setZoomLevel(initialState.zoomLevel);
   }, [reset]);
 
   // Memoize drawCanvas to prevent recreation on each render
