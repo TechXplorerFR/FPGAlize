@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { getTheme } from "../theme-provider";
-import { sampleCodes } from "@/data/sample-codes";
 import { Example, Tab } from "@/lib/types";
 import { getFileContent } from "@/lib/utils";
 
@@ -26,30 +25,37 @@ export default function CodeEditor({
   useEffect(() => {
     const fetchCode = async () => {
       if (!activeTabId || activeTabId === "") {
-        // Default to first code if no tab is selected
+        // Default to empty content if no tab is selected
         setCode("");
         return;
       }
 
-      // Find the index of the active tab
-      const tabIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+      // Find the tab object by its ID
+      const activeTab = tabs.find(tab => tab.id === activeTabId);
+      if (!activeTab) {
+        setCode("");
+        return;
+      }
 
-      // If the tab exists and there's corresponding code, set it
-      if (tabIndex !== -1 && tabIndex < examples.length) {
-        setCode(await getFileContent(examples[tabIndex].originalVerilogFile));
+      // Find the example that matches this tab name
+      const matchingExample = examples.find(
+        example => example.originalVerilogFileInformation.name === activeTab.name
+      );
+
+      if (matchingExample) {
+        setCode(await getFileContent(matchingExample.originalVerilogFile) || "");
       } else {
-        // If no match found, default to first code sample
-        setCode(sampleCodes[0] || "");
+        // If no match found, use empty content
+        setCode("");
       }
     };
 
     fetchCode();
-  }, [activeTabId]);
+  }, [activeTabId, tabs, examples]); // Include tabs and examples in dependencies
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
     setCopied(true);
-    console.log(examples);
     setTimeout(() => setCopied(false), 2000);
   };
 

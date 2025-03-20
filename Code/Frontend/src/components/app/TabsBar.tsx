@@ -5,27 +5,24 @@ import { Tab } from "@/lib/types";
 
 export default function TabsBar({ 
   setActiveTabId, 
-  tabs, 
+  tabs,
+  activeTabId,
   setTabs 
 }: { 
   setActiveTabId: (id: string) => void, 
   tabs: Tab[],
+  activeTabId: string,
   setTabs: (tabs: Tab[]) => void
 }) {
-  // Keep a local state for selected tab only, use the tabs from props
-  const [selectedTab, setSelectedTab] = useState<string>(tabs[0]?.id || "");
-
   // Update selected tab when tabs change
   useEffect(() => {
-    if (tabs.length > 0 && !tabs.some(tab => tab.id === selectedTab)) {
-      setSelectedTab(tabs[0].id);
+    if (tabs.length > 0 && !tabs.some(tab => tab.id === activeTabId)) {
       setActiveTabId(tabs[0].id);
     }
-  }, [tabs, selectedTab, setActiveTabId]);
+  }, [tabs, activeTabId, setActiveTabId]);
 
   // When a tab is clicked, update both local state and parent component
   const handleTabClick = (id: string) => {
-    setSelectedTab(id);
     setActiveTabId(id);
   };
 
@@ -39,11 +36,9 @@ export default function TabsBar({
     // Always select the first tab if there are tabs remaining
     // This ensures the code fetching useEffect is triggered in other components
     if (newTabs.length > 0) {
-      setSelectedTab(newTabs[0].id);
       setActiveTabId(newTabs[0].id);
     } else {
       // If no tabs left, reset the selected tab and active tab ID
-      setSelectedTab("");
       setActiveTabId("");
     }
   };
@@ -55,7 +50,7 @@ export default function TabsBar({
           key={tab.id}
           className={cn(
             "flex items-center px-4 py-2 border-r cursor-pointer",
-            selectedTab === tab.id ? "bg-gray-100 dark:bg-neutral-700" : ""
+            activeTabId === tab.id ? "bg-gray-100 dark:bg-neutral-700" : ""
           )}
           onClick={() => handleTabClick(tab.id)}
         >

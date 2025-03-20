@@ -10,12 +10,12 @@ import {
 } from "@/components/ui/drawer";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import Example from "@/components/app/Example";
-import { exampleFiles } from "@/data/sample-files";
 import { Separator } from "@/components/ui/separator";
 import AddExampleModal from "@/components/app/AddExampleModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Example as ExampleType, Tab } from "@/lib/types";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface ExamplesDrawerProps {
   examples: ExampleType[];
@@ -48,25 +48,14 @@ function ExamplesDrawer({
         ]);
 
       // Set the active tab if provided
-      if (setActiveTabId)
+      if (setActiveTabId) {
         setActiveTabId(examples[index].originalVerilogFileInformation.name);
+      } else {
+        toast.error("Failed to load example");
+      }
     } else {
-      // Handle sample files as before
-      if (setTabs)
-        setTabs((prev) => [
-          ...prev,
-          {
-            id: exampleFiles[index].name,
-            name: exampleFiles[index].name,
-            content: exampleFiles[index] || "",
-            language: "verilog",
-          },
-        ]);
-
-      // Set the active tab if provided
-      if (setActiveTabId) setActiveTabId(exampleFiles[index].name);
+      toast.error("Failed to load example");
     }
-
     // Close the drawer
     setIsOpen(false);
   };
@@ -116,21 +105,6 @@ function ExamplesDrawer({
                         />
                       )
                   )}
-
-              {/* Fallback to sample files if no examples are loaded */}
-              {!isLoading &&
-                !examples.some(
-                  (e) => e.originalVerilogFileInformation.lineCount > 0
-                ) &&
-                exampleFiles.map((sampleFile, index) => (
-                  <Example
-                    key={index}
-                    name={sampleFile.name}
-                    lineCount={sampleFile.lineCount}
-                    fileSize={sampleFile.fileSize}
-                    onClick={() => handleExampleClick(index)}
-                  />
-                ))}
 
               <Separator />
             </div>
