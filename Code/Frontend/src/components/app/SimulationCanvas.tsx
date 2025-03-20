@@ -289,7 +289,7 @@ export default function SimulationCanvas({
     }, 50); // impulses speed
 
     return () => clearInterval(interval);
-  }, [elements]); // This dependency ensures it reruns if elements change
+  }, [elements, playing]);
 
   const handleMouseDown = (event: React.MouseEvent) => {
     const { offsetX, offsetY, button } = event.nativeEvent;
