@@ -45,7 +45,8 @@ function App() {
       // Process all examples in parallel
       const loadedExamples = await Promise.all(
         exampleConfigs.map(async ({ name, index }) => {
-          const basePath = `/src/data/samples/${name}`;
+          // Updated to use public directory path which works in both dev and production
+          const basePath = `/data/samples/${name}`;
 
           // Load all files in parallel
           const [
