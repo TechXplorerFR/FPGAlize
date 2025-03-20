@@ -1,49 +1,5 @@
-import { promises as fs } from "fs";
-import { IDataStructure } from "./parser";
-
-/**
- * Represents an electronic component or module in the design.
- * @typedef {Object} IElement
- * @property {number} id - Unique identifier for the element.
- * @property {string} name - Name of the element (instance name in SDF, module name in Verilog).
- * @property {string} type - Type of the element (e.g., module, gate, etc.).
- * @property {string} innerText - Description or metadata about the element.
- * @property {string} icon - Path to an icon representing the element.
- * @property {boolean} clicked - Boolean flag for UI interaction.
- * @property {string[]} inputs - List of input signals for the element.
- * @property {string[]} outputs - List of output signals for the element.
- */
-export type IElement = {
-    id: number;
-    name: string;
-    type: string;
-    innerText: string;
-    icon: string;
-    clicked: boolean;
-    inputs: string[];
-    outputs: string[];
-};
-
-/**
- * Represents a connection between two electronic components.
- * @typedef {Object} IConnection
- * @property {number} id - Unique identifier for the connection.
- * @property {string} from - Source signal name, including instance reference.
- * @property {string} fromLabel - Label describing the source signal.
- * @property {string} to - Destination signal name, including instance reference.
- * @property {string} toLabel - Label describing the destination signal.
- * @property {string} color - Visual color for the connection, typically for UI display.
- * @property {number} time - Delay in the connection (extracted from SDF timing values).
- */
-export type IConnection = {
-    id: number;
-    from: string;
-    fromLabel: string;
-    to: string;
-    toLabel: string;
-    color: string;
-    time: number;
-};
+import type { IConnection, IElement, IDataStructure } from "@/lib/types/types";
+import fs from 'node:fs/promises';
 
 /**
  * Tokenizes the content of an SDF file into an array of relevant tokens for easier parsing.

@@ -1,18 +1,6 @@
-import * as sdf_parser from "./sdf-parser";
-import * as v_parser from "./v-parser";
-
-/**
- * Represents the complete parsed data structure, including elements and connections.
- * This type defines the structure of the parsed data that combines elements 
- * from Verilog and connections from SDF.
- * @typedef {Object} IDataStructure
- * @property {IElement[]} elements - List of parsed elements from Verilog and SDF.
- * @property {IConnection[]} connections - List of parsed connections from SDF.
- */
-export type IDataStructure = {
-    elements: sdf_parser.IElement[];
-    connections: sdf_parser.IConnection[];
-};
+import { type IDataStructure } from "@/lib/types/types";
+import * as v_parser from "@/lib/services/v-parser";
+import * as sdf_parser from "@/lib/services/sdf-parser";
 
 /**
  * Checks if a given file has the expected extension.
@@ -35,7 +23,7 @@ function checkFileExtension(fileName: string, expectedExtension: string): boolea
  * @param {string} sdfPath - Path to the SDF file.
  * @returns {Promise<string>} - JSON string containing merged elements and connections from both files.
  */
-export async function getJsonObjectFromParsing(verilogPath: string, sdfPath: string): Promise<string> {
+export async function getJsonObjectFromParsing(verilogPath: string, sdfPath: string): Promise<IDataStructure | string> {
     // Check if provided files have the correct extensions
     if (!checkFileExtension(verilogPath, "v") || !checkFileExtension(sdfPath, "sdf")) {
         return "Provided files are not valid .v and .sdf files.";
@@ -52,5 +40,5 @@ export async function getJsonObjectFromParsing(verilogPath: string, sdfPath: str
     };
 
     // Return the merged data as a formatted JSON string
-    return JSON.stringify(mergedData, null, 2);
+    return mergedData;
 }

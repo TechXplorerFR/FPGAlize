@@ -1,8 +1,24 @@
 import { useState } from "react";
 import CodeEditor from "./CodeEditor";
 import SimulationCanvas from "./SimulationCanvas";
+import type { Example, Tab } from "@/lib/types/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default function TabDisplayer({ activeTab }: { activeTab: string }) {
+interface TabDisplayerProps {
+  activeView: string;
+  activeTabId: string;
+  examples: Example[];
+  tabs: Tab[];
+  isLoading: boolean;
+}
+
+export default function TabDisplayer({
+  activeView,
+  activeTabId,
+  examples,
+  tabs,
+  isLoading
+}: TabDisplayerProps) {
   const [editorWidth, setEditorWidth] = useState<number>(50);
 
   const handleMouseDown = (event: React.MouseEvent) => {
@@ -26,15 +42,23 @@ export default function TabDisplayer({ activeTab }: { activeTab: string }) {
     document.addEventListener("mouseup", onMouseUp);
   };
 
+  if (isLoading) {
+    return <div className="w-full h-[88vh] flex items-center justify-center">
+      <Skeleton className="w-3/4 h-3/4 rounded-md" />
+    </div>;
+  }
+
   return (
     <>
       {/* Conditional rendering */}
-      {activeTab === "Code" && <CodeEditor />}
-      {activeTab === "Simulation" && <SimulationCanvas />}
-      {activeTab === "Mix" && (
+      {activeView === "Code" && <CodeEditor activeTabId={activeTabId} examples={examples} tabs={tabs} />}
+      {activeView === "Simulation" && (
+        <SimulationCanvas activeTabId={activeTabId} examples={examples} />
+      )}
+      {activeView === "Mix" && (
         <div style={{ display: "flex", width: "100%", height: "88vh" }}>
           <div style={{ width: `${editorWidth}%`, overflow: "hidden" }}>
-            <CodeEditor />
+            <CodeEditor activeTabId={activeTabId} examples={examples} tabs={tabs} />
           </div>
           {/* Draggable Divider */}
           <div
@@ -47,8 +71,14 @@ export default function TabDisplayer({ activeTab }: { activeTab: string }) {
             onMouseDown={handleMouseDown}
           />
 
-          <div style={{ width: `${100 - editorWidth}%`, height: "88vh", overflow: "hidden" }}>
-            <SimulationCanvas />
+          <div
+            style={{
+              width: `${100 - editorWidth}%`,
+              height: "88vh",
+              overflow: "hidden",
+            }}
+          >
+            <SimulationCanvas activeTabId={activeTabId} examples={examples} />
           </div>
         </div>
       )}
