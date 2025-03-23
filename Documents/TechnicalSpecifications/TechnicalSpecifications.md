@@ -334,19 +334,17 @@ To set up the development environment, run the following commands:
 
 For the frontend:
 ```
-cd fpgasim/frontend
+cd code/frontend
 npm install
 npm run dev
 ```
 
 For the backend:
 ```
-cd fpgasim/backend
+cd code/backend
 npm install
 npm run dev
 ```
-_Key tools include ESLint, Prettier, TypeScript, Jest, and Cypress._
-
 ### 7.2. Local Storage Strategy
 1. **File Storage:**  
    - Store uploaded files in IndexedDB.  
@@ -360,16 +358,32 @@ _Key tools include ESLint, Prettier, TypeScript, Jest, and Cypress._
 ### 7.3. Containerization
 Example Dockerfile for containerized deployment (text diagram):
 ```
-FROM node:18-alpine as build
+# Use node as the base image
+FROM node:23-alpine
+
+# Set working directory
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
+
+RUN pwd
+RUN ls
+
+# Copy package files
+COPY Code/Frontend/package.json Code/Frontend/package-lock.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy app source
+COPY Code/Frontend ./
+
+# Build the app
 RUN npm run build
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+
+# Expose the port
+EXPOSE 4173
+
+# Run preview server
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0"]
 ```
 
 ### 7.4. Static Deployment
