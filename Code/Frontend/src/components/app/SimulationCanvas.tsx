@@ -185,14 +185,14 @@ export default function SimulationCanvas({
 
     // Draw elements
     elements.forEach((el) => {
-      ctx.fillStyle = "red";
+      ctx.fillStyle = "lightcoral";
       ctx.fillRect(el.x, el.y, 50, 50);
 
-      ctx.fillStyle = "white";
+      ctx.fillStyle = "black";
       ctx.font = `${20 / zoomLevel}px Arial`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(el.id.toString(), el.x + 25, el.y + 25);
+      ctx.fillText(el.name, el.x + 25, el.y + 25);
     });
 
     ctx.restore();
