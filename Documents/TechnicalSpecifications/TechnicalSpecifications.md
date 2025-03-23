@@ -1,3 +1,4 @@
+
 <div align="center">
 
 # Technical Specification  
@@ -68,15 +69,15 @@ Understanding signal propagation in FPGAs is inherently complex. This simulator 
 > **Core Question:** How can we make the intricate workings of an FPGA accessible and comprehensible to both novice and experienced users?
 
 ### 1.2. Target Users
-- **Teachers:** Responsible for selecting preloaded FPGA examples or uploading custom .v and .sdf files and managing simulation sessions.
+- **Teachers:** Responsible for selecting preloaded FPGA examples or uploading custom `.v` and `.sdf` files, then managing simulation sessions.
 - **Students:** Engage with real-time FPGA simulations through a user-friendly web interface.
 
 ### 1.3. User Experience Goals
 - **Intuitive Navigation:** Minimal training required.
 - **Real-Time Feedback:** Immediate visual response to user actions.
 - **Interactive Learning:** Ability to control simulation speed, step through the simulation, and inspect details.
-- **Self-Guided Exploration:** Tools to encourage experimentation with FPGA designs.
-- **Accessibility:** Support across multiple devices with integrated accessibility features.
+- **Self-Guided Exploration:** Tools that encourage experimentation with FPGA designs.
+- **Accessibility:** Support across multiple devices and include necessary accessibility features.
 
 ### 1.4. Educational Impact
 The simulator bridges theory and practice by:
@@ -90,7 +91,7 @@ The simulator bridges theory and practice by:
 | Term           | Definition                                                                                       |
 |----------------|--------------------------------------------------------------------------------------------------|
 | **FPGA**       | Field-Programmable Gate Array; a reconfigurable integrated circuit for custom digital logic.     |
-| **BEL**        | Basic Element; a fundamental component within an FPGA (e.g., LUT, flip-flop, Block RAM).          |
+| **BEL**        | Basic Element; a fundamental component within an FPGA (e.g., LUT, flip-flop, Block RAM).         |
 | **SDF**        | Standard Delay Format; a file format containing timing delay information.                        |
 | **Verilog**    | A hardware description language used to design and simulate digital circuits.                    |
 | **Netlist**    | A structural representation of an FPGA design, detailing its components and connections.         |
@@ -112,7 +113,7 @@ The simulator bridges theory and practice by:
 
 **Backend:**
 - Node.js + Express.js (TypeScript)
-- File Parsing Libraries (for .v and .sdf files)
+- File Parsing Libraries (for `.v` and `.sdf` files)
 
 **Deployment:**
 - Local deployment via Vite (frontend) and Express.js (backend)
@@ -120,31 +121,32 @@ The simulator bridges theory and practice by:
 - Optional Docker for containerized testing
 
 ### 2.2. Architecture
-```mermaid
-graph TD
-    A[Web Browser UI]
-    B[React Application (Vite)]
-    C[Express.js Backend (Node.js)]
-    D[File Parser (.v, .sdf)]
-    A --> B
-    B --> C
-    C --> D
+Text Diagram:
+```
+[Web Browser UI]
+       │
+       ▼
+[React Application (Vite)]
+       │
+       ▼
+[Express.js Backend (Node.js)]
+       │
+       ▼
+[File Parser (.v, .sdf)]
 ```
 - **Frontend:** Handles UI interactions, code editing, simulation control, and renders FPGA layouts using HTML Canvas.
-- **Backend:** Processes file uploads, parses .v and .sdf files, and returns a JSON model.
+- **Backend:** Processes file uploads, parses `.v` and `.sdf` files, and returns a JSON model.
 - **Communication:** Uses HTTP for data transfer and optionally Socket.io for live updates.
 
 ### 2.3. Data Model
 
 #### 2.3.1. FPGA Visualization JSON
-Example JSON model:
-```mermaid
-flowchart TD
-    A[Elements]
-    B[Connections]
-    A --> B
+Text Diagram:
 ```
-Example structure:
+Elements  -->  Connections
+```
+**Example Structure:**
+```
 {
   "elements": [
     {
@@ -171,20 +173,21 @@ Example structure:
     }
   ]
 }
+```
 - **elements:** Describes FPGA components.
 - **connections:** Describes wiring between components with timing data.
 
 ### 2.4. Communication Flow
-1. **File Upload:** Users upload .v and .sdf files via an HTTP POST request.
-2. **Processing:** The backend validates and parses the files into a JSON model.
-3. **Data Delivery:** The JSON model is returned to the frontend.
-4. **Visualization:** The frontend renders the FPGA layout on HTML Canvas.
-5. **Simulation:** Users control simulation playback (play, pause, step, speed).
+1. **File Upload:** Users upload `.v` and `.sdf` files via HTTP POST.  
+2. **Processing:** The backend validates and parses the files into a JSON model.  
+3. **Data Delivery:** The JSON model is returned to the frontend.  
+4. **Visualization:** The frontend renders the FPGA layout on HTML Canvas.  
+5. **Simulation:** Users control simulation playback (play, pause, step, speed).  
 6. **Error Reporting:** Descriptive error messages are provided if issues occur.
 
 ### 2.5. Deployment Strategy
 - **Local Environment:**  
-  - Frontend served via Vite (`npm run dev`).
+  - Frontend served via Vite (`npm run dev`).  
   - Backend runs on Express.js locally (`npm run dev`).
 - **Static Deployment:**  
   - Optionally deploy the frontend on Vercel or GitHub Pages.
@@ -199,28 +202,28 @@ Example structure:
 
 ### 3.1. File Management
 - **Preloaded Examples:**  
-  - A library of preloaded FPGA examples (.v and .sdf) is provided.
+  - A library of preloaded FPGA examples (`.v` and `.sdf`) is provided.
 - **File Upload:**  
   - Teachers can upload new files to create custom examples.
 - **Export:**  
-  - Users can export the current design as a .zip file containing the associated .v and .sdf files.
+  - Users can export the current design as a `.zip` file containing the associated `.v` and `.sdf` files.
 
 ### 3.2. Code Editor & Simulation Controls
 - **Code Editor:**  
   - Integrated editor (e.g., Monaco) with Verilog syntax highlighting.
   - Supports real-time or on-demand compilation to update the FPGA visualization.
 - **Simulation Controls:**  
-  - **Play:** Start the simulation.
-  - **Pause:** Halt the simulation.
-  - **Step:** Advance the simulation by one time unit.
+  - **Play:** Start simulation.
+  - **Pause:** Halt simulation.
+  - **Step:** Advance simulation by one time unit.
   - **Speed:** Adjust playback rate (x1, x2, x4, etc.).
-  - **Reset:** Return the simulation to the initial state.
+  - **Reset:** Return the simulation to its initial state.
   - Clear error messages are shown if compilation or simulation fails.
 
 ### 3.3. FPGA Visualization
 - **2D Layout Rendering:**  
   - Renders FPGA components (BELs) and signal connections on HTML Canvas.
-  - Highlights active components and uses color coding for signals.
+  - Highlights active elements and uses color coding for signals.
 - **Navigation:**  
   - Supports zooming and panning.
 - **Interaction:**  
@@ -229,7 +232,7 @@ Example structure:
 
 ### 3.4. Simulation Engine
 - **Data Input:**  
-  - Uses the JSON model generated from parsed .v and .sdf files.
+  - Uses the JSON model generated from parsed `.v` and `.sdf` files.
 - **Animation & Timing:**  
   - Animates signal propagation based on timing data.
 - **Control Flow:**  
@@ -242,10 +245,10 @@ Example structure:
 ### 4.1. Main Interface Layout (MVP)
 A typical MVP screen includes:
 
-Header: Project Title, Navigation, Simulation Controls  
-Left Panel: Code Editor (Verilog display, error logs)  
-Right Panel: FPGA Visualization (HTML Canvas rendering)  
-Footer: Zoom controls, status/error messages
+- **Header:** Project Title, Navigation, Simulation Controls  
+- **Left Panel:** Code Editor (Verilog display, error logs)  
+- **Right Panel:** FPGA Visualization (HTML Canvas rendering)  
+- **Footer:** Zoom controls, status/error messages
 
 - **Header:** Contains navigation options (e.g., "Code", "Simulation") and control buttons (Play, Pause, Step, Speed, Export).
 - **Left Panel:** Displays the code editor for Verilog, showing preloaded examples or uploaded files.
@@ -255,15 +258,15 @@ Footer: Zoom controls, status/error messages
 ### 4.2. Interaction Flows
 1. **Loading an Example:**  
    - User selects a preloaded example.
-   - The code editor loads the example and the FPGA visualization updates accordingly.
+   - The code editor loads the example; FPGA visualization updates accordingly.
 2. **Uploading Files:**  
-   - User clicks "Import" and selects .v and .sdf files.
+   - User clicks "Import" and selects `.v` and `.sdf` files.
    - The backend processes the files; on success, the visualization and code editor update; on error, descriptive messages are displayed.
 3. **Running the Simulation:**  
    - Teacher clicks "Play" to start the simulation.
    - The animation displays signal propagation; simulation controls (Pause, Step, Speed) adjust the simulation.
 4. **Exporting the Design:**  
-   - User clicks "Export" to download a .zip file containing the current .v and .sdf files.
+   - User clicks "Export" to download a `.zip` file containing the current `.v` and `.sdf` files.
 
 ---
 
@@ -271,8 +274,8 @@ Footer: Zoom controls, status/error messages
 
 ### 5.1. Frontend Error Handling
 - **Input Validation:**  
-  - Validate file types before upload (only .v and .sdf are accepted).
-  - Provide immediate, user-friendly error messages (e.g., "Unsupported file format. Please upload a .v or .sdf file.").
+  - Validate file types before upload (only `.v` and `.sdf` allowed).
+  - Provide immediate, user-friendly error messages (e.g., "Unsupported file format. Please upload a `.v` or `.sdf` file.").
 - **UI Fallbacks:**  
   - Display alerts or error banners if file parsing fails or simulation errors occur.
   - Utilize global error boundaries to capture unexpected issues.
@@ -282,9 +285,9 @@ Footer: Zoom controls, status/error messages
 ### 5.2. Backend Error Handling
 - **HTTP Error Responses:**  
   - Return structured error responses with appropriate status codes (400, 404, 500) in JSON format.
-  - Include detailed messages (e.g., "Error: Invalid .sdf file format.").
+  - Include detailed messages (e.g., "Error: Invalid `.sdf` file format.").
 - **File Parsing Validation:**  
-  - Validate the syntax and structure of .v and .sdf files; return detailed errors if invalid.
+  - Validate the syntax and structure of `.v` and `.sdf` files; return detailed errors if invalid.
 - **WebSocket Management:**  
   - If used, implement automatic reconnection and handle malformed messages gracefully.
 - **Logging:**  
@@ -296,7 +299,7 @@ Footer: Zoom controls, status/error messages
 
 ### 6.1. Rendering Optimization
 - **HTML Canvas Rendering:**  
-  - Use requestAnimationFrame for smooth animations.
+  - Use `requestAnimationFrame` for smooth animations.
   - Render only visible or active elements based on current zoom and pan.
 - **Batch Updates:**  
   - Minimize re-renders by batching simulation frame updates.
@@ -318,7 +321,7 @@ Footer: Zoom controls, status/error messages
 
 ### 6.4. User Concurrency
 - **Multiple Browser Tabs:**  
-  - Support usage across multiple tabs (primarily single-user local use).
+  - Supports usage across multiple tabs (primarily single-user local use).
 - **Session Persistence:**  
   - Maintain user settings (theme, zoom level, last used files) across reloads.
 
@@ -330,19 +333,23 @@ Footer: Zoom controls, status/error messages
 To set up the development environment, run the following commands:
 
 For the frontend:
-npm install  
+```
+cd fpgasim/frontend
+npm install
 npm run dev
+```
 
 For the backend:
-cd fpgasim/backend  
-npm install  
+```
+cd fpgasim/backend
+npm install
 npm run dev
-
+```
 _Key tools include ESLint, Prettier, TypeScript, Jest, and Cypress._
 
 ### 7.2. Local Storage Strategy
 1. **File Storage:**  
-   - Store uploaded files in IndexedDB.
+   - Store uploaded files in IndexedDB.  
    - Cache JSON models and user preferences in localStorage.
 2. **Data Lifecycle:**  
    - Provide options to clear temporary files; auto-cleanup of unused files.
@@ -351,30 +358,30 @@ _Key tools include ESLint, Prettier, TypeScript, Jest, and Cypress._
    - All processing occurs locally; no data is transmitted externally.
 
 ### 7.3. Containerization
-Example Dockerfile for containerized deployment:
-```mermaid
-flowchart TD
-    A[FROM node:18-alpine as build]
-    B[WORKDIR /app]
-    C[COPY package*.json ./]
-    D[RUN npm install]
-    E[COPY . .]
-    F[RUN npm run build]
-    G[FROM nginx:alpine]
-    H[COPY --from=build /app/dist /usr/share/nginx/html]
-    I[EXPOSE 80]
-    J[CMD ["nginx", "-g", "daemon off;"]]
-    A --> B --> C --> D --> E --> F --> G --> H --> I --> J
+Example Dockerfile for containerized deployment (text diagram):
+```
+FROM node:18-alpine as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
 ```
 
 ### 7.4. Static Deployment
-1. **Build Process:**  
-   npm run build
-2. **Deployment Configuration:**  
+1. **Build Process:**
+```
+npm run build
+```
+2. **Deployment Configuration:**
    - Configure GitHub Actions for automated deployment.
    - Set proper base paths and SPA routing.
    - Configure caching headers.
-3. **Backend Considerations:**  
+3. **Backend Considerations:**
    - Provide API documentation.
    - Include fallback processing methods on the frontend.
 
@@ -393,62 +400,49 @@ flowchart TD
 ## 8. Diagrams & Flowcharts
 
 ### 8.1. System Architecture Diagram
-```mermaid
-graph TD
-    A[Web Browser UI]
-    B[React Application (Vite)]
-    C[Express.js Backend (Node.js)]
-    D[File Parser (.v, .sdf)]
-    A --> B
-    B --> C
-    C --> D
+Text Diagram:
+```
+[Web Browser UI]
+       │
+       ▼
+[React Application (Vite)]
+       │
+       ▼
+[Express.js Backend (Node.js)]
+       │
+       ▼
+[File Parser (.v, .sdf)]
 ```
 
 ### 8.2. File Processing Flow
-```mermaid
-flowchart TD
-    A[Upload Files]
-    B[Validate Format]
-    C[Parse Content]
-    D[Generate JSON Model]
-    A --> B --> C --> D
-    D --> E[Return JSON to Frontend]
+Text Diagram:
+```
+[Upload Files] → [Validate Format] → [Parse Content] → [Generate JSON Model] → [Return JSON to Frontend]
 ```
 
 ### 8.3. User Interaction Flow
-```mermaid
-flowchart TD
-    A[Select Example / Upload Files]
-    B[Receive Processing Feedback]
-    C[Display Code in Editor]
-    D[Render FPGA Layout on Canvas]
-    E[Control Simulation (Play, Pause, Step, Speed)]
-    A --> B --> C --> D --> E
+Text Diagram:
+```
+[Select Example / Upload Files] → [Receive Processing Feedback] → [Display Code in Editor] → [Render FPGA Layout on Canvas] → [Control Simulation (Play, Pause, Step, Speed)]
 ```
 
 ### 8.4. API Endpoints
-```mermaid
-flowchart TD
-    A[/api/upload]
-    B[/api/model/:id]
-    C[/api/status/:id]
-    D[/api/examples]
-    E[/api/example/:name]
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-```
+Text Table:
+| Endpoint             | Method | Purpose                          | Request Body         | Response                |
+|----------------------|--------|----------------------------------|----------------------|-------------------------|
+| /api/upload          | POST   | Upload .sdf and .v files         | Multipart form data  | Processing status, ID   |
+| /api/model/:id       | GET    | Retrieve generated JSON model    | -                    | JSON model data         |
+| /api/status/:id      | GET    | Check processing progress        | -                    | Status information      |
+| /api/examples        | GET    | List available example files     | -                    | List of examples        |
+| /api/example/:name   | GET    | Retrieve specific example model  | -                    | JSON model data         |
 
 ### 8.5. JSON Model Structure
-```mermaid
-flowchart TD
-    A[metadata]
-    B[components]
-    C[signals]
-    A --> B --> C
+Text Diagram:
 ```
-Example structure:
+[metadata] → [components] → [signals]
+```
+Example Structure:
+```
 {
   "metadata": {
     "name": "example_design",
@@ -482,6 +476,7 @@ Example structure:
     }
   ]
 }
+```
 
 ---
 
@@ -540,23 +535,23 @@ Example structure:
 ## 10. Testing & Validation
 
 - **Unit Tests:**  
-  - Validate file parsing from .v and .sdf to JSON.
-  - Test simulation control logic (play, pause, step, speed).
+  - Validate file parsing from `.v` and `.sdf` to JSON.  
+  - Test simulation control logic (play, pause, step, speed).  
   - Verify error handling for invalid file formats and inputs.
 - **Integration Tests:**  
-  - Ensure complete workflow: file upload → parse → visualize → simulate.
-  - Confirm correct API responses and (if used) Socket.io updates.
+  - Ensure complete workflow: file upload → parse → visualize → simulate.  
+  - Confirm correct responses from API endpoints and, if applicable, real-time updates.
 - **User Acceptance Tests (UAT):**  
-  - Teachers and students test the system by loading examples, editing code, and running simulations.
+  - Teachers and students test the system by loading examples, editing code, and running simulations.  
   - Ensure clear, descriptive error messages and a responsive UI.
 - **Performance Tests:**  
-  - Assess rendering performance with typical FPGA designs.
+  - Assess rendering performance with typical FPGA designs.  
   - Evaluate responsiveness with large file inputs and multiple interactions.
 
 ---
 
 ## 11. Conclusion
 
-This Technical Specification outlines a comprehensive, local-first FPGA signal propagation simulator designed for educational use. Teachers can select from preloaded FPGA examples or upload custom .v and .sdf files, which are processed into a JSON model and rendered on an HTML Canvas. The solution features an integrated code editor, robust simulation controls, detailed error handling, and efficient performance optimizations. Developed in TypeScript and deployable locally via Vite and Express.js—with optional static hosting on Vercel—the simulator effectively bridges FPGA theory with practical, visual learning while ensuring data privacy.
+This Technical Specification outlines a comprehensive, local-first FPGA signal propagation simulator designed for educational use. Teachers can select from preloaded FPGA examples or upload custom `.v` and `.sdf` files, which are processed into a JSON model and rendered on an HTML Canvas. The solution features an integrated code editor, robust simulation controls, detailed error handling, and efficient performance optimizations. Developed in TypeScript and deployable locally via Vite and Express.js—with optional static hosting on Vercel—the simulator effectively bridges FPGA theory with practical, visual learning while ensuring data privacy.
 
 End of Document
