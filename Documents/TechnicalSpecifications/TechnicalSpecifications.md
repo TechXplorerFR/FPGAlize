@@ -1,394 +1,869 @@
 <div align="center">
 
-# Technical Specifications
-
----
-
-**Title:** Web FPGA - Technical Specifications  
-**Team:** Team 7  
-**Author:** Abderrazaq MAKRAN  
-**Version:** 0.1
-
----
+# Technical Specification  
+**Project:** Web FPGA Signal Propagation Simulator  
+**Version:** 1.2  
+**Date:** 23/03/2025
 
 </div>
 
-<details>
-<summary><h2 id="toc">Table of Contents <i>(Click to expand)</i></h2></summary>
+---
 
-<!-- Write the Table of Contents here -->
-- [Technical Specifications](#technical-specifications)
+## Table of Contents
+
+- [Technical Specification](#technical-specification)
+  - [Table of Contents](#table-of-contents)
   - [1. Introduction](#1-introduction)
-  - [2. Glossary](#2-glossary)
-  - [3. Project Scope \& Objectives](#3-project-scope--objectives)
-    - [Primary Focus](#primary-focus)
-    - [Secondary Focus](#secondary-focus)
-    - [Out of Scope](#out-of-scope)
-  - [4. System Architecture](#4-system-architecture)
-    - [4.1. Frontend (Student \& Teacher UI)](#41-frontend-student--teacher-ui)
-    - [4.2. Backend (FastAPI)](#42-backend-fastapi)
-    - [4.3. Data Model](#43-data-model)
-      - [4.3.1. FPGA Visualization JSON](#431-fpga-visualization-json)
-      - [4.3.2. Rooms \& Session Management](#432-rooms--session-management)
-    - [4.4. Real-Time Communication (WebSockets)](#44-real-time-communication-websockets)
-  - [5. Functional Requirements](#5-functional-requirements)
-    - [5.1. Student Interface](#51-student-interface)
-    - [5.2. Teacher Interface](#52-teacher-interface)
-    - [5.3. Rooms Feature (Teacher-Student Collaboration)](#53-rooms-feature-teacher-student-collaboration)
-    - [5.4. Simulation Engine](#54-simulation-engine)
-  - [6. Error Handling and Logging](#6-error-handling-and-logging)
-    - [6.1. Frontend Error Handling](#61-frontend-error-handling)
-    - [6.2. Backend Error Handling](#62-backend-error-handling)
-  - [7. Wireframes \& User Flows](#7-wireframes--user-flows)
-    - [7.1. Landing Page](#71-landing-page)
-    - [7.2. Room Creation (Teacher)](#72-room-creation-teacher)
-    - [7.3. Room Join (Student)](#73-room-join-student)
-    - [7.4. Homepage - Teacher](#74-homepage---teacher)
-    - [7.5. Homepage - Student](#75-homepage---student)
-  - [8. Project Roadmap \& Timeline](#8-project-roadmap--timeline)
-  - [9. Deployment Strategy](#9-deployment-strategy)
+    - [1.1. Problem Statement](#11-problem-statement)
+    - [1.2. Target Users](#12-target-users)
+    - [1.3. User Experience Goals](#13-user-experience-goals)
+    - [1.4. Educational Impact](#14-educational-impact)
+    - [1.5. Glossary](#15-glossary)
+  - [2. System Overview](#2-system-overview)
+    - [2.1. Technology Stack](#21-technology-stack)
+    - [2.2. Architecture](#22-architecture)
+    - [2.3. Data Model](#23-data-model)
+      - [2.3.1. FPGA Visualization JSON](#231-fpga-visualization-json)
+    - [2.4. Communication Flow](#24-communication-flow)
+    - [2.5. Deployment Strategy](#25-deployment-strategy)
+    - [2.6. Project Structure](#26-project-structure)
+  - [3. Functional Requirements](#3-functional-requirements)
+    - [3.1. File Management](#31-file-management)
+    - [3.2. Code Editor \& Simulation Controls](#32-code-editor--simulation-controls)
+    - [3.3. FPGA Visualization](#33-fpga-visualization)
+    - [3.4. Simulation Engine](#34-simulation-engine)
+  - [4. UI \& Interaction](#4-ui--interaction)
+    - [4.1. Main Interface Layout (MVP)](#41-main-interface-layout-mvp)
+    - [4.2. Interaction Flows](#42-interaction-flows)
+  - [5. Error Handling \& Logging](#5-error-handling--logging)
+    - [5.1. Frontend Error Handling](#51-frontend-error-handling)
+    - [5.2. Backend Error Handling](#52-backend-error-handling)
+  - [6. Performance \& Scalability](#6-performance--scalability)
+    - [6.1. Rendering Optimization](#61-rendering-optimization)
+    - [6.2. File Size Limitations](#62-file-size-limitations)
+    - [6.3. Caching Strategy](#63-caching-strategy)
+    - [6.4. User Concurrency](#64-user-concurrency)
+  - [7. Deployment \& Environment](#7-deployment--environment)
+    - [7.1. Development Setup](#71-development-setup)
+    - [7.2. Local Storage Strategy](#72-local-storage-strategy)
+    - [7.3. Containerization](#73-containerization)
+    - [7.4. Static Deployment](#74-static-deployment)
+    - [7.5. Logging \& Debugging](#75-logging--debugging)
+  - [8. Diagrams \& Flowcharts](#8-diagrams--flowcharts)
+    - [8.1. System Architecture Diagram](#81-system-architecture-diagram)
+    - [8.2. File Processing Flow](#82-file-processing-flow)
+    - [8.3. User Interaction Flow](#83-user-interaction-flow)
+    - [8.4. API Endpoints](#84-api-endpoints)
+    - [8.5. JSON Model Structure](#85-json-model-structure)
+  - [9. Dependencies](#9-dependencies)
   - [10. Testing \& Validation](#10-testing--validation)
-  - [11. Conclusion](#11-conclusion)
-
-
-</details>
+    - [10.1. Unit Testing](#101-unit-testing)
+    - [10.2. Integration Testing](#102-integration-testing)
+    - [10.3. Performance Testing](#103-performance-testing)
+    - [10.4. User Acceptance Testing](#104-user-acceptance-testing)
+  - [11. Security Considerations](#11-security-considerations)
+  - [12. Conclusion](#12-conclusion)
 
 ---
 
 ## 1. Introduction
 
-This document specifies the design and development of a **web-based FPGA signal propagation simulator**. The simulator enables students and teachers to interact with an FPGA layout and observe real-time signal behavior. Additionally, a **Rooms** feature facilitates collaborative learning sessions by allowing teachers to create virtual rooms and students to join using a unique code with optional password protection and by providing their name.
+### 1.1. Problem Statement
+Understanding signal propagation in FPGAs is inherently complex. This simulator provides an interactive, visual environment that enables users to observe and manipulate FPGA signal behavior in real time without the need for specialized hardware.
+
+> **Core Question:** How can we make the intricate workings of an FPGA accessible and comprehensible to both novice and experienced users?
+
+### 1.2. Target Users
+- **Teachers:** Responsible for selecting preloaded FPGA examples or uploading custom `.v` and `.sdf` files, then managing simulation sessions.
+- **Students:** Engage with real-time FPGA simulations through a user-friendly web interface.
+
+### 1.3. User Experience Goals
+- **Intuitive Navigation:** Minimal training required.
+- **Real-Time Feedback:** Immediate visual response to user actions.
+- **Interactive Learning:** Ability to control simulation speed, step through the simulation, and inspect details.
+- **Self-Guided Exploration:** Tools that encourage experimentation with FPGA designs.
+- **Accessibility:** Support across multiple devices and include necessary accessibility features.
+
+### 1.4. Educational Impact
+The simulator bridges theory and practice by:
+- Visualizing abstract FPGA internals.
+- Enabling hands-on experimentation without physical hardware.
+- Supporting self-paced, interactive learning.
+- Connecting theoretical concepts with practical simulation outcomes.
+
+### 1.5. Glossary
+| Term             | Definition                                                                                       |
+|------------------|--------------------------------------------------------------------------------------------------|
+| **API**          | Application Programming Interface; enables communication between different software components.  |
+| **BEL**          | Basic Element; a fundamental component within an FPGA (e.g., LUT, flip-flop, Block RAM) that will be visualized in the simulation canvas.         |
+| **Canvas**       | HTML element used for drawing graphics and animations via JavaScript.                            |
+| **Docker**       | Platform for developing, shipping, and running applications in containers.                       |
+| **Express.js**   | Minimal and flexible Node.js web application framework for building APIs.                        |
+| **FPGA**         | Field-Programmable Gate Array; a reconfigurable integrated circuit for custom digital logic.     |
+| **IndexedDB**    | Low-level JavaScript API for client-side storage of significant amounts of structured data.      |
+| **JSON Model**   | A structured data format representing FPGA components and signals for visualization purposes.    |
+| **Monaco**       | Code editor that powers VS Code, used for syntax highlighting and code editing.                  |
+| **Netlist**      | A structural representation of an FPGA design, detailing its components and connections.         |
+| **Node.js**      | JavaScript runtime built on Chrome's V8 JavaScript engine for server-side execution.             |
+| **P&R**          | Place and Route; mapping netlist components onto FPGA resources and determining routing paths.   |
+| **React**        | JavaScript library for building user interfaces with component-based architecture.               |
+| **SDF**          | Standard Delay Format; a file format containing timing delay information.                        |
+| **Simulation**   | Modeling signal propagation over time to test and validate digital designs.                      |
+| **Socket.io**    | Library enabling real-time, bidirectional communication between web clients and servers.         |
+| **Synthesis**    | The process of converting Verilog code into a netlist.                                           |
+| **TailwindCSS**  | Utility-first CSS framework for rapidly building custom user interfaces.                         |
+| **TypeScript**   | JavaScript superset that adds static typing and other features to enhance code quality.          |
+| **Vercel**       | Platform for static site deployment and serverless functions with global CDN.                    |
+| **Verilog**      | A hardware description language used to design and simulate digital circuits.                    |
+| **Vite**         | Modern frontend build tool providing faster development experience through native ES modules.    |
 
 ---
 
-## 2. Glossary
+## 2. System Overview
 
-- **FPGA (Field-Programmable Gate Array):** A reconfigurable integrated circuit consisting of configurable logic blocks and routing.
-- **Basic Element (BEL):** A fundamental hardware unit within an FPGA (e.g., LUT, flip-flop, Block RAM).
-- **Application:** Verilog code that describes a function or algorithm for the FPGA.
-- **Synthesis:** The process of translating Verilog code into an electrical netlist.
-- **P&R (Place and Route):** The mapping of netlist components onto FPGA BELs and the determination of routing paths for signals.
-- **Simulator:** A tool (e.g., ModelSim) that compiles Verilog testbenches and applications, showing time-evolving signal behavior.
-- **Software (This Project):** The web application that visualizes the FPGA floorplan and simulates signal propagation in real time.
-- **Rooms:** A collaborative session mechanism where teachers and students share the same simulation environment.
+### 2.1. Technology Stack
+**Frontend:**
+- React + Vite (TypeScript)
+- TailwindCSS
+- HTML Canvas (for 2D FPGA layout rendering)
+- Socket.io (optional for real-time updates)
 
----
+**Backend:**
+- Node.js + Express.js (TypeScript)
+- File Parsing Libraries (for `.v` and `.sdf` files)
 
-## 3. Project Scope & Objectives
+**Deployment:**
+- Local deployment via Vite (frontend) and Express.js (backend)
+- Option for static deployment on Vercel for the frontend
+- Optional Docker for containerized testing
 
-### Primary Focus
-- **Web Application Development** (Frontend & Backend)
-- **FPGA Visualization** (using pre-provided Verilog netlists and SDF files)
+### 2.2. Architecture
 
-### Secondary Focus
-- **Real-Time Collaboration** via Rooms
-- **Integration of FPGA Concepts & Timing Information** for educational purposes
-
-### Out of Scope
-- Running the entire FPGA toolchain (synthesis, place & route, etc.) in the browser.  
-  *Instead, the teacher or project maintainers provide the required Verilog netlist and SDF files.*
-
----
-
-## 4. System Architecture
-
-The system is divided into a **Frontend** (React + Vite) for user interaction and a **Backend** (FastAPI) for file processing, session management, and real-time updates via WebSockets.
-
-### 4.1. Frontend (Student & Teacher UI)
-
-- **Frameworks:**  
-    - **Vite + React** for fast, lightweight development.  
-    - ( **D3.js** or **Chart.js** for 2D visualization of the FPGA floorplan and signals.) ~~~~~ 
-    - **Socket.io** for real-time synchronization with the backend.
-
-- **Key Components:**  
-    1. **Landing Page:** Role selection (Teacher or Student).  
-    2. **Room Creation (Teacher):** Form to create a new room and generate a unique room code, including fields for Room Name and an optional Password.  
-    3. **Room Join (Student):** Form to join an existing room using the provided code, including fields for Room ID/Code, an optional Password, and "Your Name".  
-    4. **Dashboard (Teacher & Student):** Main interface displaying the FPGA layout, code panels, and simulation controls. The dashboard features a split layout with a code panel on the left (editable for teachers, read-only for students) and the FPGA schematic/simulation on the right.
-
-### 4.2. Backend (FastAPI)
-
-- **Endpoints:**  
-    - **POST /rooms:** Creates a new room with a unique code and optional password.  
-    - **GET /rooms/{roomCode}:** Validates a room code and returns room details.  
-    - **POST /files/upload:** (Phase 2+) Allows teachers to upload Verilog and SDF files.  
-    - **GET /simulation-data/{roomCode}:** Retrieves processed JSON data for FPGA visualization.
-
-- **Session & State Management:**  
-    - Stores active rooms, participants, and simulation states.
-    - Handles real-time updates over WebSockets (e.g., start/stop simulation, highlighting signals, etc.).
-
-### 4.3. Data Model
-
-#### 4.3.1. FPGA Visualization JSON
-
-A unified JSON format for describing the FPGA’s BELs, their connections, and timing delays derived from the netlist (Verilog) and SDF files. For example:
-```json
-{
-    "elements": [
-        {
-            "id": 0,
-            "name": "LUT4",
-            "type": "logic_gate",
-            "innerText": "AND",
-            "icon": "path-to-img",
-            "clicked": false,
-            "inputs": [
-                { "connectionId": 1, "name": "A" },
-                { "connectionId": 2, "name": "B" }
-            ],
-            "outputs": [
-                { "connectionId": 3, "name": "OUT" }
-            ]
-        }
-    ],
-    "connections": [
-        {
-            "id": 1,
-            "from": "input_id_A",
-            "fromLabel": "A",
-            "to": "output_id_BEL1",
-            "toLabel": "Input_B",
-            "color": "blue",
-            "time": 2
-        }
-    ]
-}
+```
+┌───────────────────────────────────────────────────────────┐
+│                      Web Browser UI                       │
+└───────────────────────────────────────┬───────────────────┘
+                    │
+                    ▼
+┌───────────────────────────────────────────────────────────┐
+│                 React Application (Vite)                  │
+│  ┌───────────────┐  ┌──────────────┐  ┌───────────────┐   │
+│  │  Code Editor  │  │ Simulation   │  │ FPGA Canvas   │   │
+│  │  (Monaco)     │  │ Controls     │  │ Renderer      │   │
+│  └───────────────┘  └──────────────┘  └───────────────┘   │
+└────────────────────────────┬──────────────────────────────┘
+               │ HTTP/Fetch API
+               ▼
+┌───────────────────────────────────────────────────────────┐
+│               Express.js Backend (Node.js)                │
+│  ┌───────────────┐  ┌──────────────┐  ┌───────────────┐   │
+│  │ File Upload   │  │ Processing   │  │ JSON Model    │   │
+│  │ API Endpoints │  │ Controller   │  │ Generation    │   │
+│  └───────────────┘  └──────────────┘  └───────────────┘   │
+└────────────────────────────┬──────────────────────────────┘
+               │
+               ▼
+┌───────────────────────────────────────────────────────────┐
+│                      File Parsers                         │
+│  ┌───────────────┐                    ┌───────────────┐   │
+│  │ Verilog (.v)  │                    │ SDF (.sdf)    │   │
+│  │ Parser        │                    │ Parser        │   │
+│  └───────────────┘                    └───────────────┘   │
+└───────────────────────────────────────────────────────────┘
 ```
 
-**Key Fields:**  
-- **`elements`**: Array of FPGA BELs, each with an ID, type, inputs, outputs, etc.  
-- **`connections`**: Array of signal connections between BELs, including timing data.
+- **Frontend Layer:**
+  - **React Application:** Built with Vite and TypeScript, managing application state and UI rendering
+  - **Code Editor:** Monaco-based editor for Verilog with syntax highlighting
+  - **Simulation Controls:** Interface for controlling simulation playback (play, pause, step)
+  - **FPGA Canvas Renderer:** HTML Canvas implementation that visualizes the FPGA layout and signal propagation
 
-#### 4.3.2. Rooms & Session Management
+- **Communication Layer:**
+  - **HTTP/Fetch API:** Primary method for data exchange between frontend and backend
+  - **JSON Data Model:** Standardized format for representing FPGA components and connections
+  - **Optional WebSockets:** For real-time updates during simulation (Socket.io implementation)
 
-To support multi-user collaboration, each **Room** is represented as follows:
+- **Backend Layer:**
+  - **Express.js Server:** Handles HTTP requests, file uploads, and processing coordination
+  - **File Upload Endpoints:** Manages multipart form uploads for .v and .sdf files
+  - **Processing Controller:** Orchestrates the parsing workflow and error handling
+  - **JSON Model Generator:** Creates the visualization model from parsed data
 
+- **Processing Layer:**
+  - **Verilog Parser:** Extracts FPGA component definitions, connections, and logic
+  - **SDF Parser:** Processes timing information for signal propagation simulation
+  - **Combined Processing:** Merges data from both parsers to create a comprehensive model
+
+### 2.3. Data Model
+
+#### 2.3.1. FPGA Visualization JSON
+
+The FPGA visualization is based on a structured JSON model that defines both the elements (components) and their connections:
+
+```
+Elements (BELs) <---> Connections (Wires)
+```
+
+**JSON Model Structure:**
 ```json
 {
-  "roomId": "string (UUID or short code)",
-  "roomName": "string",
-  "teacherId": "string",
-  "participants": [
+  "elements": [
     {
-      "userId": "string",
-      "role": "teacher" or "student"
+      "id": 0,
+      "name": "LUT4",
+      "type": "logic_gate",
+      "position": { "x": 100, "y": 150 },
+      "inputs": [
+        { "connectionId": 1, "name": "A" },
+        { "connectionId": 2, "name": "B" }
+      ],
+      "outputs": [
+        { "connectionId": 3, "name": "OUT" }
+      ],
+      "state": {
+        "active": false,
+        "value": 0
+      }
+    },
+    {
+      "id": 1,
+      "name": "FF1",
+      "type": "flip_flop",
+      "position": { "x": 200, "y": 150 },
+      "inputs": [
+        { "connectionId": 3, "name": "D" },
+        { "connectionId": 4, "name": "CLK" }
+      ],
+      "outputs": [
+        { "connectionId": 5, "name": "Q" }
+      ],
+      "state": {
+        "active": false,
+        "value": 0
+      }
     }
-    // ...
   ],
-  "simulationState": {
-    "status": "running | paused | stopped",
-    "speed": 1,
-    "timeIndex": 0
-    // ...
+  "connections": [
+    {
+      "id": 1,
+      "from": "INPUT_A",
+      "to": "0.A",
+      "path": [[50, 150], [75, 150], [100, 150]],
+      "color": "blue",
+      "delay": 2,
+      "state": {
+        "active": false,
+        "value": 0,
+        "propagating": false
+      }
+    },
+    {
+      "id": 3,
+      "from": "0.OUT",
+      "to": "1.D",
+      "path": [[150, 150], [175, 150], [200, 150]],
+      "color": "green",
+      "delay": 1.5,
+      "state": {
+        "active": false,
+        "value": 0,
+        "propagating": false
+      }
+    }
+  ],
+  "metadata": {
+    "name": "2ffs_VTR",
+    "description": "Two flip-flops in series",
+    "timeUnit": "ns",
+    "gridSize": 10,
+    "canvasWidth": 800,
+    "canvasHeight": 600
   }
 }
 ```
 
-- **roomId / roomName:** Unique code and human-readable name for the room.  
-- **participants:** List of active users (teacher and students).  
-- **simulationState:** Current simulation status, speed, and time index for synchronization.
+**Key Components:**
 
-### 4.4. Real-Time Communication (WebSockets)
+1. **elements**: Array of FPGA basic elements (BELs)
+   - `id`: Unique identifier for the element
+   - `name`: Display name
+   - `type`: Element type (e.g., "logic_gate", "flip_flop", "buffer")
+   - `position`: X/Y coordinates on the canvas
+   - `inputs/outputs`: Arrays of connection points
+     - `connectionId`: Reference to a specific connection in the connections array
+     - `name`: Label for the input/output (e.g., "A", "CLK", "OUT")
+   - `state`: Current element state for simulation
 
-- **Channel per Room:** Each room has its own Socket.io namespace or channel for updates.  
-- **Message Types:**  
-  - **SIMULATION_UPDATE:** Broadcasts changes in signal values, time index, or highlight states.  
-  - **CODE_CHANGE (teacher only):** For real-time updates if the teacher modifies the code.  
-  - **FOCUS_ELEMENT:** Teacher highlights a specific FPGA element or connection.
+2. **connections**: Array of wires connecting elements
+   - `id`: Unique identifier for the connection
+   - `from`: Source element and output (format: "elementId.outputName")
+   - `to`: Target element and input (format: "elementId.inputName")
+   - `path`: Array of coordinate pairs defining wire routing
+   - `color`: Visual representation color
+   - `delay`: Signal propagation time in nanoseconds
+   - `state`: Current connection state for simulation
 
----
+3. **metadata**: Additional information about the design
+   - `name`: Design name
+   - `description`: Short description
+   - `timeUnit`: Time unit for simulation (typically "ns")
+   - `canvasWidth/canvasHeight`: Visualization dimensions
 
-## 5. Functional Requirements
+This model provides a complete representation of the FPGA circuit for visualization and simulation, with the elements representing components and connections representing the signal paths between them.
 
-### 5.1. Student Interface
+### 2.4. Communication Flow
+1. **File Upload:** Users upload `.v` and `.sdf` files via HTTP POST.  
+2. **Processing:** The backend validates and parses the files into a JSON model.  
+3. **Data Delivery:** The JSON model is returned to the frontend.  
+4. **Visualization:** The frontend renders the FPGA layout on HTML Canvas.  
+5. **Simulation:** Users control simulation playback (play, pause, step, speed).  
+6. **Error Reporting:** Descriptive error messages are provided if issues occur.
 
-1. **Room Join:**  
-   - Students enter a valid room code to access the shared simulation.  
-   - The join form includes fields for Room ID/Code, an optional Password, and "Your Name".  
-2. **FPGA Visualization:**  
-   - Display the BELs and signal routes as defined by the teacher’s loaded design.  
-3. **Simulation Playback (Read-Only):**  
-   - Observe the teacher’s simulation control (play, pause, step, speed).  
-4. **Code Panel (Read-Only):**  
-   - View the Verilog/SDF code if the teacher chooses to share it.
+### 2.5. Deployment Strategy
+- **Local Environment:**  
+  - Frontend served via Vite (`npm run dev`).  
+  - Backend runs on Express.js locally (`npm run dev`).
+- **Static Deployment:**  
+  - Optionally deploy the frontend on Vercel or GitHub Pages.
+- **Containerization:**  
+  - Optional Docker for consistent local testing.
+- **Data Privacy:**  
+  - All processing is local; no data is transmitted externally.
 
-### 5.2. Teacher Interface
+### 2.6. Project Structure
+The project follows a modular organization reflecting the implementation:
 
-1. **Room Creation & Management:**  
-   - Create a room, generating a unique code with an optional password.  
-   - Manage participants by viewing who has joined the room.  
-2. **File Upload & Processing (Phase 2+):**  
-   - Upload Verilog netlist and SDF file.  
-   - The backend parses these files into JSON for FPGA visualization.  
-3. **Simulation Controls:**  
-   - Provide controls for Play, Pause, Resume, Step, and Speed adjustment.  
-   - Broadcast real-time updates, including code changes and focus highlights, to students.  
-4. **Code Panel (Editable):**  
-   - Display the Verilog/SDF code or JSON data in an editable panel for the teacher.
+```
+Project Root
+├── Code/
+│   ├── Frontend/                # React frontend application
+│   │   ├── public/              # Static assets
+│   │   │   ├── data/            # Sample FPGA data files
+│   │   │   │   └── samples/     # Example .v and .sdf files
+│   │   │   │       ├── 1ff_no_rst_VTR/
+│   │   │   │       ├── 1ff_VTR/
+│   │   │   │       ├── 2ffs_no_rst_VTR/
+│   │   │   │       ├── 2ffs_VTR/
+│   │   │   │       ├── 5ffs_VTR/
+│   │   │   │       ├── FULLLUT_VTR/
+│   │   │   │       └── LUT_VTR/
+│   │   ├── src/                 # Frontend source code
+│   │   │   ├── components/      # React components
+│   │   │   │   ├── app/         # Application-specific components
+│   │   │   │   │   ├── AddExampleModal.tsx  # Modal for importing files
+│   │   │   │   │   ├── CanvasActionBar.tsx  # Controls for canvas actions
+│   │   │   │   │   ├── CodeEditor.tsx       # Monaco-based code editor
+│   │   │   │   │   ├── Example.tsx          # Example list item component
+│   │   │   │   │   ├── ExamplesDrawer.tsx   # Left-side drawer for examples
+│   │   │   │   │   ├── Navbar.tsx           # Top navigation bar
+│   │   │   │   │   ├── SimulationCanvas.tsx # Main canvas for FPGA visualization
+│   │   │   │   │   ├── TabDisplayer.tsx     # Handles view mode display
+│   │   │   │   │   └── TabsBar.tsx          # File tabs management
+│   │   │   │   ├── theme-provider.tsx       # Theme handling (light/dark)
+│   │   │   │   └── ui/                      # Reusable UI components
+│   │   │   │       ├── button.tsx
+│   │   │   │       ├── dialog.tsx
+│   │   │   │       ├── drawer.tsx
+│   │   │   │       ├── separator.tsx
+│   │   │   │       ├── skeleton.tsx         # Loading skeleton component
+│   │   │   │       ├── sonner.tsx           # Toast notifications
+│   │   │   │       └── toggle.tsx
+│   │   │   ├── data/            # Static data
+│   │   │   │   └── sample-elements.ts       # FPGA element data structures
+│   │   │   ├── lib/             # Core library code
+│   │   │   │   ├── services/    # Application services
+│   │   │   │   │   └── canvas-history.ts    # Implements undo/redo for canvas
+│   │   │   │   ├── types/       # TypeScript type definitions
+│   │   │   │   │   └── types.ts             # Core type definitions
+│   │   │   │   └── utils.ts                 # Utility functions
+│   │   │   ├── App.tsx          # Main application component
+│   │   │   └── main.tsx         # Application entry point
+│   │   ├── package.json         # Frontend dependencies
+│   │   ├── tsconfig.json        # TypeScript configuration
+│   │   ├── vercel.json          # Vercel deployment configuration
+│   │   ├── vite.config.ts       # Vite configuration
+│   │   └── tailwind.config.js   # TailwindCSS configuration
+│   ├── Backend/                # Node.js backend for file processing
+│   │   ├── src/                # Backend source code
+│   │   │   ├── controllers/    # Request handlers
+│   │   │   │   ├── fileController.ts       # Handles file uploads and processing
+│   │   │   │   └── exampleController.ts    # Manages example files
+│   │   │   ├── routes/         # API routes
+│   │   │   │   ├── fileRoutes.ts           # File upload/processing endpoints
+│   │   │   │   └── exampleRoutes.ts        # Example file endpoints
+│   │   │   ├── services/       # Business logic services
+│   │   │   │   ├── parserService.ts        # File parsing orchestration
+│   │   │   │   └── storageService.ts       # File storage management
+│   │   │   ├── parsers/        # File parsers
+│   │   │   │   ├── verilogParser.ts        # Parses .v files
+│   │   │   │   └── sdfParser.ts            # Parses .sdf files
+│   │   │   ├── utils/          # Utility functions
+│   │   │   │   └── fileUtils.ts            # File handling utilities
+│   │   │   └── server.ts       # Express server setup
+│   │   ├── package.json        # Backend dependencies
+│   │   └── tsconfig.json       # TypeScript configuration
+│
+├── Documents/                   # Project documentation
+│   ├── FunctionalSpecifications/
+│   ├── TechnicalSpecifications/
+│   ├── Management/
+│   ├── QA/
+│   └── UserManual/
+├── README.md                    # Project overview
+└── Scripts/                     # Utility scripts
+```
 
-### 5.3. Rooms Feature (Teacher-Student Collaboration)
+**Key Components and Their Functions:**
 
-- **Synchronized State:**  
-  - All participants in a room share the same simulation state and view.  
-- **Real-Time Broadcast:**  
-  - Any teacher action (e.g., highlight, speed change) is immediately reflected in every student’s view.  
-- **Session Lifecycle:**  
-  - Create Room → Join Room → Run Simulation → End Session  
-- **Optional Enhancements:**  
-  - Chat/Q&A: Simple text-based communication can be added.  
-  - Co-Teacher Role: The teacher can grant temporary control to a student.
+**Core Frontend Components:**
+- **App.tsx**: Main application component managing state (activeView, tabs, examples)
+- **TabDisplayer.tsx**: Controls the view mode switching between Code and Simulation
+- **SimulationCanvas.tsx**: Main canvas for rendering FPGA visualizations
+- **CodeEditor.tsx**: Monaco-based editor with Verilog syntax highlighting
 
-### 5.4. Simulation Engine
+**File Management:**
+- **ExamplesDrawer.tsx**: Side drawer showing available examples with metadata
+- **Example.tsx**: Individual example component with click handling
+- **AddExampleModal.tsx**: Modal for importing new example files
 
-- **Data Input:**  
-  - Uses the JSON generated from the provided Verilog/SDF files without running the full synthesis/P&R toolchain.  
-- **Animation & Timing:**  
-  - Animates signals based on delays specified in the SDF.  
-- **Controls:**  
-  - **Play:** Start simulation time progression.  
-  - **Pause:** Halt simulation time progression.  
-  - **Step:** Advance by a single time unit or cycle.  
-  - **Speed:** Adjust simulation speed (e.g., x1, x2, x4).
+**Navigation and Controls:**
+- **Navbar.tsx**: Top navigation with export functionality and view mode controls 
+- **TabsBar.tsx**: Multi-tab interface for switching between open files
+- **CanvasActionBar.tsx**: Controls for simulation playback and canvas manipulation
 
----
+**Parser Services:**
+- **v-parser.ts**: Parses Verilog (.v) files into structured JSON data
+- **sdf-parser.ts**: Parses Standard Delay Format (.sdf) files
+- **parser.ts**: Combines results from both parsers into a unified data model
 
-## 6. Error Handling and Logging
+**Data Types and Models:**
+- **types.ts**: Core TypeScript type definitions for the application
+- **sample-elements.ts**: Example data structures for FPGA elements
 
-### 6.1. Frontend Error Handling
+**UI Infrastructure:**
+- **theme-provider.tsx**: Handles light/dark theme switching
+- **ui/**: Reusable UI components built on Radix UI primitives
+  - button.tsx, dialog.tsx, drawer.tsx, dropdown-menu.tsx, etc.
+  - skeleton.tsx: Loading placeholder components
+  - sonner.tsx: Toast notification system
+  - tabs.tsx: Tab component for switching between views
 
-- **User Input Validation:**  
-  - Validate room codes, file uploads, and form inputs with immediate feedback.  
-  - Display clear error messages (e.g., "Invalid room code", "File format not supported").  
-- **UI Fallbacks:**  
-  - Show fallback views or alerts if WebSocket connections fail or if data cannot be loaded.  
-  - Use global error boundaries in React to catch unexpected exceptions and display a user-friendly message.  
-- **Logging:**  
-  - Capture client-side errors using a logging framework (e.g., Sentry) for debugging purposes.
+**Utility Functions:**
+- **utils.ts**: Helper functions for CSS class management, file handling, etc.
+- **services/canvas-history.ts**: Undo/redo functionality for canvas operations
 
-### 6.2. Backend Error Handling
+**Backend Integration:**
+- The frontend communicates with the backend for file parsing and processing
+- File upload handling via HTTP endpoints
+- JSON model retrieval for visualization
 
-- **HTTP Error Responses:**  
-  - Return appropriate HTTP status codes (e.g., 400 for bad requests, 404 for not found, 500 for server errors).  
-  - Provide meaningful error messages in JSON responses (e.g., { "error": "Room not found" }).  
-- **File Parsing & Processing:**  
-  - Validate the format of Verilog and SDF files during upload.  
-  - If parsing fails, return an error with details to guide the teacher in correcting file issues.  
-- **WebSocket Error Management:**  
-  - Monitor WebSocket connections and automatically attempt reconnection if dropped.  
-  - Gracefully handle invalid or malformed messages and log them for review.  
-- **Logging and Monitoring:**  
-  - Use centralized logging (e.g., ELK stack) for critical backend errors.  
-  - Log all exceptions with context (e.g., room IDs, user identifiers) to ease debugging.  
-- **Fallback Strategies:**  
-  - For non-critical errors (e.g., temporary network issues), provide default simulation data and alert users with a retry option.
+## 3. Functional Requirements
 
----
+### 3.1. File Management
+- **Preloaded Examples:**  
+  - A library of preloaded FPGA examples (`.v` and `.sdf`) is provided.
+- **File Upload:**  
+  - Teachers can upload new files to create custom examples.
+- **Export:**  
+  - Users can export the current design as a `.zip` file containing the associated `.v` and `.sdf` files.
 
-## 7. Wireframes & User Flows
-
-### 7.1. Landing Page
-
-- **Buttons:**  
-  - “I’m a Teacher” → Navigates to the Room Creation page.  
-  - “I’m a Student” → Navigates to the Room Join page.
-
-### 7.2. Room Creation (Teacher)
-
-1. **Form:**  
-   - Teacher inputs a Room Name (and optionally a Password).  
-2. **Create:**  
-   - The system generates a unique Room Code.  
-3. **Redirect:**  
-   - The teacher is taken to the Homepage - Teacher for the newly created room.
-
-### 7.3. Room Join (Student)
-
-1. **Form:**  
-   - Student enters the Room ID/Code, an optional Password, and "Your Name".  
-2. **Validation:**  
-   - The system checks if the room is active and verifies the password if provided.  
-3. **Redirect:**  
-   - The student is directed to the Homepage - Student for that room.
-
-### 7.4. Homepage - Teacher
-
-- **Code Panel (Editable):**  
-  - Displays Verilog/SDF code or JSON data, allowing for editing and annotations.  
-- **FPGA Visualization:**  
-  - A 2D floorplan with clickable BELs and routes.  
+### 3.2. Code Editor & Simulation Controls
+- **Code Editor:**  
+  - Integrated Monaco editor with Verilog syntax highlighting.
+  - Supports real-time or on-demand compilation to update the FPGA visualization.
+  - Displays line numbers and syntax error highlighting.
 - **Simulation Controls:**  
-  - Buttons for Play, Pause, Step, and Speed adjustments.  
-- **Focus Participants:**  
-  - Teacher can highlight specific signals or code lines, which are broadcast to all participants.
+  - **Play:** Start simulation with continuous frame updates.
+  - **Pause:** Halt simulation while preserving current state.
+  - **Step:** Advance simulation by one time unit (asynchronous operation).
+  - **Speed:** Adjust playback rate (x0.5, x1, x2, x4) affecting the timing calculations.
+  - **Reset:** Return the simulation to its initial state (all signals and components).
+  - **Processing Mode:** Toggle between synchronous (blocking UI) and asynchronous (background) simulation processing.
+  - Provides clear visual feedback during simulation execution.
+  - Shows toast notifications for simulation events and errors.
 
-### 7.5. Homepage - Student
+### 3.3. FPGA Visualization
+- **2D Layout Rendering:**  
+  - Renders FPGA components (BELs) and signal connections on HTML Canvas.
+  - Highlights active elements and uses color coding for signals.
+- **Navigation:**  
+  - Supports zooming and panning.
+- **Interaction:**  
+  - Displays tooltips or info panels on hover.
+  - Optionally allows dragging of components for layout adjustments.
 
-- **Code Panel (Read-Only):**  
-  - Displays the teacher’s code without allowing modifications.  
-- **FPGA Visualization:**  
-  - Mirrors the teacher’s layout, including any highlights.  
-- **Simulation Controls (Mirrored):**  
-  - Students observe the simulation state as controlled by the teacher.
+### 3.4. Simulation Engine
+- **Data Input:**  
+  - Uses the JSON model generated from parsed `.v` and `.sdf` files.
+- **Animation & Timing:**  
+  - Animates signal propagation based on timing data.
+- **Control Flow:**  
+  - Advances simulation in discrete time steps and updates the Canvas in real time.
 
 ---
 
-## 8. Project Roadmap & Timeline
+## 4. UI & Interaction
 
-| **Phase**                                 | **Features**                                                                                                                                                          | **Deadline** |
-|-------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
-| **Phase 1: Visualizing Provided Examples**| - Static UI with FPGA visualization (Flip-Flop, LUT4 examples)<br>- Basic simulation controls (Play, Pause, Step, Speed)<br>- Basic Rooms setup (Create/Join) with sample data | **13/3**     |
-| **Phase 2: Teacher File Upload**          | - File upload & parsing (Verilog + SDF)<br>- Convert files to JSON for FPGA layout<br>- Advanced Rooms management (list participants, improved UI)<br>- Enhanced real-time sync (highlight/focus) | **25/3**     |
-| **Phase 3: Full Automation (Optional)**   | - Automate FPGA processing (synthesis, P&R) if time allows<br>- Integrate open-source FPGA tools (yosys, nextpnr, etc.)                                                | **1/4**      |
+### 4.1. Main Interface Layout (MVP)
+A typical MVP screen includes:
+
+- **Header:** Project Title, Navigation, Simulation Controls  
+- **Left Panel:** Code Editor (Verilog display, error logs)  
+- **Right Panel:** FPGA Visualization (HTML Canvas rendering)  
+- **Footer:** Zoom controls, status/error messages
+
+- **Header:** Contains navigation options (e.g., "Code", "Simulation") and control buttons (Play, Pause, Step, Speed, Export).
+- **Left Panel:** Displays the code editor for Verilog, showing preloaded examples or uploaded files.
+- **Right Panel:** Renders the FPGA layout on HTML Canvas.
+- **Footer:** Provides additional controls (zoom, pan) and displays status messages.
+
+### 4.2. Interaction Flows
+1. **Loading an Example:**  
+   - User selects a preloaded example.
+   - The code editor loads the example; FPGA visualization updates accordingly.
+2. **Uploading Files:**  
+   - User clicks "Import" and selects `.v` and `.sdf` files.
+   - The backend processes the files; on success, the visualization and code editor update; on error, descriptive messages are displayed.
+3. **Running the Simulation:**  
+   - Teacher clicks "Play" to start the simulation.
+   - The animation displays signal propagation; simulation controls (Pause, Step, Speed) adjust the simulation.
+4. **Exporting the Design:**  
+   - User clicks "Export" to download a `.zip` file containing the current `.v` and `.sdf` files.
 
 ---
 
-## 9. Deployment Strategy
+## 5. Error Handling & Logging
 
-1. **Hosting:** AWS EC2 (Ubuntu 22.04 LTS) or a similar environment.  
-2. **Containerization:** Docker images for both Frontend and Backend, potentially orchestrated with Kubernetes.  
-3. **Frontend Deployment:**  
-   - AWS Amplify or Vercel for a straightforward build and deploy pipeline.  
-4. **Backend Deployment:**  
-   - FastAPI app container deployed on AWS EC2, behind a load balancer if needed.  
-5. **CI/CD:**  
-   - GitHub Actions for automated testing, building, and deployment triggers.
+### 5.1. Frontend Error Handling
+
+| Error Category | Error Types | Example Message | User Experience |
+|----------------|-------------|-----------------|-----------------|
+| **File Upload** | Invalid Format | ❌ "Unsupported file format (.txt). Please upload only .v or .sdf files." | Toast notification with red icon |
+| | Size Exceeded | ❌ "File size exceeds 50MB limit. Please reduce file complexity or split into multiple files." | Modal dialog with warning icon |
+| | Corrupt File | ⚠️ "File appears to be corrupted or incomplete. Please check and re-upload." | Toast notification with guidance |
+| **Code Editor** | Syntax Error | 🔍 "Line 42: Unexpected token '{'. Expected ';' at end of line 41." | Inline editor highlighting with fix suggestion |
+| | Reference Error | 🔍 "Line 87: 'clock_in' used but not declared." | Squiggly underline with hover details |
+| | Missing Module | ⚠️ "Module 'counter' referenced but not defined in this file." | Warning banner above editor |
+| **Simulation** | Timing Conflict | ⚠️ "Signal timing conflict detected in 'clk_out' path." | Highlighted wire in visualization |
+| | Missing Connection | ❌ "Cannot simulate: missing connection between FF1.Q and LUT2.A" | Error panel with visual indicator on canvas |
+| | State Error | ⚠️ "Unexpected signal state at component 'FF3'. Simulation may be unstable." | Warning badge on component |
+| **Rendering** | Canvas Error | ⚠️ "Unable to render all components. Try reducing zoom level." | Status message in footer |
+| | Layout Overflow | ℹ️ "Design too large for viewport. Use zoom controls to adjust view." | Info badge with zoom controls highlight |
+
+### 5.2. Backend Error Handling
+
+| Error Category | HTTP Status | Error Code | Example Response |
+|----------------|-------------|------------|------------------|
+| **File Processing** | 400 | `FILE_PARSE_ERROR` | ```{"error":true,"code":"FILE_PARSE_ERROR","message":"Invalid SDF timing format on line 156","details":"Expected numeric value but found 'x'","status":400}``` |
+| | 413 | `FILE_SIZE_EXCEEDED` | ```{"error":true,"code":"FILE_SIZE_EXCEEDED","message":"File size exceeds 50MB limit","details":"Maximum allowed size is 50MB, received 68MB","status":413}``` |
+| | 415 | `UNSUPPORTED_FORMAT` | ```{"error":true,"code":"UNSUPPORTED_FORMAT","message":"Unsupported file format","details":"Only .v and .sdf files are supported","status":415}``` |
+| **Resource Access** | 404 | `EXAMPLE_NOT_FOUND` | ```{"error":true,"code":"EXAMPLE_NOT_FOUND","message":"Example '2ffs_VTR' not found","details":"Verify example name or browse available examples","status":404}``` |
+| | 403 | `ACCESS_DENIED` | ```{"error":true,"code":"ACCESS_DENIED","message":"Access denied to requested resource","details":"Check permissions or authentication","status":403}``` |
+| **Data Validation** | 422 | `VALIDATION_ERROR` | ```{"error":true,"code":"VALIDATION_ERROR","message":"Invalid simulation parameters","details":"Time step must be positive integer","status":422}``` |
+| **Server Errors** | 500 | `SERVER_ERROR` | ```{"error":true,"code":"SERVER_ERROR","message":"Internal server error occurred","details":"Error reference: #E12345","status":500}``` |
+| | 503 | `SERVICE_UNAVAILABLE` | ```{"error":true,"code":"SERVICE_UNAVAILABLE","message":"Service temporarily unavailable","details":"Try again later","status":503}``` |
+
+Each error includes:
+- Clear error identification
+- Actionable guidance for resolution
+- Reference codes for support (where applicable)
+- Appropriate visual indicators based on severity
+
+## 6. Performance & Scalability
+
+### 6.1. Rendering Optimization
+- **HTML Canvas Rendering:**  
+  - Use `requestAnimationFrame` for smooth animations.
+  - Render only visible or active elements based on current zoom and pan.
+- **Batch Updates:**  
+  - Minimize re-renders by batching simulation frame updates.
+
+### 6.2. File Size Limitations
+
+| File Type | Recommended Limit | Maximum Limit | Handling Strategy                     |
+|-----------|-------------------|---------------|---------------------------------------|
+| .sdf      | 10MB              | 50MB          | Warn user; use chunked processing     |
+| .v        | 5MB               | 25MB          | Warn user; display performance notice |
+
+- **Exceeding Maximum Limits:**
+  - Files exceeding maximum limits will be rejected with a clear error message
+  - Users will receive guidance on how to split or reduce file size
+  - Example error: "File size exceeds 50MB limit. Please reduce file complexity or split into multiple files."
+
+- **Processing Strategy:**
+  - Large files within limits use progressive loading indicators
+  - Memory usage monitoring prevents browser crashes
+  - Automatic background processing for files near maximum limits
+
+### 6.3. Caching Strategy
+- **Local Storage:**  
+  - Cache JSON models, user settings, and preloaded examples in localStorage.
+- **File Fingerprinting:**  
+  - Detect file changes to prevent redundant parsing.
+- **Rendering Cache:**  
+  - Cache precomputed layouts for fast re-rendering.
+
+### 6.4. User Concurrency
+- **Multiple Browser Tabs:**  
+  - Supports usage across multiple tabs (primarily single-user local use).
+- **Session Persistence:**  
+  - Maintain user settings (theme, zoom level, last used files) across reloads.
+
+---
+
+## 7. Deployment & Environment
+
+### 7.1. Development Setup
+To set up the development environment, run the following commands:
+
+For the frontend:
+```
+cd code/frontend
+npm install
+npm run dev
+```
+
+For the backend:
+```
+cd code/backend
+npm install
+npm run dev
+```
+### 7.2. Local Storage Strategy
+1. **File Storage:**  
+   - Store uploaded files in IndexedDB.  
+   - Cache JSON models and user preferences in localStorage.
+2. **Data Lifecycle:**  
+   - Provide options to clear temporary files; auto-cleanup of unused files.
+   - Offer export/backup functionality.
+3. **Privacy:**  
+   - All processing occurs locally; no data is transmitted externally.
+
+### 7.3. Containerization
+Example Dockerfile for containerized deployment (text diagram):
+```
+# Use node as the base image
+FROM node:23-alpine
+
+# Set working directory
+WORKDIR /app
+
+RUN pwd
+RUN ls
+
+# Copy package files
+COPY Code/Frontend/package.json Code/Frontend/package-lock.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy app source
+COPY Code/Frontend ./
+
+# Build the app
+RUN npm run build
+
+# Expose the port
+EXPOSE 4173
+
+# Run preview server
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0"]
+```
+
+### 7.4. Static Deployment
+1. **Build Process:**
+```
+npm run build
+```
+2. **Deployment Configuration:**
+   - Configure GitHub Actions for automated deployment.
+   - Set proper base paths and SPA routing.
+   - Configure caching headers.
+3. **Backend Considerations:**
+   - Provide API documentation.
+   - Include fallback processing methods on the frontend.
+
+### 7.5. Logging & Debugging
+- **Development Logging:**  
+  - Detailed console logs, performance metrics, and API request/response data.
+- **Production Logging:**  
+  - Error-only logging with optional verbose logs.
+  - Local log storage with rotation and export options.
+- **Crash Reporting:**  
+  - Capture unhandled exceptions and generate crash reports.
+  - Option for anonymous crash data reporting (opt-in).
+
+---
+
+## 8. Diagrams & Flowcharts
+
+### 8.1. System Architecture Diagram
+```
+[Web Browser UI]
+       │
+       ▼
+[React Application (Vite)]
+       │
+       ▼
+[Express.js Backend (Node.js)]
+       │
+       ▼
+[File Parser (.v, .sdf)]
+```
+
+### 8.2. File Processing Flow
+```
+[Upload Files] → [Validate Format] → [Parse Content] → [Generate JSON Model] → [Return JSON to Frontend]
+```
+
+### 8.3. User Interaction Flow
+```
+[Select Example / Upload Files] → [Receive Processing Feedback] → [Display Code in Editor] → [Render FPGA Layout on Canvas] → [Control Simulation (Play, Pause, Step, Speed)]
+```
+
+### 8.4. API Endpoints
+Text Table:
+| Endpoint             | Method | Purpose                          | Request Body         | Response                |
+|----------------------|--------|----------------------------------|----------------------|-------------------------|
+| /api/upload          | POST   | Upload .sdf and .v files         | Multipart form data  | Processing status, ID   |
+| /api/model/:id       | GET    | Retrieve generated JSON model    | -                    | JSON model data         |
+| /api/status/:id      | GET    | Check processing progress        | -                    | Status information      |
+| /api/examples        | GET    | List available example files     | -                    | List of examples        |
+| /api/example/:name   | GET    | Retrieve specific example model  | -                    | JSON model data         |
+
+### 8.5. JSON Model Structure
+```
+[metadata] → [components] → [signals]
+```
+Example Structure:
+```
+{
+  "metadata": {
+    "name": "example_design",
+    "components": 42,
+    "signals": 156,
+    "timeUnits": "ns",
+    "totalDuration": 100
+  },
+  "components": [
+    {
+      "id": "comp1",
+      "type": "FF",
+      "x": 10,
+      "y": 20,
+      "width": 5,
+      "height": 5,
+      "connections": ["sig1", "sig2"]
+    }
+  ],
+  "signals": [
+    {
+      "id": "sig1",
+      "source": "comp1",
+      "target": "comp2",
+      "path": [[10, 20], [15, 20], [15, 30]],
+      "timing": [
+        {"time": 0, "value": 0},
+        {"time": 5, "value": 1},
+        {"time": 10, "value": 0}
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## 9. Dependencies
+
+**Runtime Dependencies:**
+- @monaco-editor/react: ^4.7.0  
+- @radix-ui/react-dialog: ^1.1.6  
+- @radix-ui/react-dropdown-menu: ^2.1.6  
+- @radix-ui/react-label: ^2.1.2  
+- @radix-ui/react-separator: ^1.1.2  
+- @radix-ui/react-slot: ^1.1.2  
+- @radix-ui/react-tabs: ^1.1.3  
+- @radix-ui/react-toggle: ^1.1.2  
+- @radix-ui/react-toggle-group: ^1.1.2  
+- @radix-ui/react-tooltip: ^1.1.8  
+- class-variance-authority: ^0.7.1  
+- clsx: ^2.1.1  
+- file-saver: ^2.0.5  
+- fs: ^0.0.1-security  
+- jszip: ^3.10.1  
+- lucide-react: ^0.476.0  
+- next-themes: ^0.4.6  
+- react: ^19.0.0  
+- react-dom: ^19.0.0  
+- react-router: ^7.2.0  
+- sonner: ^2.0.1  
+- tailwind-merge: ^3.0.2  
+- tailwindcss-animate: ^1.0.7  
+- vaul: ^1.1.2  
+
+**Development Dependencies:**
+- @eslint/js: ^9.21.0  
+- @tailwindcss/vite: ^4.0.9  
+- @types/file-saver: ^2.0.7  
+- @types/node: ^22.13.5  
+- @types/react: ^19.0.10  
+- @types/react-dom: ^19.0.4  
+- @vitejs/plugin-react: ^4.3.4  
+- @vitest/coverage-v8: ^3.0.7  
+- @vitest/ui: ^3.0.7  
+- autoprefixer: ^10.4.20  
+- eslint: ^9.21.0  
+- eslint-plugin-react-hooks: ^5.0.0  
+- eslint-plugin-react-refresh: ^0.4.19  
+- globals: ^15.15.0  
+- postcss: ^8.5.3  
+- tailwindcss: ^4.0.9  
+- typescript: ~5.7.2  
+- typescript-eslint: ^8.24.1  
+- vite: ^6.2.0  
+- vitest: ^3.0.7  
 
 ---
 
 ## 10. Testing & Validation
 
-- **Unit Tests:**  
-  - File parsing logic (Verilog & SDF → JSON).  
-  - Room creation & join (ensuring unique room codes and proper password validation).  
-  - Error handling cases (invalid inputs, file format errors).
+### 10.1. Unit Testing
+- Test individual components and functions
+- Validate file parsing logic
+- Test simulation algorithms
+- Verify UI component rendering
 
-- **Integration Tests:**  
-  - Teacher actions are correctly broadcast to students in real time.  
-  - WebSocket message consistency and proper error responses/fallbacks.
+### 10.2. Integration Testing
+- Test end-to-end workflow
+- Verify file upload and processing
+- Test simulation controls
+- Validate FPGA visualization
 
-- **User Acceptance Tests (UAT):**  
-  - Real teachers and students perform typical tasks (creating/joining rooms, viewing simulations).  
-  - Validate that error messages and UI feedback are clear and consistent.
+### 10.3. Performance Testing
+- Measure rendering performance
+- Test with large files
+- Evaluate memory usage
+- Verify animation smoothness
 
-- **Performance Tests:**  
-  - Ensure smooth visualization for moderately sized FPGA designs.  
-  - Test concurrent access with multiple students in a single room.
-
----
-
-## 11. Conclusion
-
-This unified technical specification outlines a comprehensive solution for a **web-based FPGA signal propagation simulator** with a **Rooms** feature for collaborative, teacher-led sessions. The design includes robust error handling and logging mechanisms that ensure a resilient system across both client and server environments. Key deliverables include:
-
-- Source code (frontend + backend) on GitHub.  
-- Detailed documentation (setup instructions, adding new examples).  
-- Two example FPGA applications (Flip-Flop, LUT4).  
-- Core Rooms functionality for synchronized teacher-student collaboration with integrated error management.
-
-The roadmap details the phased development from basic visualization to advanced file upload capabilities and optional automation, with comprehensive error handling built into every layer of the system.
+### 10.4. User Acceptance Testing
+- Test with sample users
+- Gather feedback on usability
+- Verify educational effectiveness
+- Identify improvement areas
 
 ---
 
-**End of Document**
+## 11. Security Considerations
+- Input validation for all file uploads
+- Sanitize user inputs
+- Local processing to avoid data transmission
+- Secure storage of user files
+
+---
+
+## 12. Conclusion
+
+This Technical Specification outlines a comprehensive, local-first FPGA signal propagation simulator designed for educational use. Teachers can select from preloaded FPGA examples or upload custom `.v` and `.sdf` files, which are processed into a JSON model and rendered on an HTML Canvas. The solution features an integrated code editor, robust simulation controls, detailed error handling, and efficient performance optimizations. Developed in TypeScript and deployable locally via Vite and Express.js—with optional static hosting on Vercel—the simulator effectively bridges FPGA theory with practical, visual learning while ensuring data privacy.
+
+End of Document
