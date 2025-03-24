@@ -2,8 +2,8 @@
 
 # Technical Specification  
 **Project:** Web FPGA Signal Propagation Simulator  
-**Version:** 1.2  
-**Date:** 23/03/2025
+**Version:** 1.3  
+**Date:** 24/03/2025
 
 </div>
 
