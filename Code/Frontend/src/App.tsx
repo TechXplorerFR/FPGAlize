@@ -6,6 +6,8 @@ import TabsBar from "./components/app/TabsBar";
 import { countFileLines, readFileContent } from "@/lib/utils";
 import type { Example, Tab } from "@/lib/types/types";
 import { Toaster } from "@/components/ui/sonner";
+import { parseFilesForBrowser } from "@/lib/services/parser";
+import { toastMessage } from "@/lib/services/toast";
 
 function App() {
   const [activeView, setActiveView] = useState<string>("Code");
@@ -63,13 +65,23 @@ function App() {
           // Count lines
           const lineCount = await countFileLines(originalVerilogFile);
 
+          // Parse the post-synthesis files to get the JSON output
+          const jsonOutput = await parseFilesForBrowser(
+            postSynthesisVerilogFile,
+            postSynthesisSdfFile
+          );
+
+          if (!jsonOutput) {
+            toastMessage.warning(`Failed to parse example: ${name}`);
+          }
+
           return {
             index,
             example: {
               originalVerilogFile,
               postSynthesisVerilogFile,
               postSynthesisSdfFile,
-              jsonOutput: null,
+              jsonOutput,
               originalVerilogFileInformation: {
                 name: originalVerilogFile.name.split(".")[0],
                 lineCount,
@@ -91,7 +103,8 @@ function App() {
 
       setIsLoading(false);
     } catch (error) {
-      console.error("Failed to load example files:", error);
+      console.error("Error loading example files:", error);
+      toastMessage.error("Failed to load example files");
       setIsLoading(false);
     }
   }

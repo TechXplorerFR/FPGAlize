@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 import { type Element } from "@/lib/types/types";
 
 export interface CanvasState {
   elements: Element[];
-  elementPositions: Map<string, { x: number, y: number }>;
+  elementPositions: Map<string, { x: number; y: number }>;
 }
 
 class CanvasHistory {
@@ -21,7 +21,7 @@ class CanvasHistory {
     if (this.currentIndex < this.history.length - 1) {
       this.history = this.history.slice(0, this.currentIndex + 1);
     }
-    
+
     // Add the new state to history
     this.history.push(this.cloneState(state));
     this.currentIndex = this.history.length - 1;
@@ -67,41 +67,44 @@ export function useCanvasHistory(initialState: CanvasState) {
   const [canvasHistory] = useState(() => new CanvasHistory(initialState));
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  
+
   const updateButtons = useCallback(() => {
     setCanUndo(canvasHistory.canUndo());
     setCanRedo(canvasHistory.canRedo());
   }, [canvasHistory]);
-  
-  const pushState = useCallback((state: CanvasState) => {
-    canvasHistory.push(state);
-    updateButtons();
-  }, [canvasHistory, updateButtons]);
-  
+
+  const pushState = useCallback(
+    (state: CanvasState) => {
+      canvasHistory.push(state);
+      updateButtons();
+    },
+    [canvasHistory, updateButtons]
+  );
+
   const undo = useCallback((): CanvasState | null => {
     const state = canvasHistory.undo();
     updateButtons();
     return state;
   }, [canvasHistory, updateButtons]);
-  
+
   const redo = useCallback((): CanvasState | null => {
     const state = canvasHistory.redo();
     updateButtons();
     return state;
   }, [canvasHistory, updateButtons]);
-  
+
   const reset = useCallback((): CanvasState => {
     const state = canvasHistory.reset();
     updateButtons();
     return state;
   }, [canvasHistory, updateButtons]);
-  
+
   return {
     pushState,
     undo,
     redo,
     reset,
     canUndo,
-    canRedo
+    canRedo,
   };
 }

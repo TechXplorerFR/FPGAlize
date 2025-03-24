@@ -16,10 +16,14 @@ export type FileInformation = {
  * @typedef {Object} Tab
  * @property {string} name - Name of the tab.
  * @property {string} id - Unique identifier for the tab.
+ * @property {string} type - Type of the tab content (e.g., "verilog", "sdf").
+ * @property {Example} example - Reference to the example data associated with this tab.
  */
 export type Tab = {
   name: string;
   id: string;
+  type: string;
+  example: Example;
 };
 
 /**

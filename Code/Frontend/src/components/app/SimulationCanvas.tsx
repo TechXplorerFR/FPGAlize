@@ -1,9 +1,12 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Example, type Element } from "@/lib/types/types";
+import { Example, type Element, IDataStructure } from "@/lib/types/types";
 import { elementList } from "@/data/sample-elements";
 import CanvasActionBar from "./CanvasActionBar";
 import { getTheme } from "../theme-provider";
-import { useCanvasHistory, type CanvasState } from "@/lib/services/canvas-history";
+import {
+  useCanvasHistory,
+  type CanvasState,
+} from "@/lib/services/canvas-history";
 
 // Debounce helper function
 function debounce<T extends (...args: any[]) => any>(
@@ -21,7 +24,7 @@ function debounce<T extends (...args: any[]) => any>(
 export default function SimulationCanvas({
   activeTabId,
   examples,
-  playing
+  playing,
 }: {
   activeTabId: string;
   examples: Example[];
@@ -54,10 +57,13 @@ export default function SimulationCanvas({
   // Initialize the canvas history
   const initialCanvasState: CanvasState = {
     elements,
-    elementPositions: new Map(elements.map(el => [el.id.toString(), { x: el.x, y: el.y }])),
+    elementPositions: new Map(
+      elements.map((el) => [el.id.toString(), { x: el.x, y: el.y }])
+    ),
   };
-  
-  const { pushState, undo, redo, reset, canUndo, canRedo } = useCanvasHistory(initialCanvasState);
+
+  const { pushState, undo, redo, reset, canUndo, canRedo } =
+    useCanvasHistory(initialCanvasState);
 
   // Update history when canvas elements change (debounced to avoid too many history entries)
   const debouncedPushState = useCallback(
@@ -65,14 +71,14 @@ export default function SimulationCanvas({
       // Only push state if elements were actually modified by user actions
       if (elementsModified) {
         const currentElementPositions = new Map(
-          elements.map(el => [el.id.toString(), { x: el.x, y: el.y }])
+          elements.map((el) => [el.id.toString(), { x: el.x, y: el.y }])
         );
-        
+
         const currentState: CanvasState = {
           elements,
           elementPositions: currentElementPositions,
         };
-        
+
         pushState(currentState);
         // Reset the modified flag after pushing state
         setElementsModified(false);
@@ -188,7 +194,7 @@ export default function SimulationCanvas({
       ctx.fillStyle = "lightcoral";
       ctx.fillRect(el.x, el.y, 50, 50);
 
-      ctx.fillStyle = "black";
+      ctx.fillStyle = isDarkTheme ? "white" : "black";
       ctx.font = `${20 / zoomLevel}px Arial`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -258,7 +264,7 @@ export default function SimulationCanvas({
 
         // Move the impulses along their respective paths
         Object.entries(prev).forEach(([key, position]) => {
-          const newPosition =  position + 0.05; // Move the impulse along the wire
+          const newPosition = position + 0.05; // Move the impulse along the wire
           if (newPosition < 1) {
             newImpulses[key] = playing ? newPosition : position;
           }
@@ -351,12 +357,12 @@ export default function SimulationCanvas({
         setElementsModified(true);
       }
     }
-    
+
     // Set elements modified when dragging ends
     if (draggingElement !== null) {
       setElementsModified(true);
     }
-    
+
     // To remove
     console.log(activeTabId, examples);
     // ---------------
@@ -421,6 +427,53 @@ export default function SimulationCanvas({
     setZoomLevel(1);
     setPanOffset({ x: 0, y: 0 });
   };
+
+  // Get the current example and its JSON data
+  const currentExample = examples.find(
+    (example) => example.originalVerilogFileInformation.name === activeTabId
+  );
+
+  const jsonModel = currentExample?.jsonOutput || null;
+
+  useEffect(() => {
+    if (jsonModel) {
+      // If we have a parsed JSON model, use it for the simulation
+      console.log("Using parsed JSON model for simulation:", jsonModel);
+
+      // Here you would set up your elements based on the parsed data
+      // For example:
+      if (jsonModel.elements.length > 0) {
+        // Initialize your elements and connections from the parsed data
+        // This would replace or supplement the sample elementList
+
+        // This is a placeholder - implement according to your exact needs
+        const parsedElements: Element[] = jsonModel.elements.map(
+          (el, index) => ({
+            id: el.id,
+            name: el.name,
+            icon: "path-to-an-icon", // Use appropriate icon based on type
+            x: 100 + index * 100, // Position elements in a grid or other layout
+            y: 100 + index * 50,
+            isDragging: false,
+            connectedTo: jsonModel.connections
+              .filter(
+                (conn) =>
+                  conn.from.startsWith(`${el.name}.`) ||
+                  conn.to.startsWith(`${el.name}.`)
+              )
+              .map((conn) => {
+                // Extract the connected element's ID
+                // This depends on your connection structure
+                return conn.id;
+              }),
+          })
+        );
+
+        // Set elements state with parsed data
+        // setElements(parsedElements); // Uncomment when implemented
+      }
+    }
+  }, [jsonModel]);
 
   return (
     <div ref={containerRef} className="w-full h-[88vh] bg-gray-100">

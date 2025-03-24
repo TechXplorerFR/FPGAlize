@@ -32,31 +32,52 @@ function ExamplesDrawer({
 }: ExamplesDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Handler to close drawer after handling example click
   const handleExampleClick = (index: number) => {
-    if (examples.length > 0 && examples[index]) {
-      // Pass the tab data as before
-      if (setTabs)
-        setTabs((prev) => [
-          ...prev,
-          {
-            id: examples[index].originalVerilogFileInformation.name,
-            name: examples[index].originalVerilogFileInformation.name,
-            content: examples[index].originalVerilogFile || "",
-            language: "verilog",
-          },
-        ]);
-
-      // Set the active tab if provided
-      if (setActiveTabId) {
-        setActiveTabId(examples[index].originalVerilogFileInformation.name);
-      } else {
-        toast.error("Failed to load example");
-      }
-    } else {
-      toast.error("Failed to load example");
+    const example = examples[index];
+    
+    if (!example || !example.originalVerilogFileInformation) {
+      toast.error("Failed to load example: Invalid example data");
+      return;
     }
-    // Close the drawer
+    
+    // Get the existing tabs
+    setTabs((prevTabs) => {
+      // Check if tab already exists
+      const existingTabIndex = prevTabs.findIndex(
+        (tab) => tab.name === example.originalVerilogFileInformation.name
+      );
+      
+      if (existingTabIndex !== -1) {
+        // Tab exists, just activate it
+        if (setActiveTabId) {
+          setActiveTabId(prevTabs[existingTabIndex].id);
+        }
+        return prevTabs;
+      } else {
+        try {
+          // Create a new tab with a unique ID
+          const newId = crypto.randomUUID();
+          const newTab: Tab = {
+            id: newId,
+            name: example.originalVerilogFileInformation.name,
+            type: "verilog",
+            example: example,
+          };
+          
+          // Add the new tab and set it as active
+          if (setActiveTabId) {
+            setActiveTabId(newId);
+          }
+          toast.success(`Loaded ${newTab.name}`);
+          return [...prevTabs, newTab];
+        } catch (error) {
+          toast.error(`Failed to create tab: ${error instanceof Error ? error.message : String(error)}`);
+          return prevTabs;
+        }
+      }
+    });
+    
+    // Close the drawer after selection
     setIsOpen(false);
   };
 
