@@ -33,8 +33,10 @@ export type Tab = {
  */
 export type Element = {
   id: number;
+  name: string;
   x: number;
   y: number;
+  icon: string;
   isDragging: boolean;
   connectedTo: number[];
 };

@@ -21,9 +21,11 @@ function debounce<T extends (...args: any[]) => any>(
 export default function SimulationCanvas({
   activeTabId,
   examples,
+  playing
 }: {
   activeTabId: string;
   examples: Example[];
+  playing: boolean;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,8 +55,6 @@ export default function SimulationCanvas({
   const initialCanvasState: CanvasState = {
     elements,
     elementPositions: new Map(elements.map(el => [el.id.toString(), { x: el.x, y: el.y }])),
-    panOffset,
-    zoomLevel
   };
   
   const { pushState, undo, redo, reset, canUndo, canRedo } = useCanvasHistory(initialCanvasState);
@@ -71,8 +71,6 @@ export default function SimulationCanvas({
         const currentState: CanvasState = {
           elements,
           elementPositions: currentElementPositions,
-          panOffset,
-          zoomLevel
         };
         
         pushState(currentState);
@@ -80,7 +78,7 @@ export default function SimulationCanvas({
         setElementsModified(false);
       }
     }, 500), // 500ms debounce time
-    [elements, panOffset, zoomLevel, pushState, elementsModified]
+    [elements, pushState, elementsModified]
   );
 
   // Make sure state is pushed to history after relevant operations
@@ -93,8 +91,6 @@ export default function SimulationCanvas({
     const prevState = undo();
     if (prevState) {
       setElements(prevState.elements);
-      setPanOffset(prevState.panOffset);
-      setZoomLevel(prevState.zoomLevel);
     }
   }, [undo]);
 
@@ -103,8 +99,6 @@ export default function SimulationCanvas({
     const nextState = redo();
     if (nextState) {
       setElements(nextState.elements);
-      setPanOffset(nextState.panOffset);
-      setZoomLevel(nextState.zoomLevel);
     }
   }, [redo]);
 
@@ -112,8 +106,6 @@ export default function SimulationCanvas({
   const handleReset = useCallback(() => {
     const initialState = reset();
     setElements(initialState.elements);
-    setPanOffset(initialState.panOffset);
-    setZoomLevel(initialState.zoomLevel);
   }, [reset]);
 
   // Memoize drawCanvas to prevent recreation on each render
@@ -193,14 +185,14 @@ export default function SimulationCanvas({
 
     // Draw elements
     elements.forEach((el) => {
-      ctx.fillStyle = "red";
+      ctx.fillStyle = "lightcoral";
       ctx.fillRect(el.x, el.y, 50, 50);
 
-      ctx.fillStyle = "white";
+      ctx.fillStyle = "black";
       ctx.font = `${20 / zoomLevel}px Arial`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(el.id.toString(), el.x + 25, el.y + 25);
+      ctx.fillText(el.name, el.x + 25, el.y + 25);
     });
 
     ctx.restore();
@@ -266,9 +258,9 @@ export default function SimulationCanvas({
 
         // Move the impulses along their respective paths
         Object.entries(prev).forEach(([key, position]) => {
-          const newPosition = position + 0.05; // Move the impulse along the wire
+          const newPosition =  position + 0.05; // Move the impulse along the wire
           if (newPosition < 1) {
-            newImpulses[key] = newPosition;
+            newImpulses[key] = playing ? newPosition : position;
           }
         });
 
@@ -287,7 +279,7 @@ export default function SimulationCanvas({
     }, 50); // impulses speed
 
     return () => clearInterval(interval);
-  }, [elements]); // This dependency ensures it reruns if elements change
+  }, [elements, playing]);
 
   const handleMouseDown = (event: React.MouseEvent) => {
     const { offsetX, offsetY, button } = event.nativeEvent;

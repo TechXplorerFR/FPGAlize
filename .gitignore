@@ -38,3 +38,4 @@ yarn-error.log
 modelsim.ini
 
 coverage
+.vercel

@@ -10,6 +10,7 @@ interface TabDisplayerProps {
   examples: Example[];
   tabs: Tab[];
   isLoading: boolean;
+  playing: boolean;
 }
 
 export default function TabDisplayer({
@@ -17,7 +18,8 @@ export default function TabDisplayer({
   activeTabId,
   examples,
   tabs,
-  isLoading
+  isLoading,
+  playing
 }: TabDisplayerProps) {
   const [editorWidth, setEditorWidth] = useState<number>(50);
 
@@ -53,7 +55,7 @@ export default function TabDisplayer({
       {/* Conditional rendering */}
       {activeView === "Code" && <CodeEditor activeTabId={activeTabId} examples={examples} tabs={tabs} />}
       {activeView === "Simulation" && (
-        <SimulationCanvas activeTabId={activeTabId} examples={examples} />
+        <SimulationCanvas activeTabId={activeTabId} examples={examples} playing={playing} />
       )}
       {activeView === "Mix" && (
         <div style={{ display: "flex", width: "100%", height: "88vh" }}>
@@ -78,7 +80,7 @@ export default function TabDisplayer({
               overflow: "hidden",
             }}
           >
-            <SimulationCanvas activeTabId={activeTabId} examples={examples} />
+            <SimulationCanvas activeTabId={activeTabId} examples={examples} playing={playing} />
           </div>
         </div>
       )}

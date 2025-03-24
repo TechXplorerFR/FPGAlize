@@ -4,8 +4,6 @@ import { type Element } from "@/lib/types/types";
 export interface CanvasState {
   elements: Element[];
   elementPositions: Map<string, { x: number, y: number }>;
-  panOffset: { x: number, y: number };
-  zoomLevel: number;
 }
 
 class CanvasHistory {
@@ -61,8 +59,6 @@ class CanvasHistory {
     return {
       elements: [...state.elements],
       elementPositions: new Map(state.elementPositions),
-      panOffset: { ...state.panOffset },
-      zoomLevel: state.zoomLevel
     };
   }
 }
