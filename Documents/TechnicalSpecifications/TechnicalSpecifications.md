@@ -3,7 +3,20 @@
 # Technical Specification  
 **Project:** Web FPGA Signal Propagation Simulator  
 **Version:** 1.3  
-**Date:** 24/03/2025
+**Date:** 2025-03-24
+
+Document Revision History
+
+| Version | Date       | Author              | Summary of Changes                                               |
+|---------|------------|---------------------|------------------------------------------------------------------|
+| 0.1     | 2025-02-26 | Abderrazaq Makran   | Initial structure and outline created                            |
+| 0.2     | 2025-03-01 | Abderrazaq Makran   | Added system overview, architecture diagram, and tech stack      |
+| 0.3     | 2025-03-05 | Abderrazaq Makran   | Drafted functional requirements and FPGA visualization model     |
+| 0.4     | 2025-03-10 | Abderrazaq Makran   | Integrated simulation engine specs and interaction flows         |
+| 1.0     | 2025-03-17 | Abderrazaq Makran   | First complete version; added error handling and UI wireframes   |
+| 1.2     | 2025-03-22 | Abderrazaq Makran   | Refactored structure, improved code guidelines and diagrams      |
+| 1.3     | 2025-03-24 | Abderrazaq Makran   | Final version with appendices, glossary, and performance details |
+
 
 </div>
 
