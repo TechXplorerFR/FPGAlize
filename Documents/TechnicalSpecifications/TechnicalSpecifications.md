@@ -61,7 +61,11 @@
     - [10.3. Performance Testing](#103-performance-testing)
     - [10.4. User Acceptance Testing](#104-user-acceptance-testing)
   - [11. Security Considerations](#11-security-considerations)
-  - [12. Conclusion](#12-conclusion)
+  - [12. Appendices](#12-appendices)
+    - [12.1 Typography \& Styling Guidelines](#121-typography--styling-guidelines)
+    - [12.2 Documentation Guidelines](#122-documentation-guidelines)
+    - [12.3 Code Style Guidelines](#123-code-style-guidelines)
+  - [13. Conclusion](#13-conclusion)
 
 ---
 
@@ -817,7 +821,53 @@ Text Table:
 
 ---
 
-## 12. Conclusion
+## 12. Appendices
+
+### 12.1 Typography & Styling Guidelines
+
+- **Fonts:** Use sans-serif fonts such as Inter, Roboto, or Helvetica for readability.
+- **Headings:**  
+  - Use `#` (H1) only for the main document title.  
+  - Use `##` (H2) for major sections, and `###` (H3) for subsections.
+- **Code Blocks:**  
+  - Use backticks (` ``` `) for code snippets with proper language tagging (e.g., `tsx`, `ts`, `json`).
+- **Tables:**  
+  - Alternate row colors and consistent column widths for readability.
+- **Diagrams:**  
+  - Diagrams should be vector-based or SVG for scalability, with clear labels and color-coded components.
+
+---
+
+### 12.2 Documentation Guidelines
+
+- **File Naming Convention:**  
+  - Use `PascalCase` or `kebab-case` for documentation files. Example: `Technical-Specification-v1.3.md`
+- **Content Style:**  
+  - Use concise and objective language.  
+  - Prefer active voice (“The user clicks…” vs. “The button is clicked…”).  
+  - Maintain consistent terminology for key concepts like “BEL”, “canvas”, “example”.
+- **Versioning:**  
+  - Maintain a version log in the header or separate `CHANGELOG.md` file with dates and author notes.
+
+---
+
+### 12.3 Code Style Guidelines
+
+- **Languages:** TypeScript for both frontend and backend.
+- **Conventions:**  
+  - Use `camelCase` for variables and functions (`loadExample`, `uploadFile`)  
+  - Use `PascalCase` for components (`SimulationCanvas.tsx`, `ExampleDrawer.tsx`)  
+  - Constants in `UPPER_SNAKE_CASE`
+- **Formatting:**  
+  - Enforce formatting with Prettier (`.prettierrc`).  
+  - Use ESLint (`.eslintrc`) to maintain code quality.
+- **Comments & Docstrings:**  
+  - Use JSDoc for function documentation.
+  - Comment complex logic or non-obvious code decisions.
+
+---
+
+## 13. Conclusion
 
 This Technical Specification outlines a comprehensive, local-first FPGA signal propagation simulator designed for educational use. Teachers can select from preloaded FPGA examples or upload custom `.v` and `.sdf` files, which are processed into a JSON model and rendered on an HTML Canvas. The solution features an integrated code editor, robust simulation controls, detailed error handling, and efficient performance optimizations. Developed in TypeScript and deployable locally via Vite and Express.js—with optional static hosting on Vercel—the simulator effectively bridges FPGA theory with practical, visual learning while ensuring data privacy.
 
