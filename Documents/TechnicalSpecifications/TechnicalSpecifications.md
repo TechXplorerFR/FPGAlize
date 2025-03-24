@@ -841,13 +841,13 @@ Text Table:
 ### 12.2 Documentation Guidelines
 
 - **File Naming Convention:**  
-  - Use `PascalCase` or `kebab-case` for documentation files. Example: `Technical-Specification-v1.3.md`
+  - Use `PascalCase` for documentation files. Example: `TechnicalSpecification.md`
 - **Content Style:**  
   - Use concise and objective language.  
   - Prefer active voice (“The user clicks…” vs. “The button is clicked…”).  
   - Maintain consistent terminology for key concepts like “BEL”, “canvas”, “example”.
 - **Versioning:**  
-  - Maintain a version log in the header or separate `CHANGELOG.md` file with dates and author notes.
+  - Maintain a version log in the header with dates and author notes.
 
 ---
 
