@@ -54,7 +54,6 @@
     - [8.2. File Processing Flow](#82-file-processing-flow)
     - [8.3. User Interaction Flow](#83-user-interaction-flow)
     - [8.4. API Endpoints](#84-api-endpoints)
-    - [8.5. JSON Model Structure](#85-json-model-structure)
   - [9. Dependencies](#9-dependencies)
   - [10. Testing \& Validation](#10-testing--validation)
     - [10.1. Unit Testing](#101-unit-testing)
@@ -512,11 +511,6 @@ A typical MVP screen includes:
 - **Right Panel:** FPGA Visualization (HTML Canvas rendering)  
 - **Footer:** Zoom controls, status/error messages
 
-- **Header:** Contains navigation options (e.g., "Code", "Simulation") and control buttons (Play, Pause, Step, Speed, Export).
-- **Left Panel:** Displays the code editor for Verilog, showing preloaded examples or uploaded files.
-- **Right Panel:** Renders the FPGA layout on HTML Canvas.
-- **Footer:** Provides additional controls (zoom, pan) and displays status messages.
-
 ### 4.2. Interaction Flows
 1. **Loading an Example:**  
    - User selects a preloaded example.
@@ -699,26 +693,30 @@ npm run build
 
 ### 8.1. System Architecture Diagram
 ```
-[Web Browser UI]
-       │
-       ▼
-[React Application (Vite)]
-       │
-       ▼
-[Express.js Backend (Node.js)]
-       │
-       ▼
-[File Parser (.v, .sdf)]
+graph TD
+  A["Web Browser UI"] --> B["React Application (Vite)"]
+  B --> C["Express.js Backend (Node.js)"]
+  C --> D["File Parsers (.v, .sdf)"]
 ```
 
 ### 8.2. File Processing Flow
 ```
-[Upload Files] → [Validate Format] → [Parse Content] → [Generate JSON Model] → [Return JSON to Frontend]
+graph LR
+    A[Upload Files] --> B[Validate Format]
+    B --> C[Parse Content]
+    C --> D[Generate JSON Model]
+    D --> E[Return JSON to Frontend]
+
 ```
 
 ### 8.3. User Interaction Flow
 ```
-[Select Example / Upload Files] → [Receive Processing Feedback] → [Display Code in Editor] → [Render FPGA Layout on Canvas] → [Control Simulation (Play, Pause, Step, Speed)]
+graph TD
+  A["Select Example / Upload Files"] --> B["Receive Processing Feedback"]
+  B --> C["Display Code in Editor"]
+  C --> D["Render FPGA Layout on Canvas"]
+  D --> E["Control Simulation (Play, Pause, Step, Speed)"]
+
 ```
 
 ### 8.4. API Endpoints
@@ -730,49 +728,6 @@ Text Table:
 | /api/status/:id      | GET    | Check processing progress        | -                    | Status information      |
 | /api/examples        | GET    | List available example files     | -                    | List of examples        |
 | /api/example/:name   | GET    | Retrieve specific example model  | -                    | JSON model data         |
-
-### 8.5. JSON Model Structure
-```
-[metadata] → [components] → [signals]
-```
-Example Structure:
-```
-{
-  "metadata": {
-    "name": "example_design",
-    "components": 42,
-    "signals": 156,
-    "timeUnits": "ns",
-    "totalDuration": 100
-  },
-  "components": [
-    {
-      "id": "comp1",
-      "type": "FF",
-      "x": 10,
-      "y": 20,
-      "width": 5,
-      "height": 5,
-      "connections": ["sig1", "sig2"]
-    }
-  ],
-  "signals": [
-    {
-      "id": "sig1",
-      "source": "comp1",
-      "target": "comp2",
-      "path": [[10, 20], [15, 20], [15, 30]],
-      "timing": [
-        {"time": 0, "value": 0},
-        {"time": 5, "value": 1},
-        {"time": 10, "value": 0}
-      ]
-    }
-  ]
-}
-```
-
----
 
 ## 9. Dependencies
 
