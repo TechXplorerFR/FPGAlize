@@ -56,17 +56,15 @@ function ExamplesDrawer({
       } else {
         try {
           // Create a new tab with a unique ID
-          const newId = crypto.randomUUID();
           const newTab: Tab = {
-            id: newId,
+            id: example.originalVerilogFileInformation.name,
             name: example.originalVerilogFileInformation.name,
-            type: "verilog",
             example: example,
           };
           
           // Add the new tab and set it as active
           if (setActiveTabId) {
-            setActiveTabId(newId);
+            setActiveTabId(example.originalVerilogFileInformation.name);
           }
           toast.success(`Loaded ${newTab.name}`);
           return [...prevTabs, newTab];
