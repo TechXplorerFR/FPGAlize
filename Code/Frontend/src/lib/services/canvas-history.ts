@@ -6,7 +6,7 @@ export interface CanvasState {
   elementPositions: Map<string, { x: number, y: number }>;
 }
 
-class CanvasHistory {
+export class CanvasHistory {
   private history: CanvasState[] = [];
   private currentIndex: number = -1;
   private initialState: CanvasState;
@@ -44,6 +44,8 @@ class CanvasHistory {
   }
 
   reset(): CanvasState {
+    this.history = [];
+    this.currentIndex = -1;
     return this.cloneState(this.initialState);
   }
 
@@ -57,7 +59,7 @@ class CanvasHistory {
 
   private cloneState(state: CanvasState): CanvasState {
     return {
-      elements: [...state.elements],
+      elements: state.elements.map(el => ({ ...el })), 
       elementPositions: new Map(state.elementPositions),
     };
   }
