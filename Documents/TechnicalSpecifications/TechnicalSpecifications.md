@@ -783,7 +783,7 @@ npm run build
 ## 8. Diagrams & Flowcharts
 
 ### 8.1. System Architecture Diagram
-```
+```mermaid
 graph TD
   A["Web Browser UI"] --> B["React Application (Vite)"]
   B --> C["Express.js Backend (Node.js)"]
@@ -791,7 +791,7 @@ graph TD
 ```
 
 ### 8.2. File Processing Flow
-```
+```mermaid
 graph LR
     A[Upload Files] --> B[Validate Format]
     B --> C[Parse Content]
@@ -801,7 +801,7 @@ graph LR
 ```
 
 ### 8.3. User Interaction Flow
-```
+```mermaid
 graph TD
   A["Select Example / Upload Files"] --> B["Receive Processing Feedback"]
   B --> C["Display Code in Editor"]
