@@ -2,8 +2,22 @@
 
 # Technical Specification  
 **Project:** Web FPGA Signal Propagation Simulator  
-**Version:** 1.2  
-**Date:** 23/03/2025
+**Version:** 1.4
+**Date:** 2025-03-25
+
+Document Revision History
+
+| Version | Date       | Author              | Summary of Changes                                               |
+|---------|------------|---------------------|------------------------------------------------------------------|
+| 0.1     | 2025-02-26 | Abderrazaq Makran   | Initial structure and outline created                            |
+| 0.2     | 2025-03-01 | Abderrazaq Makran   | Added system overview, architecture diagram, and tech stack      |
+| 0.3     | 2025-03-05 | Abderrazaq Makran   | Drafted functional requirements and FPGA visualization model     |
+| 0.4     | 2025-03-10 | Abderrazaq Makran   | Integrated simulation engine specs and interaction flows         |
+| 1.0     | 2025-03-17 | Abderrazaq Makran   | First complete version; added error handling and UI wireframes   |
+| 1.2     | 2025-03-22 | Abderrazaq Makran   | Refactored structure, improved code guidelines and diagrams      |
+| 1.3     | 2025-03-24 | Abderrazaq Makran   | Pre-final version |
+| 1.4     | 2025-03-25 | Abderrazaq Makran   | Final version with appendices, glossary, and performance details |
+
 
 </div>
 
@@ -19,6 +33,9 @@
     - [1.3. User Experience Goals](#13-user-experience-goals)
     - [1.4. Educational Impact](#14-educational-impact)
     - [1.5. Glossary](#15-glossary)
+    - [1.6. System Requirements](#16-system-requirements)
+      - [1.6.1. Browser Compatibility](#161-browser-compatibility)
+      - [1.6.2. Error Recovery \& Data Persistence](#162-error-recovery--data-persistence)
   - [2. System Overview](#2-system-overview)
     - [2.1. Technology Stack](#21-technology-stack)
     - [2.2. Architecture](#22-architecture)
@@ -27,6 +44,10 @@
     - [2.4. Communication Flow](#24-communication-flow)
     - [2.5. Deployment Strategy](#25-deployment-strategy)
     - [2.6. Project Structure](#26-project-structure)
+    - [2.7 Appendices](#27-appendices)
+      - [2.7.1 Typography \& Styling Guidelines](#271-typography--styling-guidelines)
+      - [2.7.2 Documentation Guidelines](#272-documentation-guidelines)
+      - [2.7.3 Code Style Guidelines](#273-code-style-guidelines)
   - [3. Functional Requirements](#3-functional-requirements)
     - [3.1. File Management](#31-file-management)
     - [3.2. Code Editor \& Simulation Controls](#32-code-editor--simulation-controls)
@@ -54,7 +75,6 @@
     - [8.2. File Processing Flow](#82-file-processing-flow)
     - [8.3. User Interaction Flow](#83-user-interaction-flow)
     - [8.4. API Endpoints](#84-api-endpoints)
-    - [8.5. JSON Model Structure](#85-json-model-structure)
   - [9. Dependencies](#9-dependencies)
   - [10. Testing \& Validation](#10-testing--validation)
     - [10.1. Unit Testing](#101-unit-testing)
@@ -117,6 +137,35 @@ The simulator bridges theory and practice by:
 | **Verilog**      | A hardware description language used to design and simulate digital circuits.                    |
 | **Vite**         | Modern frontend build tool providing faster development experience through native ES modules.    |
 
+### 1.6. System Requirements
+
+#### 1.6.1. Browser Compatibility
+| Browser            | Minimum Version | Notes                                    |
+|-------------------|-----------------|------------------------------------------|
+| Chrome            | 88+            | Recommended for best performance         |
+| Firefox           | 85+            | Full WebGL 2.0 support required          |
+| Safari            | 14+            | Limited canvas performance on iOS        |
+| Edge (Chromium)   | 88+            | Full feature support                     |
+
+**WebGL Requirements:**
+- WebGL 2.0 support required for canvas rendering
+- Hardware acceleration recommended
+- Minimum 2GB video memory for large FPGA layouts
+
+#### 1.6.2. Error Recovery & Data Persistence
+
+| Error Scenario           | Recovery Procedure                          | Data Persistence                          |
+|-------------------------|--------------------------------------------|--------------------------------------------|
+| Browser Crash           | Auto-save to IndexedDB every 30 seconds    | Restore last saved state on reload         |
+| Network Failure         | Queue operations for retry                 | Cache parsed models locally                |
+| File Corruption         | Maintain backup of last valid state        | Version history of last 5 changes          |
+| Memory Exhaustion       | Clear non-essential caches                 | Persist critical simulation data           |
+
+**Recovery Features:**
+- Automatic state saving during simulation
+- Manual save points for critical operations
+- Background sync for unsaved changes
+- Conflict resolution for multi-tab editing
 ---
 
 ## 2. System Overview
@@ -126,7 +175,6 @@ The simulator bridges theory and practice by:
 - React + Vite (TypeScript)
 - TailwindCSS
 - HTML Canvas (for 2D FPGA layout rendering)
-- Socket.io (optional for real-time updates)
 
 **Backend:**
 - Node.js + Express.js (TypeScript)
@@ -457,6 +505,52 @@ Project Root
 - File upload handling via HTTP endpoints
 - JSON model retrieval for visualization
 
+### 2.7 Appendices
+
+#### 2.7.1 Typography & Styling Guidelines
+
+- **Fonts:** Use sans-serif fonts such as Inter, Roboto, or Helvetica for readability.
+- **Headings:**  
+  - Use `#` (H1) only for the main document title.  
+  - Use `##` (H2) for major sections, and `###` (H3) for subsections.
+- **Code Blocks:**  
+  - Use backticks (` ``` `) for code snippets with proper language tagging (e.g., `tsx`, `ts`, `json`).
+- **Tables:**  
+  - Alternate row colors and consistent column widths for readability.
+- **Diagrams:**  
+  - Diagrams should be vector-based or SVG for scalability, with clear labels and color-coded components.
+
+---
+
+#### 2.7.2 Documentation Guidelines
+
+- **File Naming Convention:**  
+  - Use `PascalCase` for documentation files. Example: `TechnicalSpecification.md`
+- **Content Style:**  
+  - Use concise and objective language.  
+  - Prefer active voice (“The user clicks…” vs. “The button is clicked…”).  
+  - Maintain consistent terminology for key concepts like “BEL”, “canvas”, “example”.
+- **Versioning:**  
+  - Maintain a version log in the header with dates and author notes.
+
+---
+
+#### 2.7.3 Code Style Guidelines
+
+- **Languages:** TypeScript for both frontend and backend.
+- **Conventions:**  
+  - Use `camelCase` for variables and functions (`loadExample`, `uploadFile`)  
+  - Use `PascalCase` for components (`SimulationCanvas.tsx`, `ExampleDrawer.tsx`)  
+  - Constants in `UPPER_SNAKE_CASE`
+- **Formatting:**  
+  - Enforce formatting with Prettier (`.prettierrc`).  
+  - Use ESLint (`.eslintrc`) to maintain code quality.
+- **Comments & Docstrings:**  
+  - Use JSDoc for function documentation.
+  - Comment complex logic or non-obvious code decisions.
+
+---
+
 ## 3. Functional Requirements
 
 ### 3.1. File Management
@@ -470,7 +564,7 @@ Project Root
 ### 3.2. Code Editor & Simulation Controls
 - **Code Editor:**  
   - Integrated Monaco editor with Verilog syntax highlighting.
-  - Supports real-time or on-demand compilation to update the FPGA visualization.
+  - Supports real-time update of the FPGA visualization.
   - Displays line numbers and syntax error highlighting.
 - **Simulation Controls:**  
   - **Play:** Start simulation with continuous frame updates.
@@ -478,10 +572,7 @@ Project Root
   - **Step:** Advance simulation by one time unit (asynchronous operation).
   - **Speed:** Adjust playback rate (x0.5, x1, x2, x4) affecting the timing calculations.
   - **Reset:** Return the simulation to its initial state (all signals and components).
-  - **Processing Mode:** Toggle between synchronous (blocking UI) and asynchronous (background) simulation processing.
-  - Provides clear visual feedback during simulation execution.
-  - Shows toast notifications for simulation events and errors.
-
+  - **Processing Mode**: Toggle between synchronous (blocking UI) and asynchronous (background) simulation processing, providing clear visual feedback during simulation execution.
 ### 3.3. FPGA Visualization
 - **2D Layout Rendering:**  
   - Renders FPGA components (BELs) and signal connections on HTML Canvas.
@@ -511,11 +602,6 @@ A typical MVP screen includes:
 - **Left Panel:** Code Editor (Verilog display, error logs)  
 - **Right Panel:** FPGA Visualization (HTML Canvas rendering)  
 - **Footer:** Zoom controls, status/error messages
-
-- **Header:** Contains navigation options (e.g., "Code", "Simulation") and control buttons (Play, Pause, Step, Speed, Export).
-- **Left Panel:** Displays the code editor for Verilog, showing preloaded examples or uploaded files.
-- **Right Panel:** Renders the FPGA layout on HTML Canvas.
-- **Footer:** Provides additional controls (zoom, pan) and displays status messages.
 
 ### 4.2. Interaction Flows
 1. **Loading an Example:**  
@@ -558,7 +644,6 @@ A typical MVP screen includes:
 | | 413 | `FILE_SIZE_EXCEEDED` | ```{"error":true,"code":"FILE_SIZE_EXCEEDED","message":"File size exceeds 50MB limit","details":"Maximum allowed size is 50MB, received 68MB","status":413}``` |
 | | 415 | `UNSUPPORTED_FORMAT` | ```{"error":true,"code":"UNSUPPORTED_FORMAT","message":"Unsupported file format","details":"Only .v and .sdf files are supported","status":415}``` |
 | **Resource Access** | 404 | `EXAMPLE_NOT_FOUND` | ```{"error":true,"code":"EXAMPLE_NOT_FOUND","message":"Example '2ffs_VTR' not found","details":"Verify example name or browse available examples","status":404}``` |
-| | 403 | `ACCESS_DENIED` | ```{"error":true,"code":"ACCESS_DENIED","message":"Access denied to requested resource","details":"Check permissions or authentication","status":403}``` |
 | **Data Validation** | 422 | `VALIDATION_ERROR` | ```{"error":true,"code":"VALIDATION_ERROR","message":"Invalid simulation parameters","details":"Time step must be positive integer","status":422}``` |
 | **Server Errors** | 500 | `SERVER_ERROR` | ```{"error":true,"code":"SERVER_ERROR","message":"Internal server error occurred","details":"Error reference: #E12345","status":500}``` |
 | | 503 | `SERVICE_UNAVAILABLE` | ```{"error":true,"code":"SERVICE_UNAVAILABLE","message":"Service temporarily unavailable","details":"Try again later","status":503}``` |
@@ -635,7 +720,7 @@ npm run dev
    - Cache JSON models and user preferences in localStorage.
 2. **Data Lifecycle:**  
    - Provide options to clear temporary files; auto-cleanup of unused files.
-   - Offer export/backup functionality.
+   - Offer export functionality.
 3. **Privacy:**  
    - All processing occurs locally; no data is transmitted externally.
 
@@ -698,27 +783,31 @@ npm run build
 ## 8. Diagrams & Flowcharts
 
 ### 8.1. System Architecture Diagram
-```
-[Web Browser UI]
-       │
-       ▼
-[React Application (Vite)]
-       │
-       ▼
-[Express.js Backend (Node.js)]
-       │
-       ▼
-[File Parser (.v, .sdf)]
+```mermaid
+graph TD
+  A["Web Browser UI"] --> B["React Application (Vite)"]
+  B --> C["Express.js Backend (Node.js)"]
+  C --> D["File Parsers (.v, .sdf)"]
 ```
 
 ### 8.2. File Processing Flow
-```
-[Upload Files] → [Validate Format] → [Parse Content] → [Generate JSON Model] → [Return JSON to Frontend]
+```mermaid
+graph LR
+    A[Upload Files] --> B[Validate Format]
+    B --> C[Parse Content]
+    C --> D[Generate JSON Model]
+    D --> E[Return JSON to Frontend]
+
 ```
 
 ### 8.3. User Interaction Flow
-```
-[Select Example / Upload Files] → [Receive Processing Feedback] → [Display Code in Editor] → [Render FPGA Layout on Canvas] → [Control Simulation (Play, Pause, Step, Speed)]
+```mermaid
+graph TD
+  A["Select Example / Upload Files"] --> B["Receive Processing Feedback"]
+  B --> C["Display Code in Editor"]
+  C --> D["Render FPGA Layout on Canvas"]
+  D --> E["Control Simulation (Play, Pause, Step, Speed)"]
+
 ```
 
 ### 8.4. API Endpoints
@@ -730,49 +819,6 @@ Text Table:
 | /api/status/:id      | GET    | Check processing progress        | -                    | Status information      |
 | /api/examples        | GET    | List available example files     | -                    | List of examples        |
 | /api/example/:name   | GET    | Retrieve specific example model  | -                    | JSON model data         |
-
-### 8.5. JSON Model Structure
-```
-[metadata] → [components] → [signals]
-```
-Example Structure:
-```
-{
-  "metadata": {
-    "name": "example_design",
-    "components": 42,
-    "signals": 156,
-    "timeUnits": "ns",
-    "totalDuration": 100
-  },
-  "components": [
-    {
-      "id": "comp1",
-      "type": "FF",
-      "x": 10,
-      "y": 20,
-      "width": 5,
-      "height": 5,
-      "connections": ["sig1", "sig2"]
-    }
-  ],
-  "signals": [
-    {
-      "id": "sig1",
-      "source": "comp1",
-      "target": "comp2",
-      "path": [[10, 20], [15, 20], [15, 30]],
-      "timing": [
-        {"time": 0, "value": 0},
-        {"time": 5, "value": 1},
-        {"time": 10, "value": 0}
-      ]
-    }
-  ]
-}
-```
-
----
 
 ## 9. Dependencies
 
@@ -861,6 +907,7 @@ Example Structure:
 - Secure storage of user files
 
 ---
+
 
 ## 12. Conclusion
 
