@@ -2,8 +2,8 @@
 
 # Technical Specification  
 **Project:** Web FPGA Signal Propagation Simulator  
-**Version:** 1.3  
-**Date:** 2025-03-24
+**Version:** 1.4
+**Date:** 2025-03-25
 
 Document Revision History
 
@@ -15,7 +15,8 @@ Document Revision History
 | 0.4     | 2025-03-10 | Abderrazaq Makran   | Integrated simulation engine specs and interaction flows         |
 | 1.0     | 2025-03-17 | Abderrazaq Makran   | First complete version; added error handling and UI wireframes   |
 | 1.2     | 2025-03-22 | Abderrazaq Makran   | Refactored structure, improved code guidelines and diagrams      |
-| 1.3     | 2025-03-24 | Abderrazaq Makran   | Final version with appendices, glossary, and performance details |
+| 1.3     | 2025-03-24 | Abderrazaq Makran   | Pre-final version |
+| 1.4     | 2025-03-25 | Abderrazaq Makran   | Final version with appendices, glossary, and performance details |
 
 
 </div>
@@ -40,6 +41,10 @@ Document Revision History
     - [2.4. Communication Flow](#24-communication-flow)
     - [2.5. Deployment Strategy](#25-deployment-strategy)
     - [2.6. Project Structure](#26-project-structure)
+    - [2.7 Appendices](#27-appendices)
+      - [2.7.1 Typography \& Styling Guidelines](#271-typography--styling-guidelines)
+      - [2.7.2 Documentation Guidelines](#272-documentation-guidelines)
+      - [2.8.3 Code Style Guidelines](#283-code-style-guidelines)
   - [3. Functional Requirements](#3-functional-requirements)
     - [3.1. File Management](#31-file-management)
     - [3.2. Code Editor \& Simulation Controls](#32-code-editor--simulation-controls)
@@ -74,11 +79,7 @@ Document Revision History
     - [10.3. Performance Testing](#103-performance-testing)
     - [10.4. User Acceptance Testing](#104-user-acceptance-testing)
   - [11. Security Considerations](#11-security-considerations)
-  - [12. Appendices](#12-appendices)
-    - [12.1 Typography \& Styling Guidelines](#121-typography--styling-guidelines)
-    - [12.2 Documentation Guidelines](#122-documentation-guidelines)
-    - [12.3 Code Style Guidelines](#123-code-style-guidelines)
-  - [13. Conclusion](#13-conclusion)
+  - [12. Conclusion](#12-conclusion)
 
 ---
 
@@ -473,6 +474,52 @@ Project Root
 - File upload handling via HTTP endpoints
 - JSON model retrieval for visualization
 
+### 2.7 Appendices
+
+#### 2.7.1 Typography & Styling Guidelines
+
+- **Fonts:** Use sans-serif fonts such as Inter, Roboto, or Helvetica for readability.
+- **Headings:**  
+  - Use `#` (H1) only for the main document title.  
+  - Use `##` (H2) for major sections, and `###` (H3) for subsections.
+- **Code Blocks:**  
+  - Use backticks (` ``` `) for code snippets with proper language tagging (e.g., `tsx`, `ts`, `json`).
+- **Tables:**  
+  - Alternate row colors and consistent column widths for readability.
+- **Diagrams:**  
+  - Diagrams should be vector-based or SVG for scalability, with clear labels and color-coded components.
+
+---
+
+#### 2.7.2 Documentation Guidelines
+
+- **File Naming Convention:**  
+  - Use `PascalCase` for documentation files. Example: `TechnicalSpecification.md`
+- **Content Style:**  
+  - Use concise and objective language.  
+  - Prefer active voice (“The user clicks…” vs. “The button is clicked…”).  
+  - Maintain consistent terminology for key concepts like “BEL”, “canvas”, “example”.
+- **Versioning:**  
+  - Maintain a version log in the header with dates and author notes.
+
+---
+
+#### 2.8.3 Code Style Guidelines
+
+- **Languages:** TypeScript for both frontend and backend.
+- **Conventions:**  
+  - Use `camelCase` for variables and functions (`loadExample`, `uploadFile`)  
+  - Use `PascalCase` for components (`SimulationCanvas.tsx`, `ExampleDrawer.tsx`)  
+  - Constants in `UPPER_SNAKE_CASE`
+- **Formatting:**  
+  - Enforce formatting with Prettier (`.prettierrc`).  
+  - Use ESLint (`.eslintrc`) to maintain code quality.
+- **Comments & Docstrings:**  
+  - Use JSDoc for function documentation.
+  - Comment complex logic or non-obvious code decisions.
+
+---
+
 ## 3. Functional Requirements
 
 ### 3.1. File Management
@@ -486,7 +533,7 @@ Project Root
 ### 3.2. Code Editor & Simulation Controls
 - **Code Editor:**  
   - Integrated Monaco editor with Verilog syntax highlighting.
-  - Supports real-time or on-demand compilation to update the FPGA visualization.
+  - Supports real-time update of the FPGA visualization.
   - Displays line numbers and syntax error highlighting.
 - **Simulation Controls:**  
   - **Play:** Start simulation with continuous frame updates.
@@ -494,9 +541,8 @@ Project Root
   - **Step:** Advance simulation by one time unit (asynchronous operation).
   - **Speed:** Adjust playback rate (x0.5, x1, x2, x4) affecting the timing calculations.
   - **Reset:** Return the simulation to its initial state (all signals and components).
-  - **Processing Mode:** Toggle between synchronous (blocking UI) and asynchronous (background) simulation processing.
-  - Provides clear visual feedback during simulation execution.
-  - Shows toast notifications for simulation events and errors.
+  - **Processing Mode:** Toggle between synchronous (blocking UI) and asynchronous (background) simulation processing. 
+  Provides clear visual feedback during simulation execution. Shows toast notifications for simulation events and errors.
 
 ### 3.3. FPGA Visualization
 - **2D Layout Rendering:**  
@@ -569,7 +615,6 @@ A typical MVP screen includes:
 | | 413 | `FILE_SIZE_EXCEEDED` | ```{"error":true,"code":"FILE_SIZE_EXCEEDED","message":"File size exceeds 50MB limit","details":"Maximum allowed size is 50MB, received 68MB","status":413}``` |
 | | 415 | `UNSUPPORTED_FORMAT` | ```{"error":true,"code":"UNSUPPORTED_FORMAT","message":"Unsupported file format","details":"Only .v and .sdf files are supported","status":415}``` |
 | **Resource Access** | 404 | `EXAMPLE_NOT_FOUND` | ```{"error":true,"code":"EXAMPLE_NOT_FOUND","message":"Example '2ffs_VTR' not found","details":"Verify example name or browse available examples","status":404}``` |
-| | 403 | `ACCESS_DENIED` | ```{"error":true,"code":"ACCESS_DENIED","message":"Access denied to requested resource","details":"Check permissions or authentication","status":403}``` |
 | **Data Validation** | 422 | `VALIDATION_ERROR` | ```{"error":true,"code":"VALIDATION_ERROR","message":"Invalid simulation parameters","details":"Time step must be positive integer","status":422}``` |
 | **Server Errors** | 500 | `SERVER_ERROR` | ```{"error":true,"code":"SERVER_ERROR","message":"Internal server error occurred","details":"Error reference: #E12345","status":500}``` |
 | | 503 | `SERVICE_UNAVAILABLE` | ```{"error":true,"code":"SERVICE_UNAVAILABLE","message":"Service temporarily unavailable","details":"Try again later","status":503}``` |
@@ -646,7 +691,7 @@ npm run dev
    - Cache JSON models and user preferences in localStorage.
 2. **Data Lifecycle:**  
    - Provide options to clear temporary files; auto-cleanup of unused files.
-   - Offer export/backup functionality.
+   - Offer export functionality.
 3. **Privacy:**  
    - All processing occurs locally; no data is transmitted externally.
 
@@ -834,53 +879,8 @@ Text Table:
 
 ---
 
-## 12. Appendices
 
-### 12.1 Typography & Styling Guidelines
-
-- **Fonts:** Use sans-serif fonts such as Inter, Roboto, or Helvetica for readability.
-- **Headings:**  
-  - Use `#` (H1) only for the main document title.  
-  - Use `##` (H2) for major sections, and `###` (H3) for subsections.
-- **Code Blocks:**  
-  - Use backticks (` ``` `) for code snippets with proper language tagging (e.g., `tsx`, `ts`, `json`).
-- **Tables:**  
-  - Alternate row colors and consistent column widths for readability.
-- **Diagrams:**  
-  - Diagrams should be vector-based or SVG for scalability, with clear labels and color-coded components.
-
----
-
-### 12.2 Documentation Guidelines
-
-- **File Naming Convention:**  
-  - Use `PascalCase` for documentation files. Example: `TechnicalSpecification.md`
-- **Content Style:**  
-  - Use concise and objective language.  
-  - Prefer active voice (“The user clicks…” vs. “The button is clicked…”).  
-  - Maintain consistent terminology for key concepts like “BEL”, “canvas”, “example”.
-- **Versioning:**  
-  - Maintain a version log in the header with dates and author notes.
-
----
-
-### 12.3 Code Style Guidelines
-
-- **Languages:** TypeScript for both frontend and backend.
-- **Conventions:**  
-  - Use `camelCase` for variables and functions (`loadExample`, `uploadFile`)  
-  - Use `PascalCase` for components (`SimulationCanvas.tsx`, `ExampleDrawer.tsx`)  
-  - Constants in `UPPER_SNAKE_CASE`
-- **Formatting:**  
-  - Enforce formatting with Prettier (`.prettierrc`).  
-  - Use ESLint (`.eslintrc`) to maintain code quality.
-- **Comments & Docstrings:**  
-  - Use JSDoc for function documentation.
-  - Comment complex logic or non-obvious code decisions.
-
----
-
-## 13. Conclusion
+## 12. Conclusion
 
 This Technical Specification outlines a comprehensive, local-first FPGA signal propagation simulator designed for educational use. Teachers can select from preloaded FPGA examples or upload custom `.v` and `.sdf` files, which are processed into a JSON model and rendered on an HTML Canvas. The solution features an integrated code editor, robust simulation controls, detailed error handling, and efficient performance optimizations. Developed in TypeScript and deployable locally via Vite and Express.js—with optional static hosting on Vercel—the simulator effectively bridges FPGA theory with practical, visual learning while ensuring data privacy.
 
