@@ -11,7 +11,7 @@ RUN ls
 COPY Code/Frontend/package.json Code/Frontend/package-lock.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm i
 
 # Copy app source
 COPY Code/Frontend ./
