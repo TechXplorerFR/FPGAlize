@@ -33,6 +33,9 @@ Document Revision History
     - [1.3. User Experience Goals](#13-user-experience-goals)
     - [1.4. Educational Impact](#14-educational-impact)
     - [1.5. Glossary](#15-glossary)
+    - [1.6. System Requirements](#16-system-requirements)
+      - [1.6.1. Browser Compatibility](#161-browser-compatibility)
+      - [1.6.2. Error Recovery \& Data Persistence](#162-error-recovery--data-persistence)
   - [2. System Overview](#2-system-overview)
     - [2.1. Technology Stack](#21-technology-stack)
     - [2.2. Architecture](#22-architecture)
@@ -44,7 +47,7 @@ Document Revision History
     - [2.7 Appendices](#27-appendices)
       - [2.7.1 Typography \& Styling Guidelines](#271-typography--styling-guidelines)
       - [2.7.2 Documentation Guidelines](#272-documentation-guidelines)
-      - [2.8.3 Code Style Guidelines](#283-code-style-guidelines)
+      - [2.7.3 Code Style Guidelines](#273-code-style-guidelines)
   - [3. Functional Requirements](#3-functional-requirements)
     - [3.1. File Management](#31-file-management)
     - [3.2. Code Editor \& Simulation Controls](#32-code-editor--simulation-controls)
@@ -134,6 +137,35 @@ The simulator bridges theory and practice by:
 | **Verilog**      | A hardware description language used to design and simulate digital circuits.                    |
 | **Vite**         | Modern frontend build tool providing faster development experience through native ES modules.    |
 
+### 1.6. System Requirements
+
+#### 1.6.1. Browser Compatibility
+| Browser            | Minimum Version | Notes                                    |
+|-------------------|-----------------|------------------------------------------|
+| Chrome            | 88+            | Recommended for best performance         |
+| Firefox           | 85+            | Full WebGL 2.0 support required          |
+| Safari            | 14+            | Limited canvas performance on iOS        |
+| Edge (Chromium)   | 88+            | Full feature support                     |
+
+**WebGL Requirements:**
+- WebGL 2.0 support required for canvas rendering
+- Hardware acceleration recommended
+- Minimum 2GB video memory for large FPGA layouts
+
+#### 1.6.2. Error Recovery & Data Persistence
+
+| Error Scenario           | Recovery Procedure                          | Data Persistence                          |
+|-------------------------|--------------------------------------------|--------------------------------------------|
+| Browser Crash           | Auto-save to IndexedDB every 30 seconds    | Restore last saved state on reload         |
+| Network Failure         | Queue operations for retry                 | Cache parsed models locally                |
+| File Corruption         | Maintain backup of last valid state        | Version history of last 5 changes          |
+| Memory Exhaustion       | Clear non-essential caches                 | Persist critical simulation data           |
+
+**Recovery Features:**
+- Automatic state saving during simulation
+- Manual save points for critical operations
+- Background sync for unsaved changes
+- Conflict resolution for multi-tab editing
 ---
 
 ## 2. System Overview
@@ -143,7 +175,6 @@ The simulator bridges theory and practice by:
 - React + Vite (TypeScript)
 - TailwindCSS
 - HTML Canvas (for 2D FPGA layout rendering)
-- Socket.io (optional for real-time updates)
 
 **Backend:**
 - Node.js + Express.js (TypeScript)
@@ -504,7 +535,7 @@ Project Root
 
 ---
 
-#### 2.8.3 Code Style Guidelines
+#### 2.7.3 Code Style Guidelines
 
 - **Languages:** TypeScript for both frontend and backend.
 - **Conventions:**  
@@ -541,9 +572,7 @@ Project Root
   - **Step:** Advance simulation by one time unit (asynchronous operation).
   - **Speed:** Adjust playback rate (x0.5, x1, x2, x4) affecting the timing calculations.
   - **Reset:** Return the simulation to its initial state (all signals and components).
-  - **Processing Mode:** Toggle between synchronous (blocking UI) and asynchronous (background) simulation processing. 
-  Provides clear visual feedback during simulation execution. Shows toast notifications for simulation events and errors.
-
+  - **Processing Mode**: Toggle between synchronous (blocking UI) and asynchronous (background) simulation processing, providing clear visual feedback during simulation execution.
 ### 3.3. FPGA Visualization
 - **2D Layout Rendering:**  
   - Renders FPGA components (BELs) and signal connections on HTML Canvas.
