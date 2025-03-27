@@ -59,6 +59,7 @@ class CanvasHistory {
   private cloneState(state: CanvasState): CanvasState {
     return {
       elements: [...state.elements],
+      connections: [...state.connections],
       elementPositions: new Map(state.elementPositions),
     };
   }

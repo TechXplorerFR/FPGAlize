@@ -56,7 +56,7 @@ export type IElement = {
  */
 export type IElementInput = {
   wireName: string;
-  inputName: string;
+  inputName: string | null;
 };
 
 /**
@@ -67,7 +67,7 @@ export type IElementInput = {
  */
 export type IElementOutput = {
   wireName: string;
-  outputName: string;
+  outputName: string | null;
 };
 
 /**
@@ -117,4 +117,23 @@ export type Example = {
   postSynthesisSdfFile: File;
   jsonOutput: IDataStructure | null;
   originalVerilogFileInformation: FileInformation;
+};
+
+/**
+ * Represents the endpoints of a connection between two elements.
+ * This type defines the structure of the connection endpoints, including
+ * the source and destination elements, ports, and the connection itself.
+ * @typedef {Object} ConnectionEndpoints
+ * @property {IConnection} connection - The connection object between the elements.
+ * @property {IElement} sourceElement - The source element where the connection starts.
+ * @property {IElement} destElement - The destination element where the connection ends.
+ * @property {string} sourcePort - The output port of the source element.
+ * @property {string} destPort - The input port of the destination element.
+ */
+export type ConnectionEndpoints = {
+  connection: IConnection;
+  sourceElement: IElement;
+  destElement: IElement;
+  sourcePort: string;
+  destPort: string;
 };

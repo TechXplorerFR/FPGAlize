@@ -1,5 +1,10 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Example, type IElement, type IConnection } from "@/lib/types/types";
+import {
+  Example,
+  type IElement,
+  type IConnection,
+  type ConnectionEndpoints,
+} from "@/lib/types/types";
 import CanvasActionBar from "./CanvasActionBar";
 import { getTheme } from "../theme-provider";
 import {
@@ -19,15 +24,6 @@ function debounce<T extends (...args: any[]) => any>(
     timeout = setTimeout(() => func(...args), wait);
   };
 }
-
-// Type to track a connection with source and destination
-type ConnectionEndpoints = {
-  connection: IConnection;
-  sourceElement: IElement;
-  destElement: IElement;
-  sourcePort: string;
-  destPort: string;
-};
 
 export default function SimulationCanvas({
   activeTabId,
@@ -65,11 +61,9 @@ export default function SimulationCanvas({
 
   // Initialize the canvas history
   const initialCanvasState: CanvasState = {
-    elements,
-    connections,
-    elementPositions: new Map(
-      elements.map((el) => [el.id.toString(), { x: el.x ?? 0, y: el.y ?? 0 }])
-    ),
+    elements: [],
+    connections: [],
+    elementPositions: new Map(),
   };
 
   const { pushState, undo, redo, reset, canUndo, canRedo } =
@@ -104,23 +98,75 @@ export default function SimulationCanvas({
     const activeExample = examples.find(
       (example) =>
         example.jsonOutput &&
-        activeTabId.includes(example.originalVerilogFile.name)
+        activeTabId.includes(example.originalVerilogFile.name.split(".")[0])
     );
 
     if (activeExample && activeExample.jsonOutput) {
-      // Transform elements to include position information
+      // Simple positioning strategy - distribute elements in a grid
       const positionedElements = activeExample.jsonOutput.elements.map(
-        (el, index) => ({
-          ...el,
-          x: 100 + index * 150, // Simple positioning logic
-          y: 100 + (index % 3) * 80,
-        })
+        (el, index) => {
+          const row = Math.floor(index / 4); // 4 elements per row
+          const col = index % 4;
+
+          return {
+            ...el,
+            x: 100 + col * 150, // Space elements horizontally
+            y: 100 + row * 100, // Space elements vertically
+          };
+        }
       );
 
+      console.log("Positioned elements:", positionedElements.length);
       setElements(positionedElements);
       setConnections(activeExample.jsonOutput.connections);
+
+      // Reset view when loading a new example
+      resetZoom();
+
+      // Center the view on the elements
+      centerViewOnElements(positionedElements);
+    } else {
+      console.warn("No active example found for:", activeTabId);
+      // Clear the canvas if no example is selected
+      setElements([]);
+      setConnections([]);
     }
   }, [activeTabId, examples]);
+
+  // Helper function to center the view on elements
+  const centerViewOnElements = useCallback((els: IElement[]) => {
+    if (els.length === 0 || !containerRef.current) return;
+
+    // Calculate bounds
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+
+    els.forEach((el) => {
+      const x = el.x ?? 0;
+      const y = el.y ?? 0;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x + 50); // Assuming elements are 50x50
+      maxY = Math.max(maxY, y + 50);
+    });
+
+    // Calculate center of elements and container
+    const elementsWidth = maxX - minX;
+    const elementsHeight = maxY - minY;
+    const elementsCenterX = minX + elementsWidth / 2;
+    const elementsCenterY = minY + elementsHeight / 2;
+
+    const containerWidth = containerRef.current.clientWidth;
+    const containerHeight = containerRef.current.clientHeight;
+
+    // Set pan offset to center elements
+    setPanOffset({
+      x: containerWidth / 2 - elementsCenterX,
+      y: containerHeight / 2 - elementsCenterY,
+    });
+  }, []);
 
   // Make sure state is pushed to history after relevant operations
   useEffect(() => {
@@ -154,28 +200,49 @@ export default function SimulationCanvas({
 
   // Update connection endpoints when elements or connections change
   useEffect(() => {
+    if (elements.length === 0 || connections.length === 0) {
+      setConnectionEndpoints([]);
+      return;
+    }
+
+    console.log(
+      "Building connection endpoints from",
+      elements.length,
+      "elements and",
+      connections.length,
+      "connections"
+    );
+
     const newConnectionEndpoints: ConnectionEndpoints[] = [];
 
     connections.forEach((connection) => {
       // Find source element (element that has this connection name in its outputs)
-      const sourceElement = elements.find((el) =>
-        el.outputs.some((output) => output.wireName === connection.name)
+      const sourceElement = elements.find(
+        (el) =>
+          el.outputs &&
+          el.outputs.some((output) => output.wireName === connection.name)
       );
 
       // Find destination element (element that has this connection name in its inputs)
-      const destElement = elements.find((el) =>
-        el.inputs.some((input) => input.wireName === connection.name)
+      const destElement = elements.find(
+        (el) =>
+          el.inputs &&
+          el.inputs.some((input) => input.wireName === connection.name)
       );
 
       if (sourceElement && destElement) {
-        const sourcePort =
-          sourceElement.outputs.find(
-            (output) => output.wireName === connection.name
-          )?.outputName || "";
+        // Find the specific output and input ports that use this connection
+        const sourceOutput = sourceElement.outputs.find(
+          (output) => output.wireName === connection.name
+        );
 
-        const destPort =
-          destElement.inputs.find((input) => input.wireName === connection.name)
-            ?.inputName || "";
+        const destInput = destElement.inputs.find(
+          (input) => input.wireName === connection.name
+        );
+
+        // Use the port names (or default to empty string if null)
+        const sourcePort = sourceOutput?.outputName || "";
+        const destPort = destInput?.inputName || "";
 
         newConnectionEndpoints.push({
           connection,
@@ -187,6 +254,11 @@ export default function SimulationCanvas({
       }
     });
 
+    console.log(
+      "Created",
+      newConnectionEndpoints.length,
+      "connection endpoints"
+    );
     setConnectionEndpoints(newConnectionEndpoints);
   }, [elements, connections]);
 
@@ -194,11 +266,17 @@ export default function SimulationCanvas({
   const getConnectionPoints = useCallback((endpoint: ConnectionEndpoints) => {
     const { sourceElement, destElement } = endpoint;
 
+    // Calculate element center points for connections
+    const startX = (sourceElement.x ?? 0) + 25;
+    const startY = (sourceElement.y ?? 0) + 25;
+    const endX = (destElement.x ?? 0) + 25;
+    const endY = (destElement.y ?? 0) + 25;
+
     return {
-      startX: (sourceElement.x ?? 0) + 25,
-      startY: (sourceElement.y ?? 0) + 25,
-      endX: (destElement.x ?? 0) + 25,
-      endY: (destElement.y ?? 0) + 25,
+      startX,
+      startY,
+      endX,
+      endY,
     };
   }, []);
 
@@ -209,12 +287,28 @@ export default function SimulationCanvas({
     const ctx = canvasRef.getContext("2d");
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
+    // Clear with the appropriate background color
+    ctx.fillStyle = isDarkTheme ? "#171717" : "#ffffff";
+    ctx.fillRect(0, 0, canvasRef.width, canvasRef.height);
 
     // Apply transformations (scale and translate)
     ctx.save();
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(zoomLevel, zoomLevel);
+
+    // Debug info
+    if (elements.length === 0) {
+      ctx.restore();
+      ctx.fillStyle = isDarkTheme ? "#ffffff" : "#000000";
+      ctx.font = "16px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        "No elements to display. Select an example from the drawer.",
+        canvasRef.width / 2,
+        canvasRef.height / 2
+      );
+      return;
+    }
 
     // Draw connections with horizontal and vertical paths
     ctx.strokeStyle = isDarkTheme ? "rgb(226,226,226)" : "black";
@@ -267,14 +361,41 @@ export default function SimulationCanvas({
 
     // Draw elements
     elements.forEach((el) => {
-      ctx.fillStyle = "lightcoral";
+      // Determine element color based on type
+      let elementColor = "lightcoral";
+      if (el.type === "module_input") {
+        elementColor = "lightgreen";
+      } else if (el.type === "module_output") {
+        elementColor = "lightblue";
+      } else if (el.type === "DFF") {
+        elementColor = "orange";
+      }
+
+      ctx.fillStyle = elementColor;
       ctx.fillRect(el.x ?? 0, el.y ?? 0, 50, 50);
 
       ctx.fillStyle = isDarkTheme ? "white" : "black";
-      ctx.font = `${20 / zoomLevel}px Arial`;
+      ctx.font = `${Math.max(8, 16 / zoomLevel)}px Arial`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(el.name, el.x ?? 0 + 25, el.y ?? 0 + 25);
+      ctx.fillText(el.name, (el.x ?? 0) + 25, (el.y ?? 0) + 25);
+
+      // Draw smaller port labels if needed
+      if (zoomLevel > 0.6) {
+        ctx.font = `${Math.max(6, 10 / zoomLevel)}px Arial`;
+
+        // Draw input port names
+        el.inputs.forEach((input, idx) => {
+          const portName = input.inputName || `in${idx}`;
+          ctx.fillText(portName, (el.x ?? 0) + 10, (el.y ?? 0) + 10 + idx * 10);
+        });
+
+        // Draw output port names
+        el.outputs.forEach((output, idx) => {
+          const portName = output.outputName || `out${idx}`;
+          ctx.fillText(portName, (el.x ?? 0) + 40, (el.y ?? 0) + 10 + idx * 10);
+        });
+      }
     });
 
     ctx.restore();
@@ -503,7 +624,10 @@ export default function SimulationCanvas({
   };
 
   return (
-    <div ref={containerRef} className="w-full h-[88vh] bg-gray-100">
+    <div
+      ref={containerRef}
+      className="w-full h-[88vh] bg-gray-100 dark:bg-neutral-800"
+    >
       <canvas
         ref={canvas}
         className="border border-neutral-400 dark:border-neutral-900 bg-white dark:bg-neutral-900 w-full h-full"
@@ -513,6 +637,13 @@ export default function SimulationCanvas({
         onWheel={handleWheel}
         onContextMenu={(e) => e.preventDefault()}
       />
+      {/* Debug info */}
+      {elements.length === 0 && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center text-gray-500 dark:text-gray-400">
+          <p>No elements to display</p>
+          <p className="text-sm">Select an example from the drawer</p>
+        </div>
+      )}
       <div className="relative">
         <div className="absolute bottom-2 left-6">
           <CanvasActionBar
