@@ -67,93 +67,6 @@ export async function getJsonObjectFromParsing(
  * @param {File} sdfFile - The SDF (.sdf) File object.
  * @returns {Promise<IDataStructure>} - JSON object containing merged elements and connections.
  */
-// export async function parseFilesForBrowser(
-//   verilogFile: File,
-//   sdfFile: File
-// ): Promise<IDataStructure | null> {
-//   try {
-//     // Check for valid file extensions
-//     if (
-//       !checkFileExtension(verilogFile.name, "v") ||
-//       !checkFileExtension(sdfFile.name, "sdf")
-//     ) {
-//       console.error("Provided files are not valid .v and .sdf files.");
-//       return null;
-//     }
-
-//     // Read file content
-//     const verilogContent = await getFileContent(verilogFile);
-//     const sdfContent = await getFileContent(sdfFile);
-
-//     // Parse file content
-//     const verilogData = parseVerilogContent(verilogContent);
-//     const sdfData = parseSdfContent(sdfContent);
-
-//     // Merge elements and connections while avoiding duplicates
-//     const mergedElements = mergeElements((await verilogData).elements, (await sdfData).elements);
-//     const mergedConnections = mergeConnections((await verilogData).connections, (await sdfData).connections);
-
-//     // Return the merged structure
-//     return { elements: mergedElements, connections: mergedConnections };
-//   } catch (error) {
-//     console.error("Error parsing files:", error);
-//     return null;
-//   }
-// }
-
-// function mergeElements(verilogElements: IElement[], sdfElements: IElement[]): IElement[] {
-//   const merged: IElement[] = [];
-
-//   // Merge Verilog elements
-//   verilogElements.forEach((verilogElem) => {
-//     if (!merged.some((elem) => elem.id === verilogElem.id)) {
-//       merged.push({ ...verilogElem });
-//     }
-//   });
-
-//   // Merge SDF elements
-//   sdfElements.forEach((sdfElem) => {
-//     const existingElem = merged.find((elem) => elem.name === sdfElem.name);
-//     if (existingElem) {
-//       // Update the existing element
-//       existingElem.inputs = existingElem.inputs.concat(sdfElem.inputs);
-//       existingElem.outputs = existingElem.outputs.concat(sdfElem.outputs);
-//       existingElem.internal_delay = Math.max(existingElem.internal_delay, sdfElem.internal_delay);
-//       existingElem.setup_time = Math.max(existingElem.setup_time, sdfElem.setup_time);
-//     } else if (!merged.some((elem) => elem.id === sdfElem.id)) {
-//       // If not a duplicate, add new element
-//       merged.push({ ...sdfElem });
-//     }
-//   });
-
-//   return merged;
-// }
-
-// function mergeConnections(verilogConnections: IConnection[], sdfConnections: IConnection[]): IConnection[] {
-//   const merged: IConnection[] = [];
-
-//   // Merge Verilog connections
-//   verilogConnections.forEach((verilogConn) => {
-//     if (!merged.some((conn) => conn.id === verilogConn.id)) {
-//       merged.push({ ...verilogConn });
-//     }
-//   });
-
-//   // Merge SDF connections
-//   sdfConnections.forEach((sdfConn) => {
-//     const existingConn = merged.find((conn) => conn.name === sdfConn.name);
-//     if (existingConn) {
-//       // Update the existing connection with the largest time delay
-//       existingConn.time = Math.max(existingConn.time, sdfConn.time);
-//     } else if (!merged.some((conn) => conn.id === sdfConn.id)) {
-//       // If not a duplicate, add new connection
-//       merged.push({ ...sdfConn });
-//     }
-//   });
-
-//   return merged;
-// }
-
 export async function parseFilesForBrowser(
   verilogFile: File,
   sdfFile: File
@@ -236,25 +149,48 @@ function mergeConnections(verilogConnections: IConnection[], sdfConnections: ICo
 }
 
 function finalizeElements(elements: IElement[]): IElement[] {
-  return elements.map((elem, index) => ({
-    ...elem,
-    id: index, // Ensures unique IDs
-    name: cleanName(elem.name),
-    inputs: cleanInputs(elem.inputs),
-    outputs: cleanOutputs(elem.outputs)
-  }));
-}
-
-function finalizeConnections(connections: IConnection[]): IConnection[] {
-  return connections.map((conn, index) => ({
-    ...conn,
-    id: index, // Ensures unique IDs
-    color: "#000000" // Default wire color
-  }));
+  return elements.map((elem, index) => {
+    const cleanedName = cleanName(elem.name);
+    return {
+      ...elem,
+      id: index, // Ensures unique IDs
+      name: cleanedName,
+      type: cleanType(cleanedName, elem.type, elem.inputs),
+      inputs: cleanInputs(elem.inputs),
+      outputs: cleanOutputs(elem.outputs)
+    };
+  });
 }
 
 function cleanName(name: string): string {
   return name.replace(/\\/g, ''); // Remove unwanted escape characters
+}
+
+function cleanType(name: string, type: string, inputs: IElementInput[]): string {
+  // Handle clock signal explicitly
+  if (name === "clk") {
+    return "clk";
+  }
+
+  // Handle D Flip-Flop (DFF) variations
+  if (type === "DFF") {
+    if (inputs.length < 2) {
+      return "DFF_invalid"; // Not enough inputs for a proper DFF
+    }
+    return inputs.length < 3 ? "DFF" : "DFF_NE";
+  }
+
+  // Handle module inputs (no inputs present)
+  if (inputs.length === 0) {
+    return "module_input";
+  }
+
+  // Handle basic LUT logic
+  if (inputs.length <= 4) {
+    return `LUT${inputs.length}`;
+  }
+
+  return "unknown_type";
 }
 
 function cleanInputs(inputs: IElementInput[]): IElementInput[] {
@@ -279,6 +215,14 @@ function cleanOutputs(outputs: IElementOutput[]): IElementOutput[] {
       outputName: output.outputName
     };
   });
+}
+
+function finalizeConnections(connections: IConnection[]): IConnection[] {
+  return connections.map((conn, index) => ({
+    ...conn,
+    id: index, // Ensures unique IDs
+    color: "#000000" // Default wire color
+  }));
 }
 
 /**
