@@ -1,4 +1,4 @@
-import type { IDataStructure } from "@/lib/types/types";
+import type { IDataStructure, IElement, IElementInput, IElementOutput } from "@/lib/types/types";
 
 /**
  * Tokenizes a Verilog file content into an array of relevant tokens.
@@ -31,8 +31,8 @@ async function parseVerilogFile(file: File): Promise<IDataStructure> {
     const fileContent = await file.text();
     const tokens = tokenizeVerilog(fileContent);
     let currentModule = "";
-    let moduleInputs: string[] = [];
-    let moduleOutputs: string[] = [];
+    let moduleInputs: IElementInput[] = [];
+    let moduleOutputs: IElementOutput[] = [];
 
     for (let i = 0; i < tokens.length; i++) {
       if (tokens[i] === "module") {
@@ -40,11 +40,11 @@ async function parseVerilogFile(file: File): Promise<IDataStructure> {
       }
 
       if (tokens[i] === "input") {
-        moduleInputs.push(tokens[i + 1]);
+        moduleInputs.push({ wireName: "", inputName: tokens[i + 1]});
       }
 
       if (tokens[i] === "output") {
-        moduleOutputs.push(tokens[i + 1]);
+        moduleOutputs.push({ wireName: "", outputName: tokens[i + 1]});
       }
 
       if (tokens[i] === "endmodule") {
@@ -52,12 +52,13 @@ async function parseVerilogFile(file: File): Promise<IDataStructure> {
           output.elements.push({
             id: elementId++,
             name: currentModule,
+            x: null,
+            y: null,
             type: "verilog_module",
-            innerText: `Module ${currentModule}`,
-            icon: "path-to-an-icon",
-            clicked: false,
             inputs: moduleInputs,
             outputs: moduleOutputs,
+            internal_delay: 0,
+            setup_time: 0,
           });
         }
         currentModule = "";
@@ -80,13 +81,15 @@ async function parseVerilogFile(file: File): Promise<IDataStructure> {
  */
 export function parseVerilogContent(content: string): IDataStructure {
   let output: IDataStructure = { elements: [], connections: [] };
-  let elementId = 1;
+  let elementId = 0;
+  let connectionId = 1;
+  let moduleInputs: IElement[] = [];
+  let moduleOutputs: IElement[] = [];
+  let wireMap: Record<string, string> = {}; // Map to track wires
 
   try {
     const tokens = tokenizeVerilog(content);
     let currentModule = "";
-    let moduleInputs: string[] = [];
-    let moduleOutputs: string[] = [];
 
     for (let i = 0; i < tokens.length; i++) {
       if (tokens[i] === "module") {
@@ -94,31 +97,47 @@ export function parseVerilogContent(content: string): IDataStructure {
       }
 
       if (tokens[i] === "input") {
-        moduleInputs.push(tokens[i + 1]);
+        const inputName = tokens[i + 1];
+        const wireName = `wire_${connectionId++}`;
+
+        moduleInputs.push({
+          id: elementId++,
+          name: inputName,
+          x: null,
+          y: null,
+          type: "module_input",
+          inputs: [],
+          outputs: [{ wireName, outputName: null }],
+          internal_delay: 0,
+          setup_time: 0,
+        });
+
+        wireMap[inputName] = wireName;
+        output.connections.push({ id: connectionId, name: wireName, type: "wire", color: "#000000", time: 0 });
       }
 
       if (tokens[i] === "output") {
-        moduleOutputs.push(tokens[i + 1]);
-      }
+        const outputName = tokens[i + 1];
+        const wireName = `wire_${connectionId++}`;
 
-      if (tokens[i] === "endmodule") {
-        if (currentModule) {
-          output.elements.push({
-            id: elementId++,
-            name: currentModule,
-            type: "verilog_module",
-            innerText: `Module ${currentModule}`,
-            icon: "path-to-an-icon",
-            clicked: false,
-            inputs: moduleInputs,
-            outputs: moduleOutputs,
-          });
-        }
-        currentModule = "";
-        moduleInputs = [];
-        moduleOutputs = [];
+        moduleOutputs.push({
+          id: elementId++,
+          name: outputName,
+          x: null,
+          y: null,
+          type: "module_output",
+          inputs: [{ wireName, inputName: null }],
+          outputs: [],
+          internal_delay: 0,
+          setup_time: 0,
+        });
+
+        wireMap[outputName] = wireName;
+        output.connections.push({ id: connectionId++, name: wireName, type: "wire", color: "#000000", time: 0 });
       }
     }
+
+    output.elements.push(...moduleInputs, ...moduleOutputs);
   } catch (err) {
     console.error("Error parsing Verilog content:", err);
   }

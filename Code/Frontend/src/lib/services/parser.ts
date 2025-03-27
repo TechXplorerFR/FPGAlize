@@ -1,4 +1,4 @@
-import { type IDataStructure } from "@/lib/types/types";
+import { IConnection, IElement, IElementInput, IElementOutput, type IDataStructure } from "@/lib/types/types";
 import * as v_parser from "@/lib/services/v-parser";
 import * as sdf_parser from "@/lib/services/sdf-parser";
 import { getFileContent } from "@/lib/utils";
@@ -67,12 +67,98 @@ export async function getJsonObjectFromParsing(
  * @param {File} sdfFile - The SDF (.sdf) File object.
  * @returns {Promise<IDataStructure>} - JSON object containing merged elements and connections.
  */
+// export async function parseFilesForBrowser(
+//   verilogFile: File,
+//   sdfFile: File
+// ): Promise<IDataStructure | null> {
+//   try {
+//     // Check for valid file extensions
+//     if (
+//       !checkFileExtension(verilogFile.name, "v") ||
+//       !checkFileExtension(sdfFile.name, "sdf")
+//     ) {
+//       console.error("Provided files are not valid .v and .sdf files.");
+//       return null;
+//     }
+
+//     // Read file content
+//     const verilogContent = await getFileContent(verilogFile);
+//     const sdfContent = await getFileContent(sdfFile);
+
+//     // Parse file content
+//     const verilogData = parseVerilogContent(verilogContent);
+//     const sdfData = parseSdfContent(sdfContent);
+
+//     // Merge elements and connections while avoiding duplicates
+//     const mergedElements = mergeElements((await verilogData).elements, (await sdfData).elements);
+//     const mergedConnections = mergeConnections((await verilogData).connections, (await sdfData).connections);
+
+//     // Return the merged structure
+//     return { elements: mergedElements, connections: mergedConnections };
+//   } catch (error) {
+//     console.error("Error parsing files:", error);
+//     return null;
+//   }
+// }
+
+// function mergeElements(verilogElements: IElement[], sdfElements: IElement[]): IElement[] {
+//   const merged: IElement[] = [];
+
+//   // Merge Verilog elements
+//   verilogElements.forEach((verilogElem) => {
+//     if (!merged.some((elem) => elem.id === verilogElem.id)) {
+//       merged.push({ ...verilogElem });
+//     }
+//   });
+
+//   // Merge SDF elements
+//   sdfElements.forEach((sdfElem) => {
+//     const existingElem = merged.find((elem) => elem.name === sdfElem.name);
+//     if (existingElem) {
+//       // Update the existing element
+//       existingElem.inputs = existingElem.inputs.concat(sdfElem.inputs);
+//       existingElem.outputs = existingElem.outputs.concat(sdfElem.outputs);
+//       existingElem.internal_delay = Math.max(existingElem.internal_delay, sdfElem.internal_delay);
+//       existingElem.setup_time = Math.max(existingElem.setup_time, sdfElem.setup_time);
+//     } else if (!merged.some((elem) => elem.id === sdfElem.id)) {
+//       // If not a duplicate, add new element
+//       merged.push({ ...sdfElem });
+//     }
+//   });
+
+//   return merged;
+// }
+
+// function mergeConnections(verilogConnections: IConnection[], sdfConnections: IConnection[]): IConnection[] {
+//   const merged: IConnection[] = [];
+
+//   // Merge Verilog connections
+//   verilogConnections.forEach((verilogConn) => {
+//     if (!merged.some((conn) => conn.id === verilogConn.id)) {
+//       merged.push({ ...verilogConn });
+//     }
+//   });
+
+//   // Merge SDF connections
+//   sdfConnections.forEach((sdfConn) => {
+//     const existingConn = merged.find((conn) => conn.name === sdfConn.name);
+//     if (existingConn) {
+//       // Update the existing connection with the largest time delay
+//       existingConn.time = Math.max(existingConn.time, sdfConn.time);
+//     } else if (!merged.some((conn) => conn.id === sdfConn.id)) {
+//       // If not a duplicate, add new connection
+//       merged.push({ ...sdfConn });
+//     }
+//   });
+
+//   return merged;
+// }
+
 export async function parseFilesForBrowser(
   verilogFile: File,
   sdfFile: File
 ): Promise<IDataStructure | null> {
   try {
-    // Check file extensions
     if (
       !checkFileExtension(verilogFile.name, "v") ||
       !checkFileExtension(sdfFile.name, "sdf")
@@ -81,25 +167,118 @@ export async function parseFilesForBrowser(
       return null;
     }
 
-    // Get file contents as strings
     const verilogContent = await getFileContent(verilogFile);
     const sdfContent = await getFileContent(sdfFile);
 
-    // Parse the file contents
-    const verilogData = await parseVerilogContent(verilogContent);
-    const sdfData = await parseSdfContent(sdfContent);
+    const verilogData = parseVerilogContent(verilogContent);
+    const sdfData = parseSdfContent(sdfContent);
 
-    // Merge the parsed data
-    const mergedData: IDataStructure = {
-      elements: [...verilogData.elements, ...sdfData.elements],
-      connections: [...verilogData.connections, ...sdfData.connections],
-    };
+    // Merge elements and connections
+    const mergedElements = mergeElements(
+      (await verilogData).elements,
+      (await sdfData).elements
+    );
+    const mergedConnections = mergeConnections(
+      (await verilogData).connections,
+      (await sdfData).connections
+    );
 
-    return mergedData;
+    // Clean up and finalize output
+    const finalElements = finalizeElements(mergedElements);
+    const finalConnections = finalizeConnections(mergedConnections);
+
+    return { elements: finalElements, connections: finalConnections };
   } catch (error) {
     console.error("Error parsing files:", error);
     return null;
   }
+}
+
+function mergeElements(verilogElements: IElement[], sdfElements: IElement[]): IElement[] {
+  const merged: IElement[] = [];
+
+  verilogElements.forEach((verilogElem) => {
+    merged.push({ ...verilogElem });
+  });
+
+  sdfElements.forEach((sdfElem) => {
+    const existingElem = merged.find((vElem) => vElem.name === sdfElem.name);
+    if (existingElem) {
+      existingElem.inputs = existingElem.inputs.concat(sdfElem.inputs);
+      existingElem.outputs = existingElem.outputs.concat(sdfElem.outputs);
+      existingElem.internal_delay = Math.max(existingElem.internal_delay, sdfElem.internal_delay);
+      existingElem.setup_time = Math.max(existingElem.setup_time, sdfElem.setup_time);
+    } else {
+      merged.push({ ...sdfElem });
+    }
+  });
+
+  return merged;
+}
+
+function mergeConnections(verilogConnections: IConnection[], sdfConnections: IConnection[]): IConnection[] {
+  const merged: IConnection[] = [];
+
+  verilogConnections.forEach((verilogConn) => {
+    merged.push({ ...verilogConn });
+  });
+
+  sdfConnections.forEach((sdfConn) => {
+    const existingConn = merged.find((vConn) => vConn.name === sdfConn.name);
+    if (existingConn) {
+      existingConn.time = Math.max(existingConn.time, sdfConn.time);
+    } else {
+      merged.push({ ...sdfConn });
+    }
+  });
+
+  return merged;
+}
+
+function finalizeElements(elements: IElement[]): IElement[] {
+  return elements.map((elem, index) => ({
+    ...elem,
+    id: index, // Ensures unique IDs
+    name: cleanName(elem.name),
+    inputs: cleanInputs(elem.inputs),
+    outputs: cleanOutputs(elem.outputs)
+  }));
+}
+
+function finalizeConnections(connections: IConnection[]): IConnection[] {
+  return connections.map((conn, index) => ({
+    ...conn,
+    id: index, // Ensures unique IDs
+    color: "#000000" // Default wire color
+  }));
+}
+
+function cleanName(name: string): string {
+  return name.replace(/\\/g, ''); // Remove unwanted escape characters
+}
+
+function cleanInputs(inputs: IElementInput[]): IElementInput[] {
+  return inputs.map(input => {
+    if (!input.wireName) {
+      throw new Error("WireName must be defined for all inputs.");
+    }
+    return {
+      ...input,
+      inputName: input.inputName
+    };
+  });
+}
+
+function cleanOutputs(outputs: IElementOutput[]): IElementOutput[] {
+  return outputs.map(output => {
+    if (!output.wireName) {
+      throw new Error("WireName must be defined for all outputs.");
+    }
+    return {
+      ...output,
+      outputName: output.outputName
+    };
+  });
 }
 
 /**

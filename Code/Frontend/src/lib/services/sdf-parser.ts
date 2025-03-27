@@ -44,8 +44,9 @@ function extractDelays(
  */
 export function parseSdfContent(content: string): IDataStructure {
   let output: IDataStructure = { elements: [], connections: [] };
-  let elementId = 1;
+  let elementId = 0;
   let connectionId = 1;
+  let wireMap: Record<string, string> = {}; // Mapping of signal names to wire names
 
   try {
     const tokens = tokenizeSDF(content);
@@ -53,7 +54,6 @@ export function parseSdfContent(content: string): IDataStructure {
     let currentInstance = "";
     let currentElement: IElement | null = null;
 
-    // Iterate through the tokens to parse the SDF content.
     for (let i = 0; i < tokens.length; i++) {
       if (tokens[i] === "CELLTYPE") {
         currentCellType = tokens[i + 1].replace(/"/g, "");
@@ -64,12 +64,13 @@ export function parseSdfContent(content: string): IDataStructure {
         currentElement = {
           id: elementId++,
           name: currentInstance,
+          x: null,
+          y: null,
           type: currentCellType,
-          innerText: `Element of type ${currentCellType}`,
-          icon: "path-to-an-icon",
-          clicked: false,
           inputs: [],
           outputs: [],
+          internal_delay: 0,
+          setup_time: 0,
         };
 
         output.elements.push(currentElement);
@@ -78,23 +79,27 @@ export function parseSdfContent(content: string): IDataStructure {
         const from = tokens[i + 1].replace(/\[|\]/g, "");
         const to = tokens[i + 2];
 
-        // Extract timing delay values (min, typical, max) for the connection.
+        // Extract delay values (min, typical, max)
         const delayValues = extractDelays(tokens, i + 3);
         const delay = delayValues.typical ?? 0.2;
 
+        currentElement.internal_delay = delayValues.max ?? delay;
+        currentElement.setup_time = delayValues.min ?? 0;
+
+        const wireName = `wire_${connectionId++}`;
+        wireMap[from] = wireName;
+
         const connection: IConnection = {
           id: connectionId++,
-          from: `${currentInstance}.${from}`,
-          fromLabel: "input",
-          to: `${currentInstance}.${to}`,
-          toLabel: "output",
-          color: "red",
+          name: wireName,
+          type: "wire",
+          color: "#000000",
           time: delay,
         };
 
         output.connections.push(connection);
-        currentElement.outputs.push(to);
-        currentElement.inputs.push(from);
+        currentElement.outputs.push({ wireName, outputName: to || `output_${connectionId}` });
+        currentElement.inputs.push({ wireName, inputName: from || `input_${connectionId}` });
       }
     }
   } catch (err) {
