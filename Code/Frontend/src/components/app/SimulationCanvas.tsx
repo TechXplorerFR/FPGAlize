@@ -12,6 +12,14 @@ import {
   type CanvasState,
 } from "@/lib/services/canvas-history";
 import { toast } from "sonner";
+import {
+  calculatePortPosition,
+} from "@/lib/config/element-ports";
+import {
+  calculateConnectionPath,
+  getPointAlongPath,
+  type EdgePoint,
+} from "@/lib/utils/connection-router";
 
 // Debounce helper function
 function debounce<T extends (...args: any[]) => any>(
@@ -24,6 +32,30 @@ function debounce<T extends (...args: any[]) => any>(
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
+}
+
+// Calculate exact edge point based on port direction and element dimensions
+function calculateEdgePoint(
+  x: number,
+  y: number,
+  direction: "left" | "right" | "top" | "bottom",
+  elementX: number,
+  elementY: number,
+  width: number,
+  height: number
+): { x: number; y: number } {
+  switch (direction) {
+    case "left":
+      return { x: elementX, y };
+    case "right":
+      return { x: elementX + width, y };
+    case "top":
+      return { x, y: elementY };
+    case "bottom":
+      return { x, y: elementY + height };
+    default:
+      return { x, y };
+  }
 }
 
 export default function SimulationCanvas({
@@ -79,8 +111,8 @@ export default function SimulationCanvas({
       module_input: "module_input",
       module_output: "module_output",
       clk: "clk",
-      DFF_NE: "DFF_En",
-      DFF: "DFF_noEn",
+      DFF_NE: "DFF_noEn",
+      DFF: "DFF_En",
       LUT1: "LUT_1",
       LUT2: "LUT_2",
       LUT3: "LUT_3",
@@ -98,7 +130,9 @@ export default function SimulationCanvas({
   // Preload images when component mounts
   useEffect(() => {
     const imageCache: { [key: string]: HTMLImageElement } = {};
-    const dimensionsCache: { [key: string]: { width: number; height: number } } = {};
+    const dimensionsCache: {
+      [key: string]: { width: number; height: number };
+    } = {};
     const themePrefix = isDarkTheme ? "d" : "w";
 
     // Create a list of all images to load
@@ -113,11 +147,11 @@ export default function SimulationCanvas({
           const img = new Image();
           img.onload = () => {
             imageCache[type] = img;
-            
+
             // Calculate dimensions that preserve aspect ratio within MAX_COMPONENT_SIZE boundary
             const aspectRatio = img.naturalWidth / img.naturalHeight;
             let width, height;
-            
+
             if (aspectRatio >= 1) {
               // Image is wider or square
               width = MAX_COMPONENT_SIZE;
@@ -127,7 +161,7 @@ export default function SimulationCanvas({
               height = MAX_COMPONENT_SIZE;
               width = MAX_COMPONENT_SIZE * aspectRatio;
             }
-            
+
             dimensionsCache[type] = { width, height };
             resolve();
           };
@@ -336,23 +370,103 @@ export default function SimulationCanvas({
     setConnectionEndpoints(newConnectionEndpoints);
   }, [elements, connections]);
 
-  // Get connection endpoints based on element and connection
-  const getConnectionPoints = useCallback((endpoint: ConnectionEndpoints) => {
-    const { sourceElement, destElement } = endpoint;
+  // Get connection endpoints based on element and connection - enhanced to include path calculation
+  const getConnectionPoints = useCallback(
+    (endpoint: ConnectionEndpoints) => {
+      const { sourceElement, destElement, sourcePort, destPort } = endpoint;
 
-    // Calculate element center points for connections
-    const startX = (sourceElement.x ?? 0) + 25;
-    const startY = (sourceElement.y ?? 0) + 25;
-    const endX = (destElement.x ?? 0) + 25;
-    const endY = (destElement.y ?? 0) + 25;
+      // Get the dimensions for source and target elements
+      const sourceDimensions = imageDimensions[sourceElement.type] || {
+        width: 50,
+        height: 50,
+      };
+      const destDimensions = imageDimensions[destElement.type] || {
+        width: 50,
+        height: 50,
+      };
 
-    return {
-      startX,
-      startY,
-      endX,
-      endY,
-    };
-  }, []);
+      // Calculate port positions with directions using the enhanced function
+      const startPortInfo = calculatePortPosition(
+        sourceElement,
+        sourcePort,
+        "output",
+        sourceDimensions
+      );
+
+      const endPortInfo = calculatePortPosition(
+        destElement,
+        destPort,
+        "input",
+        destDimensions
+      );
+
+      // Use calculated positions or fall back to element centers
+      const startX =
+        startPortInfo?.x ?? (sourceElement.x ?? 0) + sourceDimensions.width / 2;
+      const startY =
+        startPortInfo?.y ??
+        (sourceElement.y ?? 0) + sourceDimensions.height / 2;
+      const endX =
+        endPortInfo?.x ?? (destElement.x ?? 0) + destDimensions.width / 2;
+      const endY =
+        endPortInfo?.y ?? (destElement.y ?? 0) + destDimensions.height / 2;
+
+      // Get port directions
+      const sourceDirection = startPortInfo?.direction || "right";
+      const destDirection = endPortInfo?.direction || "left";
+
+      // Calculate exact edge points where connections should start/end
+      const sourceEdge = calculateEdgePoint(
+        startX,
+        startY,
+        sourceDirection,
+        sourceElement.x ?? 0,
+        sourceElement.y ?? 0,
+        sourceDimensions.width,
+        sourceDimensions.height
+      );
+
+      const destEdge = calculateEdgePoint(
+        endX,
+        endY,
+        destDirection,
+        destElement.x ?? 0,
+        destElement.y ?? 0,
+        destDimensions.width,
+        destDimensions.height
+      );
+
+      // Calculate the connection path using the router utility
+      const sourceEdgeWithDirection: EdgePoint = {
+        ...sourceEdge,
+        direction: sourceDirection,
+      };
+
+      const destEdgeWithDirection: EdgePoint = {
+        ...destEdge,
+        direction: destDirection,
+      };
+
+      // Generate the complete path for the connection
+      const path = calculateConnectionPath(
+        sourceEdgeWithDirection,
+        destEdgeWithDirection
+      );
+
+      return {
+        startX,
+        startY,
+        endX,
+        endY,
+        sourceDirection,
+        destDirection,
+        sourceEdge,
+        destEdge,
+        path,
+      };
+    },
+    [imageDimensions]
+  );
 
   // Memoize drawCanvas to prevent recreation on each render
   const drawCanvas = useCallback(() => {
@@ -384,51 +498,53 @@ export default function SimulationCanvas({
       return;
     }
 
-    // Draw connections with horizontal and vertical paths
+    // Draw connections with path-based routing
     ctx.strokeStyle = isDarkTheme ? "rgb(226,226,226)" : "black";
     ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
 
     connectionEndpoints.forEach((endpoint) => {
-      const { startX, startY, endX, endY } = getConnectionPoints(endpoint);
+      const {
+        startX,
+        startY,
+        endX,
+        endY,
+        sourceDirection,
+        destDirection,
+        sourceEdge,
+        destEdge,
+        path,
+      } = getConnectionPoints(endpoint);
+
       const { connection } = endpoint;
 
-      // Draw the wire path (horizontal and then vertical)
+      // Draw the connection path
       ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      if (startX !== endX) ctx.lineTo(endX, startY); // Horizontal segment
-      if (startY !== endY) ctx.lineTo(endX, endY); // Vertical segment
+
+      // Draw all segments of the path
+      if (path && path.length > 1) {
+        ctx.moveTo(path[0].x, path[0].y);
+
+        for (let i = 1; i < path.length; i++) {
+          ctx.lineTo(path[i].x, path[i].y);
+        }
+      } else {
+        // Fallback to direct line if path calculation failed
+        ctx.moveTo(sourceEdge.x, sourceEdge.y);
+        ctx.lineTo(destEdge.x, destEdge.y);
+      }
+
       ctx.stroke();
 
-      // Draw the impulse (as a blue circle) along the wire
+      // Draw the impulse along the calculated path
       const impulsePosition: number = impulses[connection.name];
+      if (impulsePosition !== undefined && path && path.length > 1) {
+        // Get position along the path based on the impulse percentage
+        const impulsePoint = getPointAlongPath(path, impulsePosition);
 
-      if (impulsePosition !== undefined) {
-        let impulseX = startX;
-        let impulseY = startY;
-
-        const horizontalDistance = Math.abs(endX - startX);
-        const verticalDistance = Math.abs(endY - startY);
-        const totalDistance = horizontalDistance + verticalDistance;
-
-        if (impulsePosition <= horizontalDistance / totalDistance) {
-          // Move along the horizontal segment
-          impulseX =
-            startX +
-            (endX - startX) *
-              ((impulsePosition * totalDistance) / horizontalDistance);
-        } else {
-          // Move along the vertical segment
-          impulseX = endX;
-          impulseY =
-            startY +
-            (endY - startY) *
-              ((impulsePosition * totalDistance - horizontalDistance) /
-                verticalDistance);
-        }
-
+        // Draw the impulse
         ctx.fillStyle = connection.color || "blue";
         ctx.beginPath();
-        ctx.arc(impulseX, impulseY, 5, 0, Math.PI * 2);
+        ctx.arc(impulsePoint.x, impulsePoint.y, 5 / zoomLevel, 0, Math.PI * 2);
         ctx.fill();
       }
     });
@@ -438,39 +554,21 @@ export default function SimulationCanvas({
       // Get the image for this element type directly
       const image = componentImages[el.type];
 
-      // If the image is loaded, draw it; otherwise, fall back to colored rectangle
+      // If the image is loaded, draw it
       if (image) {
         // Get the calculated dimensions that preserve aspect ratio
-        const dimensions = imageDimensions[el.type] || { width: 50, height: 50 };
-        
-        // Center the image within the element's 50x50 area
+        const dimensions = imageDimensions[el.type] || {
+          width: 50,
+          height: 50,
+        };
+
+        // Center the image within the element's area
         const x = (el.x ?? 0) + (50 - dimensions.width) / 2;
         const y = (el.y ?? 0) + (50 - dimensions.height) / 2;
-        
+
         // Draw the image with proper aspect ratio
         ctx.drawImage(image, x, y, dimensions.width, dimensions.height);
       }
-      // else {
-      //   // Fall back to original colored rectangle logic
-      //   let elementColor = "lightcoral";
-      //   if (el.type === "module_input") {
-      //     elementColor = "lightgreen";
-      //   } else if (el.type === "module_output") {
-      //     elementColor = "lightblue";
-      //   } else if (el.type === "DFF") {
-      //     elementColor = "orange";
-      //   }
-
-      //   ctx.fillStyle = elementColor;
-      //   ctx.fillRect(el.x ?? 0, el.y ?? 0, 50, 50);
-      // }
-
-      // Draw labels (keep existing text rendering)
-      // ctx.fillStyle = isDarkTheme ? "white" : "black";
-      // ctx.font = `${Math.max(8, 16 / zoomLevel)}px Arial`;
-      // ctx.textAlign = "center";
-      // ctx.textBaseline = "middle";
-      // ctx.fillText(el.name, (el.x ?? 0) + 25, (el.y ?? 0) + 25);
     });
 
     ctx.restore();
@@ -483,7 +581,7 @@ export default function SimulationCanvas({
     isDarkTheme,
     getConnectionPoints,
     componentImages,
-    imageDimensions, // Add imageDimensions to dependencies
+    imageDimensions,
   ]);
 
   // Store elements in sessionStorage whenever they change

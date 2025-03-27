@@ -89,11 +89,11 @@ export function parseVerilogContent(content: string): IDataStructure {
 
   try {
     const tokens = tokenizeVerilog(content);
-    let currentModule = "";
+    // let currentModule = "";
 
     for (let i = 0; i < tokens.length; i++) {
       if (tokens[i] === "module") {
-        currentModule = tokens[i + 1];
+        // currentModule = tokens[i + 1];
       }
 
       if (tokens[i] === "input") {
