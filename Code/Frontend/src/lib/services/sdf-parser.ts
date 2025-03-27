@@ -1,5 +1,4 @@
 import type { IConnection, IElement, IDataStructure } from "@/lib/types/types";
-import fs from "fs/promises";
 
 /**
  * Tokenizes the content of an SDF file into an array of relevant tokens for easier parsing.

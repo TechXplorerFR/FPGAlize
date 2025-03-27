@@ -25,25 +25,6 @@ export type Tab = {
 };
 
 /**
- * Represents an element in the simulation canvas
- * @typedef {Object} Element
- * @property {number} id - Unique identifier for the element.
- * @property {number} x - X-coordinate of the element.
- * @property {number} y - Y-coordinate of the element.
- * @property {boolean} isDragging - Boolean flag for UI interaction.
- * @property {number[]} connectedTo - List of element IDs connected to this element.
- */
-export type Element = {
-  id: number;
-  name: string;
-  x: number;
-  y: number;
-  icon: string;
-  isDragging: boolean;
-  connectedTo: number[];
-};
-
-/**
  * Represents an electronic component or module in the design.
  * @typedef {Object} IElement
  * @property {number} id - Unique identifier for the element.
@@ -58,31 +39,50 @@ export type Element = {
 export type IElement = {
   id: number;
   name: string;
+  x: number | null;
+  y: number | null;
   type: string;
-  innerText: string;
-  icon: string;
-  clicked: boolean;
-  inputs: string[];
-  outputs: string[];
+  inputs: IElementInput[];
+  outputs: IElementOutput[];
+  internal_delay: number;
+  setup_time: number;
+};
+
+/**
+ * Represents an input signal for an electronic component.
+ * @typedef {Object} IElementInput
+ * @property {string} wireName - Name of the wire connected to the input.
+ * @property {string} inputName - Name of the input signal.
+ */
+export type IElementInput = {
+  wireName: string;
+  inputName: string;
+};
+
+/**
+ * Represents an output signal for an electronic component.
+ * @typedef {Object} IElementOutput
+ * @property {string} wireName - Name of the wire connected to the output.
+ * @property {string} outputName - Name of the output signal.
+ */
+export type IElementOutput = {
+  wireName: string;
+  outputName: string;
 };
 
 /**
  * Represents a connection between two electronic components.
  * @typedef {Object} IConnection
  * @property {number} id - Unique identifier for the connection.
- * @property {string} from - Source signal name, including instance reference.
- * @property {string} fromLabel - Label describing the source signal.
- * @property {string} to - Destination signal name, including instance reference.
- * @property {string} toLabel - Label describing the destination signal.
- * @property {string} color - Visual color for the connection, typically for UI display.
- * @property {number} time - Delay in the connection (extracted from SDF timing values).
+ * @property {string} name - Name of the connection (e.g., wire name).
+ * @property {string} type - Type of the connection (e.g., wire).
+ * @property {string} color - Color representation of the connection.
+ * @property {number} time - Time delay associated with the connection.
  */
 export type IConnection = {
   id: number;
-  from: string;
-  fromLabel: string;
-  to: string;
-  toLabel: string;
+  name: string;
+  type: "wire";
   color: string;
   time: number;
 };

@@ -1,6 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Example, type Element, IDataStructure } from "@/lib/types/types";
-import { elementList } from "@/data/sample-elements";
+import { Example, type IElement, type IConnection } from "@/lib/types/types";
 import CanvasActionBar from "./CanvasActionBar";
 import { getTheme } from "../theme-provider";
 import {
@@ -21,6 +20,15 @@ function debounce<T extends (...args: any[]) => any>(
   };
 }
 
+// Type to track a connection with source and destination
+type ConnectionEndpoints = {
+  connection: IConnection;
+  sourceElement: IElement;
+  destElement: IElement;
+  sourcePort: string;
+  destPort: string;
+};
+
 export default function SimulationCanvas({
   activeTabId,
   examples,
@@ -32,10 +40,11 @@ export default function SimulationCanvas({
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [elements, setElements] = useState<Element[]>(() => {
-    const saved = sessionStorage.getItem("elements");
-    return saved ? JSON.parse(saved) : elementList;
-  });
+  const [elements, setElements] = useState<IElement[]>([]);
+  const [connections, setConnections] = useState<IConnection[]>([]);
+  const [connectionEndpoints, setConnectionEndpoints] = useState<
+    ConnectionEndpoints[]
+  >([]);
 
   // Get theme inside component body
   const theme = getTheme();
@@ -57,8 +66,9 @@ export default function SimulationCanvas({
   // Initialize the canvas history
   const initialCanvasState: CanvasState = {
     elements,
+    connections,
     elementPositions: new Map(
-      elements.map((el) => [el.id.toString(), { x: el.x, y: el.y }])
+      elements.map((el) => [el.id.toString(), { x: el.x ?? 0, y: el.y ?? 0 }])
     ),
   };
 
@@ -70,13 +80,15 @@ export default function SimulationCanvas({
     debounce(() => {
       // Only push state if elements were actually modified by user actions
       if (elementsModified) {
-        const currentElementPositions = new Map(
-          elements.map((el) => [el.id.toString(), { x: el.x, y: el.y }])
-        );
-
         const currentState: CanvasState = {
           elements,
-          elementPositions: currentElementPositions,
+          connections,
+          elementPositions: new Map(
+            elements.map((el) => [
+              el.id.toString(),
+              { x: el.x ?? 0, y: el.y ?? 0 },
+            ])
+          ),
         };
 
         pushState(currentState);
@@ -84,8 +96,31 @@ export default function SimulationCanvas({
         setElementsModified(false);
       }
     }, 500), // 500ms debounce time
-    [elements, pushState, elementsModified]
+    [elements, connections, pushState, elementsModified]
   );
+
+  // Load data from active example
+  useEffect(() => {
+    const activeExample = examples.find(
+      (example) =>
+        example.jsonOutput &&
+        activeTabId.includes(example.originalVerilogFile.name)
+    );
+
+    if (activeExample && activeExample.jsonOutput) {
+      // Transform elements to include position information
+      const positionedElements = activeExample.jsonOutput.elements.map(
+        (el, index) => ({
+          ...el,
+          x: 100 + index * 150, // Simple positioning logic
+          y: 100 + (index % 3) * 80,
+        })
+      );
+
+      setElements(positionedElements);
+      setConnections(activeExample.jsonOutput.connections);
+    }
+  }, [activeTabId, examples]);
 
   // Make sure state is pushed to history after relevant operations
   useEffect(() => {
@@ -96,7 +131,8 @@ export default function SimulationCanvas({
   const handleUndo = useCallback(() => {
     const prevState = undo();
     if (prevState) {
-      setElements(prevState.elements);
+      setElements(prevState.elements as IElement[]);
+      setConnections(prevState.connections);
     }
   }, [undo]);
 
@@ -104,15 +140,67 @@ export default function SimulationCanvas({
   const handleRedo = useCallback(() => {
     const nextState = redo();
     if (nextState) {
-      setElements(nextState.elements);
+      setElements(nextState.elements as IElement[]);
+      setConnections(nextState.connections);
     }
   }, [redo]);
 
   // Handle reset action
   const handleReset = useCallback(() => {
     const initialState = reset();
-    setElements(initialState.elements);
+    setElements(initialState.elements as IElement[]);
+    setConnections(initialState.connections);
   }, [reset]);
+
+  // Update connection endpoints when elements or connections change
+  useEffect(() => {
+    const newConnectionEndpoints: ConnectionEndpoints[] = [];
+
+    connections.forEach((connection) => {
+      // Find source element (element that has this connection name in its outputs)
+      const sourceElement = elements.find((el) =>
+        el.outputs.some((output) => output.wireName === connection.name)
+      );
+
+      // Find destination element (element that has this connection name in its inputs)
+      const destElement = elements.find((el) =>
+        el.inputs.some((input) => input.wireName === connection.name)
+      );
+
+      if (sourceElement && destElement) {
+        const sourcePort =
+          sourceElement.outputs.find(
+            (output) => output.wireName === connection.name
+          )?.outputName || "";
+
+        const destPort =
+          destElement.inputs.find((input) => input.wireName === connection.name)
+            ?.inputName || "";
+
+        newConnectionEndpoints.push({
+          connection,
+          sourceElement,
+          destElement,
+          sourcePort,
+          destPort,
+        });
+      }
+    });
+
+    setConnectionEndpoints(newConnectionEndpoints);
+  }, [elements, connections]);
+
+  // Get connection endpoints based on element and connection
+  const getConnectionPoints = useCallback((endpoint: ConnectionEndpoints) => {
+    const { sourceElement, destElement } = endpoint;
+
+    return {
+      startX: (sourceElement.x ?? 0) + 25,
+      startY: (sourceElement.y ?? 0) + 25,
+      endX: (destElement.x ?? 0) + 25,
+      endY: (destElement.y ?? 0) + 25,
+    };
+  }, []);
 
   // Memoize drawCanvas to prevent recreation on each render
   const drawCanvas = useCallback(() => {
@@ -128,86 +216,83 @@ export default function SimulationCanvas({
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(zoomLevel, zoomLevel);
 
-    // Draw wires with horizontal and vertical paths
+    // Draw connections with horizontal and vertical paths
     ctx.strokeStyle = isDarkTheme ? "rgb(226,226,226)" : "black";
     ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
 
-    elements.forEach((el) => {
-      el.connectedTo.forEach((connectedId) => {
-        const connectedEl = elements.find((e) => e.id === connectedId);
-        if (connectedEl) {
-          const startX = el.x + 25;
-          const startY = el.y + 25;
-          const endX = connectedEl.x + 25;
-          const endY = connectedEl.y + 25;
+    connectionEndpoints.forEach((endpoint) => {
+      const { startX, startY, endX, endY } = getConnectionPoints(endpoint);
+      const { connection } = endpoint;
 
-          // Draw the wire path (horizontal and then vertical)
-          ctx.beginPath();
-          ctx.moveTo(startX, startY);
-          if (startX !== endX) ctx.lineTo(endX, startY); // Horizontal segment
-          if (startY !== endY) ctx.lineTo(endX, endY); // Vertical segment
-          ctx.stroke();
+      // Draw the wire path (horizontal and then vertical)
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      if (startX !== endX) ctx.lineTo(endX, startY); // Horizontal segment
+      if (startY !== endY) ctx.lineTo(endX, endY); // Vertical segment
+      ctx.stroke();
 
-          // Draw the impulse (as a blue circle) along the wire
-          const impulsePosition: number = impulses[`${el.id}-${connectedId}`];
+      // Draw the impulse (as a blue circle) along the wire
+      const impulsePosition: number = impulses[connection.name];
 
-          if (impulsePosition !== undefined) {
-            let impulseX = startX;
-            let impulseY = startY;
+      if (impulsePosition !== undefined) {
+        let impulseX = startX;
+        let impulseY = startY;
 
-            const horizontalDistance = Math.abs(endX - startX);
-            const verticalDistance = Math.abs(endY - startY);
-            const totalDistance = horizontalDistance + verticalDistance;
+        const horizontalDistance = Math.abs(endX - startX);
+        const verticalDistance = Math.abs(endY - startY);
+        const totalDistance = horizontalDistance + verticalDistance;
 
-            if (impulsePosition <= horizontalDistance / totalDistance) {
-              // Move along the horizontal segment
-              impulseX =
-                startX +
-                (endX - startX) *
-                  ((impulsePosition * totalDistance) / horizontalDistance);
-            } else {
-              // Move along the vertical segment
-              impulseX = endX;
-              impulseY =
-                startY +
-                (endY - startY) *
-                  ((impulsePosition * totalDistance - horizontalDistance) /
-                    verticalDistance);
-            }
-
-            ctx.fillStyle = "blue";
-            ctx.beginPath();
-            ctx.arc(impulseX, impulseY, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // When impulse reaches the destination
-            if (impulsePosition >= 0.9) {
-              // console.log(`Succeeded to go to ${connectedId}`);
-            }
-          }
+        if (impulsePosition <= horizontalDistance / totalDistance) {
+          // Move along the horizontal segment
+          impulseX =
+            startX +
+            (endX - startX) *
+              ((impulsePosition * totalDistance) / horizontalDistance);
+        } else {
+          // Move along the vertical segment
+          impulseX = endX;
+          impulseY =
+            startY +
+            (endY - startY) *
+              ((impulsePosition * totalDistance - horizontalDistance) /
+                verticalDistance);
         }
-      });
+
+        ctx.fillStyle = connection.color || "blue";
+        ctx.beginPath();
+        ctx.arc(impulseX, impulseY, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
     });
 
     // Draw elements
     elements.forEach((el) => {
       ctx.fillStyle = "lightcoral";
-      ctx.fillRect(el.x, el.y, 50, 50);
+      ctx.fillRect(el.x ?? 0, el.y ?? 0, 50, 50);
 
       ctx.fillStyle = isDarkTheme ? "white" : "black";
       ctx.font = `${20 / zoomLevel}px Arial`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(el.name, el.x + 25, el.y + 25);
+      ctx.fillText(el.name, el.x ?? 0 + 25, el.y ?? 0 + 25);
     });
 
     ctx.restore();
-  }, [elements, panOffset, zoomLevel, impulses, isDarkTheme]);
+  }, [
+    elements,
+    connectionEndpoints,
+    panOffset,
+    zoomLevel,
+    impulses,
+    isDarkTheme,
+    getConnectionPoints,
+  ]);
 
   // Store elements in sessionStorage whenever they change
   useEffect(() => {
     sessionStorage.setItem("elements", JSON.stringify(elements));
-  }, [elements]);
+    sessionStorage.setItem("connections", JSON.stringify(connections));
+  }, [elements, connections]);
 
   // Draw canvas whenever necessary
   useEffect(() => {
@@ -270,14 +355,12 @@ export default function SimulationCanvas({
           }
         });
 
-        // Add new impulses for wires that are not yet moving
-        elements.forEach((el) => {
-          el.connectedTo.forEach((connectedId) => {
-            const key = `${el.id}-${connectedId}`; // Use the string key to track impulse for wire
-            if (!(key in prev)) {
-              newImpulses[key] = 0; // Start new impulse from the beginning of the wire
-            }
-          });
+        // Add new impulses for connections that are not yet moving
+        connections.forEach((connection) => {
+          const connectionName = connection.name;
+          if (!(connectionName in prev)) {
+            newImpulses[connectionName] = 0; // Start new impulse from the beginning of the wire
+          }
         });
 
         return newImpulses;
@@ -285,7 +368,7 @@ export default function SimulationCanvas({
     }, 50); // impulses speed
 
     return () => clearInterval(interval);
-  }, [elements, playing]);
+  }, [connections, playing]);
 
   const handleMouseDown = (event: React.MouseEvent) => {
     const { offsetX, offsetY, button } = event.nativeEvent;
@@ -294,7 +377,6 @@ export default function SimulationCanvas({
       // Middle or right-click to start panning
       setIsPanning(true);
       setStartPan({ x: offsetX, y: offsetY });
-      // Remove the setElementsModified call from here
       return;
     }
 
@@ -304,15 +386,14 @@ export default function SimulationCanvas({
 
     const element = elements.find(
       (el) =>
-        canvasX >= el.x &&
-        canvasX <= el.x + 50 &&
-        canvasY >= el.y &&
-        canvasY <= el.y + 50
+        canvasX >= (el.x ?? 0) &&
+        canvasX <= (el.x ?? 0) + 50 &&
+        canvasY >= (el.y ?? 0) &&
+        canvasY <= (el.y ?? 0) + 50
     );
 
     if (element) {
       setDraggingElement(element.id);
-      // Remove the setElementsModified call from here
     }
   };
 
@@ -324,7 +405,6 @@ export default function SimulationCanvas({
         y: prev.y + (offsetY - startPan.y),
       }));
       setStartPan({ x: offsetX, y: offsetY });
-      // No need to set elementsModified here as it was set in mouseDown
       return;
     }
 
@@ -346,7 +426,6 @@ export default function SimulationCanvas({
           : el
       )
     );
-    // No need to set elementsModified here as it was set in mouseDown
   };
 
   const handleMouseUp = (event: React.MouseEvent) => {
@@ -363,16 +442,11 @@ export default function SimulationCanvas({
       setElementsModified(true);
     }
 
-    // To remove
-    console.log(activeTabId, examples);
-    // ---------------
     setDraggingElement(null);
   };
 
   // Modified wheel handler for both zoom and pan
   const handleWheel = (event: React.WheelEvent) => {
-    // event.preventDefault(); // Prevent default scrolling behavior
-
     // Check if Ctrl key is pressed for zooming
     if (event.ctrlKey) {
       // Set elements modified when zooming
@@ -427,53 +501,6 @@ export default function SimulationCanvas({
     setZoomLevel(1);
     setPanOffset({ x: 0, y: 0 });
   };
-
-  // Get the current example and its JSON data
-  const currentExample = examples.find(
-    (example) => example.originalVerilogFileInformation.name === activeTabId
-  );
-
-  const jsonModel = currentExample?.jsonOutput || null;
-
-  useEffect(() => {
-    if (jsonModel) {
-      // If we have a parsed JSON model, use it for the simulation
-      console.log("Using parsed JSON model for simulation:", jsonModel);
-
-      // Here you would set up your elements based on the parsed data
-      // For example:
-      if (jsonModel.elements.length > 0) {
-        // Initialize your elements and connections from the parsed data
-        // This would replace or supplement the sample elementList
-
-        // This is a placeholder - implement according to your exact needs
-        const parsedElements: Element[] = jsonModel.elements.map(
-          (el, index) => ({
-            id: el.id,
-            name: el.name,
-            icon: "path-to-an-icon", // Use appropriate icon based on type
-            x: 100 + index * 100, // Position elements in a grid or other layout
-            y: 100 + index * 50,
-            isDragging: false,
-            connectedTo: jsonModel.connections
-              .filter(
-                (conn) =>
-                  conn.from.startsWith(`${el.name}.`) ||
-                  conn.to.startsWith(`${el.name}.`)
-              )
-              .map((conn) => {
-                // Extract the connected element's ID
-                // This depends on your connection structure
-                return conn.id;
-              }),
-          })
-        );
-
-        // Set elements state with parsed data
-        // setElements(parsedElements); // Uncomment when implemented
-      }
-    }
-  }, [jsonModel]);
 
   return (
     <div ref={containerRef} className="w-full h-[88vh] bg-gray-100">

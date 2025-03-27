@@ -1,8 +1,9 @@
 import { useState, useCallback } from "react";
-import { type Element } from "@/lib/types/types";
+import { IConnection, type IElement } from "@/lib/types/types";
 
 export interface CanvasState {
-  elements: Element[];
+  elements: IElement[];
+  connections: IConnection[];
   elementPositions: Map<string, { x: number; y: number }>;
 }
 
