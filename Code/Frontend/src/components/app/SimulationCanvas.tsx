@@ -637,13 +637,6 @@ export default function SimulationCanvas({
         onWheel={handleWheel}
         onContextMenu={(e) => e.preventDefault()}
       />
-      {/* Debug info */}
-      {elements.length === 0 && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center text-gray-500 dark:text-gray-400">
-          <p>No elements to display</p>
-          <p className="text-sm">Select an example from the drawer</p>
-        </div>
-      )}
       <div className="relative">
         <div className="absolute bottom-2 left-6">
           <CanvasActionBar
