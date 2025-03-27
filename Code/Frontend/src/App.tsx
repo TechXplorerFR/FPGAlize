@@ -76,7 +76,7 @@ function App() {
               {
                 id: 0,
                 name: "clk",
-                type: "module_input",
+                type: "clk",
                 inputs: [],
                 outputs: [
                   {

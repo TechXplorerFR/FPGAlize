@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   Example,
   type IElement,
@@ -11,6 +11,7 @@ import {
   useCanvasHistory,
   type CanvasState,
 } from "@/lib/services/canvas-history";
+import { toast } from "sonner";
 
 // Debounce helper function
 function debounce<T extends (...args: any[]) => any>(
@@ -58,6 +59,94 @@ export default function SimulationCanvas({
 
   // New state to track the impulses
   const [impulses, setImpulses] = useState<{ [key: string]: number }>({});
+
+  // Add a new state to store preloaded images
+  const [componentImages, setComponentImages] = useState<{
+    [key: string]: HTMLImageElement;
+  }>({});
+
+  // Add a new state for image dimensions
+  const [imageDimensions, setImageDimensions] = useState<{
+    [key: string]: { width: number; height: number };
+  }>({});
+
+  // Maximum size for component boundaries
+  const MAX_COMPONENT_SIZE = 90;
+
+  // Define a mapping of element types to image filenames - memoize to prevent recreating on each render
+  const elementTypeToImageMap = useMemo(
+    () => ({
+      module_input: "module_input",
+      module_output: "module_output",
+      clk: "clk",
+      DFF_NE: "DFF_En",
+      DFF: "DFF_noEn",
+      LUT1: "LUT_1",
+      LUT2: "LUT_2",
+      LUT3: "LUT_3",
+      LUT4: "LUT_4",
+      and: "and",
+      nand: "nand",
+      nor: "nor",
+      nxor: "nxor",
+      or: "or",
+      xor: "xor",
+    }),
+    []
+  ); // Empty dependency array as this mapping never changes
+
+  // Preload images when component mounts
+  useEffect(() => {
+    const imageCache: { [key: string]: HTMLImageElement } = {};
+    const dimensionsCache: { [key: string]: { width: number; height: number } } = {};
+    const themePrefix = isDarkTheme ? "d" : "w";
+
+    // Create a list of all images to load
+    const imagePromises = Object.entries(elementTypeToImageMap).map(
+      ([type, imageName]) => {
+        // Fix path to use assets in public directory
+        const path = `${
+          import.meta.env.BASE_URL || ""
+        }images/components/${themePrefix}_${imageName}.png`;
+
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            imageCache[type] = img;
+            
+            // Calculate dimensions that preserve aspect ratio within MAX_COMPONENT_SIZE boundary
+            const aspectRatio = img.naturalWidth / img.naturalHeight;
+            let width, height;
+            
+            if (aspectRatio >= 1) {
+              // Image is wider or square
+              width = MAX_COMPONENT_SIZE;
+              height = MAX_COMPONENT_SIZE / aspectRatio;
+            } else {
+              // Image is taller
+              height = MAX_COMPONENT_SIZE;
+              width = MAX_COMPONENT_SIZE * aspectRatio;
+            }
+            
+            dimensionsCache[type] = { width, height };
+            resolve();
+          };
+          img.onerror = (e) => {
+            toast.error(`Failed to load image: ${path}`);
+            console.error(`Failed to load image: ${path}`, e);
+            resolve(); // Resolve anyway to not block other images
+          };
+          img.src = path;
+        });
+      }
+    );
+
+    // When all images are loaded, update the state
+    Promise.all(imagePromises).then(() => {
+      setComponentImages(imageCache);
+      setImageDimensions(dimensionsCache);
+    });
+  }, [isDarkTheme, elementTypeToImageMap]); // Reload images when theme changes
 
   // Initialize the canvas history
   const initialCanvasState: CanvasState = {
@@ -115,8 +204,6 @@ export default function SimulationCanvas({
           };
         }
       );
-
-      console.log("Positioned elements:", positionedElements.length);
       setElements(positionedElements);
       setConnections(activeExample.jsonOutput.connections);
 
@@ -126,6 +213,7 @@ export default function SimulationCanvas({
       // Center the view on the elements
       centerViewOnElements(positionedElements);
     } else {
+      toast.warning("No active example found");
       console.warn("No active example found for:", activeTabId);
       // Clear the canvas if no example is selected
       setElements([]);
@@ -205,14 +293,6 @@ export default function SimulationCanvas({
       return;
     }
 
-    console.log(
-      "Building connection endpoints from",
-      elements.length,
-      "elements and",
-      connections.length,
-      "connections"
-    );
-
     const newConnectionEndpoints: ConnectionEndpoints[] = [];
 
     connections.forEach((connection) => {
@@ -253,12 +333,6 @@ export default function SimulationCanvas({
         });
       }
     });
-
-    console.log(
-      "Created",
-      newConnectionEndpoints.length,
-      "connection endpoints"
-    );
     setConnectionEndpoints(newConnectionEndpoints);
   }, [elements, connections]);
 
@@ -361,41 +435,42 @@ export default function SimulationCanvas({
 
     // Draw elements
     elements.forEach((el) => {
-      // Determine element color based on type
-      let elementColor = "lightcoral";
-      if (el.type === "module_input") {
-        elementColor = "lightgreen";
-      } else if (el.type === "module_output") {
-        elementColor = "lightblue";
-      } else if (el.type === "DFF") {
-        elementColor = "orange";
+      // Get the image for this element type directly
+      const image = componentImages[el.type];
+
+      // If the image is loaded, draw it; otherwise, fall back to colored rectangle
+      if (image) {
+        // Get the calculated dimensions that preserve aspect ratio
+        const dimensions = imageDimensions[el.type] || { width: 50, height: 50 };
+        
+        // Center the image within the element's 50x50 area
+        const x = (el.x ?? 0) + (50 - dimensions.width) / 2;
+        const y = (el.y ?? 0) + (50 - dimensions.height) / 2;
+        
+        // Draw the image with proper aspect ratio
+        ctx.drawImage(image, x, y, dimensions.width, dimensions.height);
       }
+      // else {
+      //   // Fall back to original colored rectangle logic
+      //   let elementColor = "lightcoral";
+      //   if (el.type === "module_input") {
+      //     elementColor = "lightgreen";
+      //   } else if (el.type === "module_output") {
+      //     elementColor = "lightblue";
+      //   } else if (el.type === "DFF") {
+      //     elementColor = "orange";
+      //   }
 
-      ctx.fillStyle = elementColor;
-      ctx.fillRect(el.x ?? 0, el.y ?? 0, 50, 50);
+      //   ctx.fillStyle = elementColor;
+      //   ctx.fillRect(el.x ?? 0, el.y ?? 0, 50, 50);
+      // }
 
-      ctx.fillStyle = isDarkTheme ? "white" : "black";
-      ctx.font = `${Math.max(8, 16 / zoomLevel)}px Arial`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(el.name, (el.x ?? 0) + 25, (el.y ?? 0) + 25);
-
-      // Draw smaller port labels if needed
-      if (zoomLevel > 0.6) {
-        ctx.font = `${Math.max(6, 10 / zoomLevel)}px Arial`;
-
-        // Draw input port names
-        el.inputs.forEach((input, idx) => {
-          const portName = input.inputName || `in${idx}`;
-          ctx.fillText(portName, (el.x ?? 0) + 10, (el.y ?? 0) + 10 + idx * 10);
-        });
-
-        // Draw output port names
-        el.outputs.forEach((output, idx) => {
-          const portName = output.outputName || `out${idx}`;
-          ctx.fillText(portName, (el.x ?? 0) + 40, (el.y ?? 0) + 10 + idx * 10);
-        });
-      }
+      // Draw labels (keep existing text rendering)
+      // ctx.fillStyle = isDarkTheme ? "white" : "black";
+      // ctx.font = `${Math.max(8, 16 / zoomLevel)}px Arial`;
+      // ctx.textAlign = "center";
+      // ctx.textBaseline = "middle";
+      // ctx.fillText(el.name, (el.x ?? 0) + 25, (el.y ?? 0) + 25);
     });
 
     ctx.restore();
@@ -407,6 +482,8 @@ export default function SimulationCanvas({
     impulses,
     isDarkTheme,
     getConnectionPoints,
+    componentImages,
+    imageDimensions, // Add imageDimensions to dependencies
   ]);
 
   // Store elements in sessionStorage whenever they change
