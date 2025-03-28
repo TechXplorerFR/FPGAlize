@@ -65,11 +65,11 @@ export const elementPortConfigs: Record<string, ElementPortConfig> = {
   'DFF': {
     inputs: [
       { id: 'D', x: 0.3, y: 0.07, type: 'input' },
-      { id: 'CLK', x: 0.3, y: 1, type: 'input' },
-      { id: 'EN', x: 0.3, y: 0.5, type: 'input' }
+      { id: 'CLK', x: 0.3, y: 0.65, type: 'input' },
+      { id: 'EN', x: 0.3, y: 0.4, type: 'input' }
     ],
     outputs: [
-      { id: 'Q', x: 0, y: 0.2, type: 'output' }
+      { id: 'Q', x: 0, y: 0.07, type: 'output' }
     ]
   },
 };

@@ -128,21 +128,21 @@ function App() {
                 inputs: [
                   {
                     wireName: "wire_1",
-                    inputName: "clk",
+                    inputName: "CLK",  // Correctly capitalized
                   },
                   {
                     wireName: "wire_2",
-                    inputName: "D",
+                    inputName: "D",    // Correctly capitalized
                   },
                   {
                     wireName: "wire_4",
-                    inputName: "async_reset",
+                    inputName: "EN",   // Correctly capitalized
                   },
                 ],
                 outputs: [
                   {
                     wireName: "wire_3",
-                    outputName: "Q",
+                    outputName: "Q",   // Correctly capitalized
                   },
                 ],
                 internal_delay: 303,
@@ -152,7 +152,7 @@ function App() {
               },
               {
                 id: 4,
-                name: "async_reset",
+                name: "enable",        // Renamed from "async_reset" to "enable" for clarity
                 type: "module_input",
                 inputs: [],
                 outputs: [
