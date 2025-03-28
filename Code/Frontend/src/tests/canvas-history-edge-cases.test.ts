@@ -3,7 +3,7 @@ import {
   type CanvasState,
   CanvasHistory,
 } from "../lib/services/canvas-history";
-import { type IElement, type IConnection } from "@/lib/types/types";
+import { type IElement, type IConnection } from "../lib/types/types";
 
 describe("CanvasHistory Edge Cases", () => {
   const createMockElement = (id: number, x: number, y: number): IElement => ({

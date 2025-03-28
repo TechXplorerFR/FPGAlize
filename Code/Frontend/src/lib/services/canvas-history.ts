@@ -60,8 +60,8 @@ export class CanvasHistory {
 
   private cloneState(state: CanvasState): CanvasState {
     return {
-      elements: [...state.elements],
-      connections: [...state.connections],
+      elements: state.elements.map(el => ({ ...el })),  // Deep copy each element
+      connections: state.connections.map(conn => ({ ...conn })),  // Deep copy each connection
       elementPositions: new Map(state.elementPositions),
     };
   }

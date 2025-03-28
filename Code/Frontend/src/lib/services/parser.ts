@@ -63,7 +63,7 @@ export async function getJsonObjectFromParsing(
  * and merges their results into a single structure for browser environments.
  * @param {File} verilogFile - The Verilog (.v) File object.
  * @param {File} sdfFile - The SDF (.sdf) File object.
- * @returns {Promise<IDataStructure>} - JSON object containing merged elements and connections.
+ * @returns {Promise<IDataStructure | null>} - JSON object containing merged elements and connections.
  */
 export async function parseFilesForBrowser(
   verilogFile: File,

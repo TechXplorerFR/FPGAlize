@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { CanvasHistory, useCanvasHistory, type CanvasState } from '../lib/services/canvas-history';
-import { type IElement, type IConnection } from "@/lib/types/types";
+import { type IElement, type IConnection } from "../lib/types/types";
 
 describe('CanvasHistory', () => {
   const createMockElement = (id: number, x: number, y: number): IElement => ({

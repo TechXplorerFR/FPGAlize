@@ -8,7 +8,7 @@ import type { IDataStructure, IElement, IElementInput, IElementOutput } from "@/
  * @param {string} content - The raw content of a Verilog (.v) file.
  * @returns {string[]} - Tokenized words for easier parsing.
  */
-function tokenizeVerilog(content: string): string[] {
+export function tokenizeVerilog(content: string): string[] {
   return content
     .replace(/\(|\)|,|;/g, " ")
     .split(/\s+/)
@@ -23,7 +23,7 @@ function tokenizeVerilog(content: string): string[] {
  * @param {File} file - The Verilog (.v) File object.
  * @returns {Promise<IDataStructure>} - Parsed module elements with their connections.
  */
-async function parseVerilogFile(file: File): Promise<IDataStructure> {
+export async function parseVerilogFile(file: File): Promise<IDataStructure> {
   let output: IDataStructure = { elements: [], connections: [] };
   let elementId = 1;
 
@@ -147,13 +147,14 @@ export function parseVerilogContent(content: string): IDataStructure {
 
 /**
  * Parses a Verilog file and transforms it into a JSON object.
- * This function calls the `parseVerilogFile` function and returns the
- * parsed data structure in JSON format.
+ * This function reads the content of a Verilog file, processes it using parseVerilogContent,
+ * and returns the parsed data structure.
  * @param {File} file - The Verilog (.v) File object.
  * @returns {Promise<IDataStructure>} - JSON object containing parsed elements and connections.
  */
 export async function getJsonObjectFromV(
   file: File
 ): Promise<IDataStructure> {
-  return await parseVerilogFile(file);
+  const content = await file.text();
+  return parseVerilogContent(content);
 }

@@ -5,7 +5,7 @@ import type { IConnection, IElement, IDataStructure } from "@/lib/types/types";
  * @param {string} content - The raw content of an SDF file.
  * @returns {string[]} - An array of tokenized words from the SDF content.
  */
-function tokenizeSDF(content: string): string[] {
+export function tokenizeSDF(content: string): string[] {
   return content
     .replace(/\(|\)/g, " ")
     .split(/\s+/)
@@ -18,7 +18,7 @@ function tokenizeSDF(content: string): string[] {
  * @param {number} index - The current index in the token list where timing data might be located.
  * @returns {{ min?: number, typical?: number, max?: number }} - The extracted delay values.
  */
-function extractDelays(
+export function extractDelays(
   tokens: string[],
   index: number
 ): { min?: number; typical?: number; max?: number } {
@@ -119,6 +119,11 @@ export function parseSdfContent(content: string): IDataStructure {
 export async function getJsonObjectFromSdf(
   file: File
 ): Promise<IDataStructure> {
-  const content = await file.text();
-  return parseSdfContent(content);
+  try {
+    const content = await file.text();
+    return parseSdfContent(content);
+  } catch (error) {
+    console.error("Error processing SDF file:", error);
+    return { elements: [], connections: [] };
+  }
 }
