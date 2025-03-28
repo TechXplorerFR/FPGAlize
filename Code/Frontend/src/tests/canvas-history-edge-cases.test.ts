@@ -3,26 +3,19 @@ import {
   type CanvasState,
   CanvasHistory,
 } from "../lib/services/canvas-history";
+import { type IElement, type IConnection } from "@/lib/types/types";
 
-// Mock Element type
-type Element = {
-  id: number;
-  name: string;
-  x: number;
-  y: number;
-  connectedTo: number[];
-  icon: string; // Added property
-  isDragging: boolean; // Added property
-};
 describe("CanvasHistory Edge Cases", () => {
-  const createMockElement = (id: number, x: number, y: number): Element => ({
+  const createMockElement = (id: number, x: number, y: number): IElement => ({
     id,
     name: `Element ${id}`,
+    type: `type-${id}`,
     x,
     y,
-    connectedTo: [],
-    icon: `icon-${id}`, // Mock value for icon
-    isDragging: false, // Mock value for isDragging
+    inputs: [],
+    outputs: [],
+    internal_delay: 0,
+    setup_time: 0
   });
 
   const createInitialState = (): CanvasState => {
@@ -30,11 +23,13 @@ describe("CanvasHistory Edge Cases", () => {
       createMockElement(1, 10, 10),
       createMockElement(2, 100, 100),
     ];
+    const connections: IConnection[] = [];
 
     return {
       elements,
+      connections,
       elementPositions: new Map(
-        elements.map((el) => [el.id.toString(), { x: el.x, y: el.y }])
+        elements.map((el) => [el.id.toString(), { x: el.x ?? 0, y: el.y ?? 0 }])
       ),
     };
   };
@@ -69,6 +64,7 @@ describe("CanvasHistory Edge Cases", () => {
     // Create a new state
     const newState: CanvasState = {
       elements: [...initialState.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(initialState.elementPositions),
     };
 
@@ -99,26 +95,27 @@ describe("CanvasHistory Edge Cases", () => {
         elements: [
           {
             ...initialState.elements[0],
-            x: initialState.elements[0].x + i * 10,
+            x: (initialState.elements[0]?.x ?? 0) + i * 10,
           },
           {
             ...initialState.elements[1],
-            y: initialState.elements[1].y + i * 10,
+            y: (initialState.elements[1].y ?? 0) + i * 10,
           },
         ],
+        connections: [...initialState.connections],
         elementPositions: new Map([
           [
             "1",
             {
-              x: initialState.elements[0].x + i * 10,
-              y: initialState.elements[0].y,
+              x: (initialState.elements[0].x ?? 0) + i * 10,
+              y: initialState.elements[0].y ?? 0,
             },
           ],
           [
             "2",
             {
-              x: initialState.elements[1].x,
-              y: initialState.elements[1].y + i * 10,
+              x: initialState.elements[1].x ?? 0,
+              y: (initialState.elements[1].y ?? 0) + i * 10,
             },
           ],
         ]),
@@ -155,6 +152,7 @@ describe("CanvasHistory Edge Cases", () => {
   test("should handle empty states correctly", () => {
     const emptyState: CanvasState = {
       elements: [],
+      connections: [],
       elementPositions: new Map(),
     };
 
@@ -164,6 +162,7 @@ describe("CanvasHistory Edge Cases", () => {
     // Should be able to push and retrieve states normally
     const newState: CanvasState = {
       elements: [createMockElement(1, 30, 30)],
+      connections: [],
       elementPositions: new Map([["1", { x: 30, y: 30 }]]),
     };
 

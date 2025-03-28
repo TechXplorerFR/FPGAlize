@@ -1,86 +1,136 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getJsonObjectFromSdf } from '../lib/services/sdf-parser';
-import * as fs from 'node:fs/promises';
+import * as sdf_parser from '../lib/services/sdf-parser';
+import { describe, it, expect, vi } from 'vitest';
 
-// Mock the fs module
-vi.mock('node:fs/promises', () => ({
-  readFile: vi.fn(),
-}));
-
-describe('SDF Parser', () => {
-  const mockSdfPath = '/path/to/test.sdf';
+// Mock the File API for testing browser-specific functions
+global.File = class MockFile {
+  name: string;
+  content: string;
   
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  constructor(content: string[], name: string) {
+    this.name = name;
+    this.content = content.join('');
+  }
+  
+  text(): Promise<string> {
+    return Promise.resolve(this.content);
+  }
+} as any;
 
-  afterEach(() => {
-    vi.resetAllMocks();
-  });
-
-  it('should extract timing delays correctly', async () => {
-    // Mock a sample SDF file content with timing information
-    const mockSdfContent = `
-      (DELAYFILE
-        (SDFVERSION "3.0")
-        (DESIGN "test_module")
-        (CELLTYPE "DFF")
-        (INSTANCE dff1)
-        (IOPATH CLK Q (1.2:1.5:1.8) (2.0:2.5:3.0))
-        (IOPATH D Q (0.5:0.7:0.9))
+describe('SDF Parser Tests', () => {
+  // Sample SDF content for testing
+  const sampleSdfContent = `
+  (DELAYFILE
+    (SDFVERSION "3.0")
+    (DESIGN "test_design")
+    (CELLTYPE "Buffer")
+    (INSTANCE U1)
+    (DELAY
+      (ABSOLUTE
+        (IOPATH A Y (0.1:0.2:0.3))
       )
-    `;
-    
-    // Setup the mock to return our content
-    vi.mocked(fs.readFile).mockResolvedValue(mockSdfContent);
+    )
+    (CELLTYPE "AND2")
+    (INSTANCE U2)
+    (DELAY
+      (ABSOLUTE
+        (IOPATH A Y (0.2:0.3:0.4))
+        (IOPATH B Y (0.1:0.15:0.2))
+      )
+    )
+  )`;
 
-    // Call the function
-    const result = await getJsonObjectFromSdf(mockSdfPath);
-
-    // Verify the parsed structure
-    expect(result).toHaveProperty('elements');
-    expect(result).toHaveProperty('connections');
+  describe('tokenizeSDF function', () => {
+    it('should tokenize SDF content correctly', () => {
+      // Access the private function using type assertion
+      const tokenize = (sdf_parser as any).tokenizeSDF;
+      
+      const tokens = tokenize('(DELAYFILE (DESIGN "test"))');
+      expect(tokens).toContain('DELAYFILE');
+      expect(tokens).toContain('DESIGN');
+      expect(tokens).toContain('test');
+    });
     
-    // Check that we have an element for the DFF instance
-    const elements = result.elements;
-    expect(elements.length).toBeGreaterThan(0);
-    expect(elements.some(el => el.name === 'dff1' && el.type === 'DFF')).toBe(true);
-    
-    // Check connections
-    const connections = result.connections;
-    expect(connections.length).toBeGreaterThan(0);
-    expect(connections.some(conn => 
-      conn.from.includes('dff1.CLK') && 
-      conn.to.includes('dff1.Q') && 
-      conn.time === 1.5 // typical value
-    )).toBe(true);
-    
-    expect(connections.some(conn => 
-      conn.from.includes('dff1.D') && 
-      conn.to.includes('dff1.Q') && 
-      conn.time === 0.7 // typical value
-    )).toBe(true);
+    it('should filter out empty tokens', () => {
+      const tokenize = (sdf_parser as any).tokenizeSDF;
+      const tokens = tokenize('(  DELAYFILE   (DESIGN  "test" ) )');
+      expect(tokens.includes('')).toBe(false);
+    });
   });
-
-  it('should handle empty SDF file gracefully', async () => {
-    // Mock an empty SDF file
-    vi.mocked(fs.readFile).mockResolvedValue('');
-
-    // Call the function
-    const result = await getJsonObjectFromSdf(mockSdfPath);
-
-    // Verify we get an empty structure but no errors
-    expect(result).toEqual({ elements: [], connections: [] });
-  });
-
-  it('should handle file read errors', async () => {
-    // Mock a file read error
-    vi.mocked(fs.readFile).mockRejectedValue(new Error('File not found'));
-
-    // Call and check that the function handles the error
-    const result = await getJsonObjectFromSdf(mockSdfPath);
+  
+  describe('extractDelays function', () => {
+    it('should extract delay values correctly', () => {
+      const extractDelays = (sdf_parser as any).extractDelays;
+      const tokens = ['IOPATH', 'A', 'Y', '0.1:0.2:0.3', 'END'];
+      
+      const delays = extractDelays(tokens, 3);
+      expect(delays.min).toBe(0.1);
+      expect(delays.typical).toBe(0.2);
+      expect(delays.max).toBe(0.3);
+    });
     
-    // Should return empty structure on error
-    expect(result).toEqual({ elements: [], connections: [] });
+    it('should return empty object if no delays found', () => {
+      const extractDelays = (sdf_parser as any).extractDelays;
+      const tokens = ['IOPATH', 'A', 'Y', 'NO_MATCH', 'END'];
+      
+      const delays = extractDelays(tokens, 3);
+      expect(delays).toEqual({});
+    });
+  });
+  
+  describe('parseSdfContent function', () => {
+    it('should parse SDF content into data structure correctly', () => {
+      const result = sdf_parser.parseSdfContent(sampleSdfContent);
+      
+      expect(result).toBeDefined();
+      expect(result.elements.length).toBe(2); // Two instances: U1 and U2
+      expect(result.connections.length).toBeGreaterThan(0);
+      
+      // Check first element properties
+      const firstElement = result.elements[0];
+      expect(firstElement.name).toBe('U1');
+      expect(firstElement.type).toBe('Buffer');
+      expect(firstElement.internal_delay).toBeDefined();
+      
+      // Check second element properties
+      const secondElement = result.elements[1];
+      expect(secondElement.name).toBe('U2');
+      expect(secondElement.type).toBe('AND2');
+      
+      // Check that connections were created
+      const connections = result.connections;
+      expect(connections.some(c => c.time > 0)).toBe(true);
+    });
+    
+    it('should handle errors gracefully', () => {
+      const invalidContent = '(DELAYFILE (BROKEN CONTENT';
+      const result = sdf_parser.parseSdfContent(invalidContent);
+      
+      // Should still return a valid structure even with invalid content
+      expect(result).toHaveProperty('elements');
+      expect(result).toHaveProperty('connections');
+    });
+  });
+  
+  describe('getJsonObjectFromSdf function', () => {
+    it('should process a File object correctly', async () => {
+      // Create a mock SDF file
+      const mockFile = new File([sampleSdfContent], 'test.sdf', { type: 'text/plain' });
+      
+      // Spy on parseSdfContent
+      const parseSpy = vi.spyOn(sdf_parser, 'parseSdfContent');
+      
+      const result = await sdf_parser.getJsonObjectFromSdf(mockFile);
+      
+      // Check that parseSdfContent was called with the file content
+      expect(parseSpy).toHaveBeenCalledWith(sampleSdfContent);
+      
+      // Check result structure
+      expect(result).toHaveProperty('elements');
+      expect(result).toHaveProperty('connections');
+      expect(result.elements.length).toBeGreaterThan(0);
+      
+      // Clean up
+      parseSpy.mockRestore();
+    });
   });
 });
