@@ -86,6 +86,10 @@ export default function SimulationCanvas({
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = 100%
 
+  // Add state to track if element was actually dragged vs just clicked
+  const [dragStartPos, setDragStartPos] = useState<{ x: number, y: number } | null>(null);
+  const [elementWasDragged, setElementWasDragged] = useState(false);
+
   // Track when elements are actually being modified by user actions
   const [elementsModified, setElementsModified] = useState(false);
 
@@ -109,7 +113,9 @@ export default function SimulationCanvas({
   const elementTypeToImageMap = useMemo(
     () => ({
       module_input: "module_input",
+      module_input_en: "module_input_en",
       module_output: "module_output",
+      module_output_en: "module_output_en",
       clk: "clk",
       DFF_NE: "DFF_noEn",
       DFF: "DFF_En",
@@ -593,7 +599,7 @@ export default function SimulationCanvas({
   // Draw canvas whenever necessary
   useEffect(() => {
     drawCanvas();
-  }, [drawCanvas, canvasSize]);
+  }, [drawCanvas, canvasSize, elements]); // Added elements as a dependency
 
   useEffect(() => {
     // Debounced resize function to prevent excessive resizing
@@ -651,20 +657,36 @@ export default function SimulationCanvas({
           }
         });
 
-        // Add new impulses for connections that are not yet moving
-        connections.forEach((connection) => {
-          const connectionName = connection.name;
-          if (!(connectionName in prev)) {
-            newImpulses[connectionName] = 0; // Start new impulse from the beginning of the wire
-          }
-        });
+        // Only add new impulses if playing
+        if (playing) {
+          // Add new impulses for connections that are not yet moving
+          connections.forEach((connection) => {
+            const connectionName = connection.name;
+            if (!(connectionName in prev)) {
+              // Find source element of this connection
+              const sourceElement = elements.find(
+                (el) =>
+                  el.outputs &&
+                  el.outputs.some((output) => output.wireName === connectionName)
+              );
+              
+              // Only add impulses if the source is not a disabled input
+              if (sourceElement && sourceElement.type === 'module_input') {
+                // Don't create impulse for disabled input
+                return;
+              } else {
+                newImpulses[connectionName] = 0; // Start new impulse from the beginning
+              }
+            }
+          });
+        }
 
         return newImpulses;
       });
     }, 50); // impulses speed
 
     return () => clearInterval(interval);
-  }, [connections, playing]);
+  }, [connections, playing, elements]); // Added elements as dependency
 
   const handleMouseDown = (event: React.MouseEvent) => {
     const { offsetX, offsetY, button } = event.nativeEvent;
@@ -680,12 +702,22 @@ export default function SimulationCanvas({
     const canvasX = (offsetX - panOffset.x) / zoomLevel;
     const canvasY = (offsetY - panOffset.y) / zoomLevel;
 
+    // Save the starting position of the click
+    setDragStartPos({ x: canvasX, y: canvasY });
+    // Reset the drag flag
+    setElementWasDragged(false);
+
     const element = elements.find(
-      (el) =>
-        canvasX >= (el.x ?? 0) &&
-        canvasX <= (el.x ?? 0) + 50 &&
-        canvasY >= (el.y ?? 0) &&
-        canvasY <= (el.y ?? 0) + 50
+      (el) => {
+        // Get the actual dimensions for proper hit detection
+        const dimensions = imageDimensions[el.type] || { width: 50, height: 50 };
+        return (
+          canvasX >= (el.x ?? 0) &&
+          canvasX <= (el.x ?? 0) + dimensions.width &&
+          canvasY >= (el.y ?? 0) &&
+          canvasY <= (el.y ?? 0) + dimensions.height
+        );
+      }
     );
 
     if (element) {
@@ -711,6 +743,13 @@ export default function SimulationCanvas({
     const canvasX = (offsetX - panOffset.x) / zoomLevel;
     const canvasY = (offsetY - panOffset.y) / zoomLevel;
 
+    // Check if we've moved enough to consider this a drag
+    if (dragStartPos && 
+        (Math.abs(canvasX - dragStartPos.x) > 5 || 
+         Math.abs(canvasY - dragStartPos.y) > 5)) {
+      setElementWasDragged(true);
+    }
+
     setElements((prev) =>
       prev.map((el) =>
         el.id === draggingElement
@@ -731,14 +770,47 @@ export default function SimulationCanvas({
       if (isPanning) {
         setElementsModified(true);
       }
+      return; // Exit early for non-left clicks
+    }
+
+    // Check if we clicked an element but didn't drag it
+    if (draggingElement !== null && !elementWasDragged && event.button === 0) {
+      // Find the clicked element
+      const clickedElement = elements.find(el => el.id === draggingElement);
+      
+      // If the clicked element is a module_input or module_input_en, toggle its type
+      if (clickedElement && 
+          (clickedElement.type === 'module_input' || clickedElement.type === 'module_input_en')) {
+        const newType = clickedElement.type === 'module_input' ? 'module_input_en' : 'module_input';
+        
+        setElements((prev) =>
+          prev.map((el) =>
+            el.id === clickedElement.id
+              ? {
+                  ...el,
+                  type: newType,
+                }
+              : el
+          )
+        );
+        
+        // Mark elements as modified
+        setElementsModified(true);
+        
+        // Force an immediate redraw
+        setTimeout(() => drawCanvas(), 0);
+      }
     }
 
     // Set elements modified when dragging ends
-    if (draggingElement !== null) {
+    if (draggingElement !== null && elementWasDragged) {
       setElementsModified(true);
     }
 
+    // Reset drag state
     setDraggingElement(null);
+    setDragStartPos(null);
+    setElementWasDragged(false);
   };
 
   // Modified wheel handler for both zoom and pan

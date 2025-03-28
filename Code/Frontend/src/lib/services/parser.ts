@@ -53,8 +53,6 @@ export async function getJsonObjectFromParsing(
     connections: [...verilogData.connections, ...sdfData.connections],
   };
 
-  console.log(mergedData);
-
   // Return the merged data as a formatted JSON string
   return mergedData;
 }

@@ -203,8 +203,6 @@ function App() {
             toastMessage.warning(`Failed to parse example: ${name}`);
           }
 
-          console.log("Parsed JSON Output:", JSON.stringify(jsonOutput, null, 2));
-
           return {
             index,
             example: {
