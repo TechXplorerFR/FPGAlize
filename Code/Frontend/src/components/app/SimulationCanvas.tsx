@@ -643,6 +643,9 @@ export default function SimulationCanvas({
     };
   }, [canvasSize.width, canvasSize.height]);
 
+  // New state to track module_output elements that have received signals
+  const [activatedOutputs, setActivatedOutputs] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     const interval = setInterval(() => {
       // Move impulses along the wires
@@ -652,6 +655,27 @@ export default function SimulationCanvas({
         // Move the impulses along their respective paths
         Object.entries(prev).forEach(([key, position]) => {
           const newPosition = position + 0.05; // Move the impulse along the wire
+          
+          // Check if the impulse is near the end of the wire and needs to activate an output
+          if (newPosition > 0.95 && newPosition < 1) {
+            // Find if this connection leads to a module_output
+            const destElement = elements.find(
+              (el) =>
+                el.inputs &&
+                el.inputs.some((input) => input.wireName === key) &&
+                (el.type === 'module_output' || el.type === 'module_output_en')
+            );
+            
+            if (destElement) {
+              // Track this output as activated
+              setActivatedOutputs(prevActivated => {
+                const newActivated = new Set(prevActivated);
+                newActivated.add(destElement.id.toString());
+                return newActivated;
+              });
+            }
+          }
+          
           if (newPosition < 1) {
             newImpulses[key] = playing ? newPosition : position;
           }
@@ -687,6 +711,58 @@ export default function SimulationCanvas({
 
     return () => clearInterval(interval);
   }, [connections, playing, elements]); // Added elements as dependency
+  
+  // Modified effect to handle module_output state based on active signals AND activation history
+  useEffect(() => {
+    setElements((prevElements) => {
+      // Only update if there's a change needed
+      let needsUpdate = false;
+      
+      const updatedElements = prevElements.map(element => {
+        // Only check module_output and module_output_en elements
+        if (element.type !== 'module_output' && element.type !== 'module_output_en') {
+          return element;
+        }
+        
+        // Find the connection for this output
+        const inputConnection = element.inputs[0]?.wireName;
+        if (!inputConnection) {
+          return element;
+        }
+        
+        // Check if there's an active impulse on this connection OR if this output was previously activated
+        const hasActiveImpulse = impulses[inputConnection] !== undefined;
+        const wasActivated = activatedOutputs.has(element.id.toString());
+        
+        // If playing is false, reset activated outputs
+        const shouldBeEnabled = playing ? (hasActiveImpulse || wasActivated) : hasActiveImpulse;
+        
+        // Determine the correct type based on impulse state and activation history
+        const correctType = shouldBeEnabled ? 'module_output_en' : 'module_output';
+        
+        // Only update if the type needs to change
+        if (element.type !== correctType) {
+          needsUpdate = true;
+          return {
+            ...element,
+            type: correctType
+          };
+        }
+        
+        return element;
+      });
+      
+      // Only return new array if something changed
+      return needsUpdate ? updatedElements : prevElements;
+    });
+  }, [impulses, activatedOutputs, playing]);
+
+  // Add an effect to reset activated outputs when switching to non-playing state
+  useEffect(() => {
+    if (!playing) {
+      setActivatedOutputs(new Set());
+    }
+  }, [playing]);
 
   const handleMouseDown = (event: React.MouseEvent) => {
     const { offsetX, offsetY, button } = event.nativeEvent;
