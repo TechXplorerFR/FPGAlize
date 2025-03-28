@@ -12,9 +12,7 @@ import {
   type CanvasState,
 } from "@/lib/services/canvas-history";
 import { toast } from "sonner";
-import {
-  calculatePortPosition,
-} from "@/lib/config/element-ports";
+import { calculatePortPosition } from "@/lib/config/element-ports";
 import {
   calculateConnectionPath,
   getPointAlongPath,
@@ -87,7 +85,10 @@ export default function SimulationCanvas({
   const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = 100%
 
   // Add state to track if element was actually dragged vs just clicked
-  const [dragStartPos, setDragStartPos] = useState<{ x: number, y: number } | null>(null);
+  const [dragStartPos, setDragStartPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [elementWasDragged, setElementWasDragged] = useState(false);
 
   // Track when elements are actually being modified by user actions
@@ -252,6 +253,12 @@ export default function SimulationCanvas({
 
       // Center the view on the elements
       centerViewOnElements(positionedElements);
+
+      // Reset all states when loading new example
+      setDffStates({});
+      setConnectionValues({});
+      setClockPulses({});
+      setDffInputStates({});
     } else {
       toast.warning("No active example found");
       console.warn("No active example found for:", activeTabId);
@@ -644,40 +651,257 @@ export default function SimulationCanvas({
   }, [canvasSize.width, canvasSize.height]);
 
   // New state to track module_output elements that have received signals
-  const [activatedOutputs, setActivatedOutputs] = useState<Set<string>>(new Set());
+  const [activatedOutputs, setActivatedOutputs] = useState<Set<string>>(
+    new Set()
+  );
 
+  // New state to track DFF output states
+  const [dffStates, setDffStates] = useState<{ [key: string]: boolean }>({});
+
+  // New state to track clock pulses received by DFFs
+  const [clockPulses, setClockPulses] = useState<{ [key: string]: boolean }>(
+    {}
+  );
+
+  // New state to track signal values on connections
+  const [connectionValues, setConnectionValues] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  // Enhanced state to track DFF input states
+  const [dffInputStates, setDffInputStates] = useState<{
+    [elementId: string]: {
+      D?: boolean;
+      CLK?: boolean;
+      En?: boolean;
+      lastClockState?: boolean;
+    };
+  }>({});
+
+  // Function to evaluate if a connection has an active signal
+  const isConnectionActive = useCallback(
+    (connectionName: string): boolean => {
+      // Check if there's an impulse on the connection
+      if (impulses[connectionName] !== undefined) {
+        return true; // If there's an impulse, consider the signal active
+      }
+
+      // Check if we have a stored value for this connection
+      return connectionValues[connectionName] === true;
+    },
+    [impulses, connectionValues]
+  );
+
+  // Function to get element by connection name
+  const getElementByConnection = useCallback(
+    (
+      connectionName: string,
+      direction: "source" | "destination"
+    ): IElement | undefined => {
+      if (direction === "source") {
+        return elements.find(
+          (el) =>
+            el.outputs &&
+            el.outputs.some((output) => output.wireName === connectionName)
+        );
+      } else {
+        return elements.find(
+          (el) =>
+            el.inputs &&
+            el.inputs.some((input) => input.wireName === connectionName)
+        );
+      }
+    },
+    [elements]
+  );
+
+  // Updated function to handle DFF logic with better signal tracking
+  const processDFFLogic = useCallback(
+    (dffElement: IElement, clockConnection: string) => {
+      const elementId = dffElement.id.toString();
+      const isDFFEn = dffElement.type === "DFF";
+
+      // Find the data (D) input connection
+      const dataInputConnection = dffElement.inputs.find(
+        (input) => input.inputName === "D"
+      )?.wireName;
+
+      // For DFF_En, find the enable input connection
+      let enableInputConnection;
+      if (isDFFEn) {
+        enableInputConnection = dffElement.inputs.find(
+          (input) => input.inputName === "EN"
+        )?.wireName;
+      }
+
+      // Find the Q output connection
+      const qOutputConnection = dffElement.outputs.find(
+        (output) => output.outputName === "Q"
+      )?.wireName;
+
+      if (!dataInputConnection || !qOutputConnection) {
+        console.warn(`DFF ${elementId} missing D input or Q output connections`);
+        return;
+      }
+
+      // Get current input states
+      const dataValue = isConnectionActive(dataInputConnection);
+      const clockValue = true; // Clock is active when this function is called
+      const enableValue =
+        !isDFFEn ||
+        !enableInputConnection ||
+        isConnectionActive(enableInputConnection);
+
+      console.log(`DFF ${elementId} processing: D=${dataValue}, Enable=${enableValue}, Q output=${qOutputConnection}`);
+
+      // Update the DFF input states
+      setDffInputStates((prev) => {
+        const currentState = prev[elementId] || { lastClockState: false };
+        return {
+          ...prev,
+          [elementId]: {
+            ...currentState,
+            D: dataValue,
+            CLK: clockValue,
+            En: enableValue,
+            lastClockState: clockValue,
+          },
+        };
+      });
+
+      // Process on clock edge (rising edge)
+      // For DFF_En, we need En to be active
+      // For DFF_NE, we always update on clock edge
+      if (enableValue) {
+        // Update the DFF output state
+        setDffStates((prev) => ({
+          ...prev,
+          [elementId]: dataValue,
+        }));
+
+        // Update the Q output connection value
+        setConnectionValues((prev) => ({
+          ...prev,
+          [qOutputConnection]: dataValue,
+        }));
+
+        // Add an impulse to the Q output connection
+        setImpulses((prev) => ({
+          ...prev,
+          [qOutputConnection]: 0, // Start new impulse from the beginning
+        }));
+
+        console.log(
+          `DFF ${elementId} updated: Q output set to ${dataValue} on connection ${qOutputConnection}`
+        );
+      } else {
+        console.log(`DFF ${elementId} clock received but enable not active`);
+      }
+    },
+    [isConnectionActive, setDffStates, setConnectionValues, setImpulses]
+  );
+
+  // Enhanced effect to track and update DFF input states continuously
+  useEffect(() => {
+    if (!playing) return;
+
+    // Update DFF input states based on current connection values
+    const newDffInputStates = { ...dffInputStates };
+    let statesUpdated = false;
+
+    elements.forEach((element) => {
+      if (element.type === "DFF_NE" || element.type === "DFF") {
+        const elementId = element.id.toString();
+        const currentState = newDffInputStates[elementId] || {
+          lastClockState: false,
+        };
+
+        // Track each input
+        element.inputs.forEach((input) => {
+          const isActive = isConnectionActive(input.wireName);
+
+          if (input.inputName === "D" && currentState.D !== isActive) {
+            currentState.D = isActive;
+            statesUpdated = true;
+          } else if (input.inputName === "EN" && currentState.En !== isActive) {
+            currentState.En = isActive;
+            statesUpdated = true;
+          } else if (input.inputName === "CLK") {
+            // Don't update here - clock is handled in the impulse processing
+          }
+        });
+
+        newDffInputStates[elementId] = currentState;
+      }
+    });
+
+    if (statesUpdated) {
+      setDffInputStates(newDffInputStates);
+    }
+  }, [playing, elements, isConnectionActive, dffInputStates]);
+
+  // Enhanced effect to handle impulses with improved DFF logic
   useEffect(() => {
     const interval = setInterval(() => {
+      // Reset clock pulse tracking on each cycle to allow DFFs to respond to subsequent clocks
+      setClockPulses({});
+
       // Move impulses along the wires
       setImpulses((prev) => {
         const newImpulses: { [key: string]: number } = {};
+        const newConnectionValues: { [key: string]: boolean } = {
+          ...connectionValues,
+        };
+        const dffsToProcess: { element: IElement; clockConnection: string }[] =
+          [];
 
         // Move the impulses along their respective paths
         Object.entries(prev).forEach(([key, position]) => {
           const newPosition = position + 0.05; // Move the impulse along the wire
-          
-          // Check if the impulse is near the end of the wire and needs to activate an output
+
+          // Check if the impulse is near the end of the wire
           if (newPosition > 0.95 && newPosition < 1) {
-            // Find if this connection leads to a module_output
-            const destElement = elements.find(
-              (el) =>
-                el.inputs &&
-                el.inputs.some((input) => input.wireName === key) &&
-                (el.type === 'module_output' || el.type === 'module_output_en')
-            );
-            
+            // Find the destination element for this connection
+            const destElement = getElementByConnection(key, "destination");
+
             if (destElement) {
-              // Track this output as activated
-              setActivatedOutputs(prevActivated => {
-                const newActivated = new Set(prevActivated);
-                newActivated.add(destElement.id.toString());
-                return newActivated;
-              });
+              // Store the signal value for this connection
+              newConnectionValues[key] = true;
+
+              // Check if this is a module_output
+              if (
+                destElement.type === "module_output" ||
+                destElement.type === "module_output_en"
+              ) {
+                // Track this output as activated
+                setActivatedOutputs((prevActivated) => {
+                  const newActivated = new Set(prevActivated);
+                  newActivated.add(destElement.id.toString());
+                  return newActivated;
+                });
+              }
+
+              // Check if this is a DFF receiving a clock signal
+              if (
+                (destElement.type === "DFF_NE" || destElement.type === "DFF") &&
+                destElement.inputs.some(
+                  (input) => input.inputName === "CLK" && input.wireName === key
+                )
+              ) {
+                // Add to list of DFFs to process after handling all impulses
+                dffsToProcess.push({
+                  element: destElement,
+                  clockConnection: key,
+                });
+              }
             }
           }
-          
+
           if (newPosition < 1) {
             newImpulses[key] = playing ? newPosition : position;
+          } else {
+            // When an impulse completes its journey, we keep track of the signal value
+            newConnectionValues[key] = true;
           }
         });
 
@@ -688,70 +912,141 @@ export default function SimulationCanvas({
             const connectionName = connection.name;
             if (!(connectionName in prev)) {
               // Find source element of this connection
-              const sourceElement = elements.find(
-                (el) =>
-                  el.outputs &&
-                  el.outputs.some((output) => output.wireName === connectionName)
+              const sourceElement = getElementByConnection(
+                connectionName,
+                "source"
               );
-              
+
+              // Special handling for DFF outputs
+              if (
+                sourceElement &&
+                (sourceElement.type === "DFF_NE" ||
+                  sourceElement.type === "DFF")
+              ) {
+                const isQOutput = sourceElement.outputs.some(
+                  (output) =>
+                    output.outputName === "Q" &&
+                    output.wireName === connectionName
+                );
+
+                if (isQOutput) {
+                  // Get the DFF state
+                  const dffId = sourceElement.id.toString();
+                  const dffState = dffStates[dffId];
+
+                  // Only add impulse if the DFF has a defined state (meaning clock already triggered)
+                  if (dffState !== undefined) {
+                    newImpulses[connectionName] = 0; // Start new impulse from the beginning
+                    console.log(
+                      `DFF ${dffId} creating new impulse on Q output ${connectionName}`
+                    );
+                  }
+                  return;
+                }
+              }
+
               // Only add impulses if the source is not a disabled input
-              if (sourceElement && sourceElement.type === 'module_input') {
-                // Don't create impulse for disabled input
-                return;
-              } else {
-                newImpulses[connectionName] = 0; // Start new impulse from the beginning
+              if (sourceElement) {
+                if (sourceElement.type === "module_input") {
+                  // Don't create impulse for disabled input
+                  return;
+                } else {
+                  newImpulses[connectionName] = 0; // Start new impulse from the beginning
+                }
               }
             }
           });
         }
+
+        // Process any DFFs that received clock signals
+        if (playing) {
+          dffsToProcess.forEach(({ element, clockConnection }) => {
+            const elementId = element.id.toString();
+            
+            // Add more debug info
+            console.log(`DFF ${elementId} received clock signal. Current state:`, 
+              { D: dffInputStates[elementId]?.D, En: dffInputStates[elementId]?.En });
+            
+            processDFFLogic(element, clockConnection);
+          });
+        }
+
+        // Update connection values
+        setConnectionValues(newConnectionValues);
 
         return newImpulses;
       });
     }, 50); // impulses speed
 
     return () => clearInterval(interval);
-  }, [connections, playing, elements]); // Added elements as dependency
-  
+  }, [
+    connections,
+    playing,
+    elements,
+    connectionValues,
+    dffStates,
+    getElementByConnection,
+    processDFFLogic,
+    clockPulses,
+  ]);
+
+  // Reset all states when switching examples or play status changes
+  useEffect(() => {
+    if (!playing) {
+      setDffStates({});
+      setConnectionValues({});
+      setClockPulses({});
+      setDffInputStates({});
+    }
+  }, [playing, activeTabId]);
+
   // Modified effect to handle module_output state based on active signals AND activation history
   useEffect(() => {
     setElements((prevElements) => {
       // Only update if there's a change needed
       let needsUpdate = false;
-      
-      const updatedElements = prevElements.map(element => {
+
+      const updatedElements = prevElements.map((element) => {
         // Only check module_output and module_output_en elements
-        if (element.type !== 'module_output' && element.type !== 'module_output_en') {
+        if (
+          element.type !== "module_output" &&
+          element.type !== "module_output_en"
+        ) {
           return element;
         }
-        
+
         // Find the connection for this output
         const inputConnection = element.inputs[0]?.wireName;
         if (!inputConnection) {
           return element;
         }
-        
+
         // Check if there's an active impulse on this connection OR if this output was previously activated
         const hasActiveImpulse = impulses[inputConnection] !== undefined;
         const wasActivated = activatedOutputs.has(element.id.toString());
-        
+
         // If playing is false, reset activated outputs
-        const shouldBeEnabled = playing ? (hasActiveImpulse || wasActivated) : hasActiveImpulse;
-        
+        const shouldBeEnabled = playing
+          ? hasActiveImpulse || wasActivated
+          : hasActiveImpulse;
+
         // Determine the correct type based on impulse state and activation history
-        const correctType = shouldBeEnabled ? 'module_output_en' : 'module_output';
-        
+        const correctType = shouldBeEnabled
+          ? "module_output_en"
+          : "module_output";
+
         // Only update if the type needs to change
         if (element.type !== correctType) {
           needsUpdate = true;
           return {
             ...element,
-            type: correctType
+            type: correctType,
           };
         }
-        
+
         return element;
       });
-      
+
       // Only return new array if something changed
       return needsUpdate ? updatedElements : prevElements;
     });
@@ -783,18 +1078,16 @@ export default function SimulationCanvas({
     // Reset the drag flag
     setElementWasDragged(false);
 
-    const element = elements.find(
-      (el) => {
-        // Get the actual dimensions for proper hit detection
-        const dimensions = imageDimensions[el.type] || { width: 50, height: 50 };
-        return (
-          canvasX >= (el.x ?? 0) &&
-          canvasX <= (el.x ?? 0) + dimensions.width &&
-          canvasY >= (el.y ?? 0) &&
-          canvasY <= (el.y ?? 0) + dimensions.height
-        );
-      }
-    );
+    const element = elements.find((el) => {
+      // Get the actual dimensions for proper hit detection
+      const dimensions = imageDimensions[el.type] || { width: 50, height: 50 };
+      return (
+        canvasX >= (el.x ?? 0) &&
+        canvasX <= (el.x ?? 0) + dimensions.width &&
+        canvasY >= (el.y ?? 0) &&
+        canvasY <= (el.y ?? 0) + dimensions.height
+      );
+    });
 
     if (element) {
       setDraggingElement(element.id);
@@ -820,9 +1113,11 @@ export default function SimulationCanvas({
     const canvasY = (offsetY - panOffset.y) / zoomLevel;
 
     // Check if we've moved enough to consider this a drag
-    if (dragStartPos && 
-        (Math.abs(canvasX - dragStartPos.x) > 5 || 
-         Math.abs(canvasY - dragStartPos.y) > 5)) {
+    if (
+      dragStartPos &&
+      (Math.abs(canvasX - dragStartPos.x) > 5 ||
+        Math.abs(canvasY - dragStartPos.y) > 5)
+    ) {
       setElementWasDragged(true);
     }
 
@@ -852,13 +1147,19 @@ export default function SimulationCanvas({
     // Check if we clicked an element but didn't drag it
     if (draggingElement !== null && !elementWasDragged && event.button === 0) {
       // Find the clicked element
-      const clickedElement = elements.find(el => el.id === draggingElement);
-      
+      const clickedElement = elements.find((el) => el.id === draggingElement);
+
       // If the clicked element is a module_input or module_input_en, toggle its type
-      if (clickedElement && 
-          (clickedElement.type === 'module_input' || clickedElement.type === 'module_input_en')) {
-        const newType = clickedElement.type === 'module_input' ? 'module_input_en' : 'module_input';
-        
+      if (
+        clickedElement &&
+        (clickedElement.type === "module_input" ||
+          clickedElement.type === "module_input_en")
+      ) {
+        const newType =
+          clickedElement.type === "module_input"
+            ? "module_input_en"
+            : "module_input";
+
         setElements((prev) =>
           prev.map((el) =>
             el.id === clickedElement.id
@@ -869,10 +1170,10 @@ export default function SimulationCanvas({
               : el
           )
         );
-        
+
         // Mark elements as modified
         setElementsModified(true);
-        
+
         // Force an immediate redraw
         setTimeout(() => drawCanvas(), 0);
       }
