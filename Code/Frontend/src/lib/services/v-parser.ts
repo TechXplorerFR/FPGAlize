@@ -1,4 +1,9 @@
-import type { IDataStructure, IElement, IElementInput, IElementOutput } from "@/lib/types/types";
+import type {
+  IDataStructure,
+  IElement,
+  IElementInput,
+  IElementOutput,
+} from "@/lib/types/types";
 
 /**
  * Tokenizes a Verilog file content into an array of relevant tokens.
@@ -8,7 +13,7 @@ import type { IDataStructure, IElement, IElementInput, IElementOutput } from "@/
  * @param {string} content - The raw content of a Verilog (.v) file.
  * @returns {string[]} - Tokenized words for easier parsing.
  */
-function tokenizeVerilog(content: string): string[] {
+export function tokenizeVerilog(content: string): string[] {
   return content
     .replace(/\(|\)|,|;/g, " ")
     .split(/\s+/)
@@ -23,31 +28,37 @@ function tokenizeVerilog(content: string): string[] {
  * @param {File} file - The Verilog (.v) File object.
  * @returns {Promise<IDataStructure>} - Parsed module elements with their connections.
  */
-async function parseVerilogFile(file: File): Promise<IDataStructure> {
+export async function parseVerilogFile(file: File): Promise<IDataStructure> {
   let output: IDataStructure = { elements: [], connections: [] };
   let elementId = 1;
 
   try {
     const fileContent = await file.text();
     const tokens = tokenizeVerilog(fileContent);
+    // State tracking variables for current parsing context
     let currentModule = "";
     let moduleInputs: IElementInput[] = [];
     let moduleOutputs: IElementOutput[] = [];
 
+    // Iterate through tokens to identify module structure
     for (let i = 0; i < tokens.length; i++) {
       if (tokens[i] === "module") {
+        // Found module declaration - capture module name
         currentModule = tokens[i + 1];
       }
 
       if (tokens[i] === "input") {
-        moduleInputs.push({ wireName: "", inputName: tokens[i + 1]});
+        // Found input port - add to module inputs collection
+        moduleInputs.push({ wireName: "", inputName: tokens[i + 1] });
       }
 
       if (tokens[i] === "output") {
-        moduleOutputs.push({ wireName: "", outputName: tokens[i + 1]});
+        // Found output port - add to module outputs collection
+        moduleOutputs.push({ wireName: "", outputName: tokens[i + 1] });
       }
 
       if (tokens[i] === "endmodule") {
+        // Module definition complete - add to elements collection
         if (currentModule) {
           output.elements.push({
             id: elementId++,
@@ -61,6 +72,7 @@ async function parseVerilogFile(file: File): Promise<IDataStructure> {
             setup_time: 0,
           });
         }
+        // Reset state for next module
         currentModule = "";
         moduleInputs = [];
         moduleOutputs = [];
@@ -89,13 +101,8 @@ export function parseVerilogContent(content: string): IDataStructure {
 
   try {
     const tokens = tokenizeVerilog(content);
-    let currentModule = "";
 
     for (let i = 0; i < tokens.length; i++) {
-      if (tokens[i] === "module") {
-        currentModule = tokens[i + 1];
-      }
-
       if (tokens[i] === "input") {
         const inputName = tokens[i + 1];
         const wireName = `wire_${connectionId++}`;
@@ -113,7 +120,13 @@ export function parseVerilogContent(content: string): IDataStructure {
         });
 
         wireMap[inputName] = wireName;
-        output.connections.push({ id: connectionId, name: wireName, type: "wire", color: "#000000", time: 0 });
+        output.connections.push({
+          id: connectionId,
+          name: wireName,
+          type: "wire",
+          color: "#000000",
+          time: 0,
+        });
       }
 
       if (tokens[i] === "output") {
@@ -133,7 +146,13 @@ export function parseVerilogContent(content: string): IDataStructure {
         });
 
         wireMap[outputName] = wireName;
-        output.connections.push({ id: connectionId++, name: wireName, type: "wire", color: "#000000", time: 0 });
+        output.connections.push({
+          id: connectionId++,
+          name: wireName,
+          type: "wire",
+          color: "#000000",
+          time: 0,
+        });
       }
     }
 
@@ -147,13 +166,12 @@ export function parseVerilogContent(content: string): IDataStructure {
 
 /**
  * Parses a Verilog file and transforms it into a JSON object.
- * This function calls the `parseVerilogFile` function and returns the
- * parsed data structure in JSON format.
+ * This function reads the content of a Verilog file, processes it using parseVerilogContent,
+ * and returns the parsed data structure.
  * @param {File} file - The Verilog (.v) File object.
  * @returns {Promise<IDataStructure>} - JSON object containing parsed elements and connections.
  */
-export async function getJsonObjectFromV(
-  file: File
-): Promise<IDataStructure> {
-  return await parseVerilogFile(file);
+export async function getJsonObjectFromV(file: File): Promise<IDataStructure> {
+  const content = await file.text();
+  return parseVerilogContent(content);
 }

@@ -4,23 +4,46 @@
 
 export type Direction = 'left' | 'right' | 'top' | 'bottom';
 
+/**
+ * Represents a point in 2D space
+ * @typedef {Point}
+ * @property {number} x - X coordinate of the point
+ * @property {number} y - Y coordinate of the point
+ */
 export interface Point {
   x: number;
   y: number;
 }
 
+/**
+ * Represents a port on a component with its coordinates and direction
+ * @typedef {PortInfo}
+ * @property {number} x - X coordinate of the port
+ * @property {number} y - Y coordinate of the port
+ * @property {Direction} direction - Direction of the port (left, right, top, bottom)
+ */
 export interface PortInfo {
   x: number;
   y: number;
   direction: Direction;
 }
 
+/**
+ * Represents a point on the edge of a component with its direction
+ * @typedef {EdgePoint}
+ * @property {number} x - X coordinate of the point
+ * @property {number} y - Y coordinate of the point
+ * @property {Direction} direction - Direction of the point (left, right, top, bottom)
+ */
 export interface EdgePoint extends Point {
   direction: Direction;
 }
 
 /**
  * Calculates the path points for a connection between two ports
+ * @param {EdgePoint} source - The source port information
+ * @param {EdgePoint} dest - The destination port information
+ * @returns {Point[]} - An array of points representing the connection path
  */
 export function calculateConnectionPath(
   source: EdgePoint,
@@ -100,6 +123,9 @@ export function calculateConnectionPath(
 
 /**
  * Calculates a position along a multi-segment path based on a percentage
+ * @param {Point[]} path - Array of points representing the path
+ * @param {number} percentage - Percentage along the path (0 to 1)
+ * @returns {Point} - The calculated point along the path
  */
 export function getPointAlongPath(path: Point[], percentage: number): Point {
   if (path.length < 2) return path[0] || { x: 0, y: 0 };
