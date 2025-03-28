@@ -16,29 +16,12 @@ export type FileInformation = {
  * @typedef {Object} Tab
  * @property {string} name - Name of the tab.
  * @property {string} id - Unique identifier for the tab.
+ * @property {Example} example - Reference to the example data associated with this tab.
  */
 export type Tab = {
   name: string;
   id: string;
-};
-
-/**
- * Represents an element in the simulation canvas
- * @typedef {Object} Element
- * @property {number} id - Unique identifier for the element.
- * @property {number} x - X-coordinate of the element.
- * @property {number} y - Y-coordinate of the element.
- * @property {boolean} isDragging - Boolean flag for UI interaction.
- * @property {number[]} connectedTo - List of element IDs connected to this element.
- */
-export type Element = {
-  id: number;
-  name: string;
-  x: number;
-  y: number;
-  icon: string;
-  isDragging: boolean;
-  connectedTo: number[];
+  example: Example;
 };
 
 /**
@@ -56,31 +39,50 @@ export type Element = {
 export type IElement = {
   id: number;
   name: string;
+  x: number | null;
+  y: number | null;
   type: string;
-  innerText: string;
-  icon: string;
-  clicked: boolean;
-  inputs: string[];
-  outputs: string[];
+  inputs: IElementInput[];
+  outputs: IElementOutput[];
+  internal_delay: number;
+  setup_time: number;
+};
+
+/**
+ * Represents an input signal for an electronic component.
+ * @typedef {Object} IElementInput
+ * @property {string} wireName - Name of the wire connected to the input.
+ * @property {string} inputName - Name of the input signal.
+ */
+export type IElementInput = {
+  wireName: string;
+  inputName: string | null;
+};
+
+/**
+ * Represents an output signal for an electronic component.
+ * @typedef {Object} IElementOutput
+ * @property {string} wireName - Name of the wire connected to the output.
+ * @property {string} outputName - Name of the output signal.
+ */
+export type IElementOutput = {
+  wireName: string;
+  outputName: string | null;
 };
 
 /**
  * Represents a connection between two electronic components.
  * @typedef {Object} IConnection
  * @property {number} id - Unique identifier for the connection.
- * @property {string} from - Source signal name, including instance reference.
- * @property {string} fromLabel - Label describing the source signal.
- * @property {string} to - Destination signal name, including instance reference.
- * @property {string} toLabel - Label describing the destination signal.
- * @property {string} color - Visual color for the connection, typically for UI display.
- * @property {number} time - Delay in the connection (extracted from SDF timing values).
+ * @property {string} name - Name of the connection (e.g., wire name).
+ * @property {string} type - Type of the connection (e.g., wire).
+ * @property {string} color - Color representation of the connection.
+ * @property {number} time - Time delay associated with the connection.
  */
 export type IConnection = {
   id: number;
-  from: string;
-  fromLabel: string;
-  to: string;
-  toLabel: string;
+  name: string;
+  type: "wire";
   color: string;
   time: number;
 };
@@ -115,4 +117,23 @@ export type Example = {
   postSynthesisSdfFile: File;
   jsonOutput: IDataStructure | null;
   originalVerilogFileInformation: FileInformation;
+};
+
+/**
+ * Represents the endpoints of a connection between two elements.
+ * This type defines the structure of the connection endpoints, including
+ * the source and destination elements, ports, and the connection itself.
+ * @typedef {Object} ConnectionEndpoints
+ * @property {IConnection} connection - The connection object between the elements.
+ * @property {IElement} sourceElement - The source element where the connection starts.
+ * @property {IElement} destElement - The destination element where the connection ends.
+ * @property {string} sourcePort - The output port of the source element.
+ * @property {string} destPort - The input port of the destination element.
+ */
+export type ConnectionEndpoints = {
+  connection: IConnection;
+  sourceElement: IElement;
+  destElement: IElement;
+  sourcePort: string;
+  destPort: string;
 };
