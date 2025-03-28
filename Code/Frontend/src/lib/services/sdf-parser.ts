@@ -121,7 +121,8 @@ export async function getJsonObjectFromSdf(
 ): Promise<IDataStructure> {
   try {
     const content = await file.text();
-    return parseSdfContent(content);
+    // Call the exported version of parseSdfContent to ensure the spy works
+    return exports.parseSdfContent(content);
   } catch (error) {
     console.error("Error processing SDF file:", error);
     return { elements: [], connections: [] };

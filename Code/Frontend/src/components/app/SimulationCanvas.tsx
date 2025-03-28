@@ -517,12 +517,6 @@ export default function SimulationCanvas({
 
     connectionEndpoints.forEach((endpoint) => {
       const {
-        startX,
-        startY,
-        endX,
-        endY,
-        sourceDirection,
-        destDirection,
         sourceEdge,
         destEdge,
         path,
@@ -717,7 +711,7 @@ export default function SimulationCanvas({
 
   // Updated function to handle DFF logic with better signal tracking
   const processDFFLogic = useCallback(
-    (dffElement: IElement, clockConnection: string) => {
+    (dffElement: IElement, _clockConnection: string) => {
       const elementId = dffElement.id.toString();
       const isDFFEn = dffElement.type === "DFF";
 
