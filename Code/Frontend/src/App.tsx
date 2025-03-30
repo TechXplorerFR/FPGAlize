@@ -81,7 +81,7 @@ function App() {
                 outputs: [
                   {
                     wireName: "wire_1",
-                    outputName: null,
+                    outputName: "CLK",
                   },
                 ],
                 internal_delay: 0,

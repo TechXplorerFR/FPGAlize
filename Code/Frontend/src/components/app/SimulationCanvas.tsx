@@ -46,11 +46,11 @@ function calculateEdgePoint(
     case "left":
       return { x: elementX, y };
     case "right":
-      return { x: elementX + width, y };
+      return { x: elementX + width / 1.5, y };
     case "top":
       return { x, y: elementY };
     case "bottom":
-      return { x, y: elementY + height };
+      return { x, y: elementY + height / 1.5 };
     default:
       return { x, y };
   }
@@ -516,11 +516,7 @@ export default function SimulationCanvas({
     ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
 
     connectionEndpoints.forEach((endpoint) => {
-      const {
-        sourceEdge,
-        destEdge,
-        path,
-      } = getConnectionPoints(endpoint);
+      const { sourceEdge, destEdge, path } = getConnectionPoints(endpoint);
 
       const { connection } = endpoint;
 
@@ -734,7 +730,9 @@ export default function SimulationCanvas({
       )?.wireName;
 
       if (!dataInputConnection || !qOutputConnection) {
-        console.warn(`DFF ${elementId} missing D input or Q output connections`);
+        console.warn(
+          `DFF ${elementId} missing D input or Q output connections`
+        );
         return;
       }
 
@@ -746,7 +744,9 @@ export default function SimulationCanvas({
         !enableInputConnection ||
         isConnectionActive(enableInputConnection);
 
-      console.log(`DFF ${elementId} processing: D=${dataValue}, Enable=${enableValue}, Q output=${qOutputConnection}`);
+      console.log(
+        `DFF ${elementId} processing: D=${dataValue}, Enable=${enableValue}, Q output=${qOutputConnection}`
+      );
 
       // Update the DFF input states
       setDffInputStates((prev) => {
@@ -956,11 +956,16 @@ export default function SimulationCanvas({
         if (playing) {
           dffsToProcess.forEach(({ element, clockConnection }) => {
             const elementId = element.id.toString();
-            
+
             // Add more debug info
-            console.log(`DFF ${elementId} received clock signal. Current state:`, 
-              { D: dffInputStates[elementId]?.D, En: dffInputStates[elementId]?.En });
-            
+            console.log(
+              `DFF ${elementId} received clock signal. Current state:`,
+              {
+                D: dffInputStates[elementId]?.D,
+                En: dffInputStates[elementId]?.En,
+              }
+            );
+
             processDFFLogic(element, clockConnection);
           });
         }

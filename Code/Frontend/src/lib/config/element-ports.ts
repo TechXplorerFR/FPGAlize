@@ -6,6 +6,8 @@
  * - (1,1) is the bottom-right corner
  */
 
+import { Direction } from "../utils/connection-router";
+
 export interface Port {
   id: string;
   x: number; // Relative x position (0-1)
@@ -53,14 +55,20 @@ export const elementPortConfigs: Record<string, ElementPortConfig> = {
   'module_input': {
     inputs: [],
     outputs: [
-      { id: 'out', x: 1, y: 0.5, type: 'output' }
+      { id: 'out', x: 1, y: 0.3, type: 'output' }
     ]
   },
   'module_output': {
     inputs: [
-      { id: 'in', x: 0, y: 0.5, type: 'input' }
+      { id: 'in', x: 0, y: 0.3, type: 'input' }
     ],
     outputs: []
+  },
+  'clk': {
+    inputs: [],
+    outputs: [
+      { id: 'CLK', x: 1, y: 0.3, type: 'output' }
+    ]
   },
   'DFF': {
     inputs: [
@@ -69,7 +77,7 @@ export const elementPortConfigs: Record<string, ElementPortConfig> = {
       { id: 'EN', x: 0.3, y: 0.4, type: 'input' }
     ],
     outputs: [
-      { id: 'Q', x: 0, y: 0.07, type: 'output' }
+      { id: 'Q', x: 1, y: 0.07, type: 'output' }
     ]
   },
 };
@@ -80,7 +88,7 @@ export function calculatePortPosition(
   portId: string,
   portType: 'input' | 'output',
   dimensions: { width: number; height: number }
-): { x: number; y: number; direction: 'left' | 'right' | 'top' | 'bottom' } | null {
+): { x: number; y: number; direction: Direction } | null {
   // Get port configuration for this element type
   const config = elementPortConfigs[element.type] || defaultPortConfig;
   
