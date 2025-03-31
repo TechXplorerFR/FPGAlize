@@ -1118,6 +1118,131 @@ export default function SimulationCanvas({
     };
   }, [activeTabId]); // Reset active inputs when changing tabs/examples
 
+  // Update impulses for clock elements
+  useEffect(() => {
+    let clockIntervalId: number | undefined;
+  
+    if (playing) {
+      const clockElements = elements.filter((el) => el.type === "clk");
+  
+      if (clockElements.length > 0) {
+        const clockConnections = clockElements.flatMap((clockElement) =>
+          connections.filter((conn) => {
+            const output = clockElement.outputs?.find(
+              (out) => out.outputName === "CLK"
+            );
+            return output && output.wireName === conn.name;
+          })
+        );
+  
+        const intervalTime = 1 / (clockFrequency * 100) * 1000; // Convert to ms
+  
+        clockIntervalId = window.setInterval(() => {
+          clockConnections.forEach((conn) => {
+            setImpulses((prev) => {
+              const positions = Array.isArray(prev[conn.name])
+                ? [...prev[conn.name]]
+                : [];
+  
+              if (
+                positions.length === 0 ||
+                Math.min(...positions) > 0.99
+              ) {
+                positions.push(0); // Add a new impulse at the start
+              }
+  
+              const newPositions = positions
+                .map((pos) => pos + 0.01) // Move by 1/100th of the wire
+                .filter((pos) => pos <= 1);
+  
+              return { ...prev, [conn.name]: newPositions };
+            });
+          });
+        }, intervalTime);
+      }
+    }
+  
+    return () => {
+      if (clockIntervalId !== undefined) {
+        window.clearInterval(clockIntervalId);
+      }
+    };
+  }, [playing, elements, connections, clockFrequency]);
+  
+  // Update impulse propagation logic
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (playing) {
+        setImpulses((prev) => {
+          const updated = { ...prev };
+          const impulsesPendingPropagation: {
+            destElementId: number;
+            wireNames: string[];
+          }[] = [];
+  
+          Object.entries(updated).forEach(([connName, positions]) => {
+            if (positions.length > 0) {
+              const finishedImpulses = positions.filter((pos) => pos >= 0.99);
+  
+              const newPositions = positions
+                .map((pos) => pos + 0.01) // Move by 1/100th of the wire
+                .filter((pos) => pos <= 1);
+  
+              if (finishedImpulses.length > 0) {
+                const connection = connections.find(
+                  (conn) => conn.name === connName
+                );
+                if (connection) {
+                  const destElement = elements.find(
+                    (el) =>
+                      el.inputs &&
+                      el.inputs.some((input) => input.wireName === connName)
+                  );
+  
+                  if (
+                    destElement &&
+                    destElement.outputs &&
+                    destElement.outputs.length > 0
+                  ) {
+                    impulsesPendingPropagation.push({
+                      destElementId: destElement.id,
+                      wireNames: destElement.outputs.map((o) => o.wireName),
+                    });
+                  }
+                }
+              }
+  
+              if (newPositions.length > 0) {
+                updated[connName] = newPositions;
+              } else {
+                delete updated[connName];
+              }
+            }
+          });
+  
+          impulsesPendingPropagation.forEach(({ wireNames }) => {
+            wireNames.forEach((wireName) => {
+              const nextConn = connections.find(
+                (conn) => conn.name === wireName
+              );
+              if (nextConn) {
+                if (!updated[wireName]) {
+                  updated[wireName] = [];
+                }
+                updated[wireName].push(0);
+              }
+            });
+          });
+  
+          return updated;
+        });
+      }
+    }, 1 / (clockFrequency * 100) * 1000); // Update every 1/(frequency x 1000) seconds
+  
+    return () => clearInterval(intervalId);
+  }, [elements, connections, playing, clockFrequency]);
+  
+
   return (
     <div
       ref={containerRef}
