@@ -11,4 +11,18 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Add the following publicDir configuration to copy all files from public to the build output
+  publicDir: 'public',
+  // Define build-specific configurations
+  build: {
+    // Configure Vite to copy the samples directory to the build output
+    assetsDir: 'assets',
+    rollupOptions: {
+      // Explicitly include files in the src/data/samples directory as assets
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+      },
+    },
+    chunkSizeWarningLimit: 1024,
+  },
 });

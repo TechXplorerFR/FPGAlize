@@ -1,5 +1,5 @@
 # Use node as the base image
-FROM node:18-alpine
+FROM node:23-alpine
 
 # Set working directory
 WORKDIR /app
@@ -11,7 +11,7 @@ RUN ls
 COPY Code/Frontend/package.json Code/Frontend/package-lock.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm i
 
 # Copy app source
 COPY Code/Frontend ./
@@ -23,4 +23,4 @@ RUN npm run build
 EXPOSE 4173
 
 # Run preview server
-CMD ["npm", "run", "preview"]
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0"]
