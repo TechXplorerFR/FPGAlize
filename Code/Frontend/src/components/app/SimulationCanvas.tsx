@@ -716,7 +716,6 @@ export default function SimulationCanvas({
     
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
       
       // Update impulse positions
       setImpulses(prev => {

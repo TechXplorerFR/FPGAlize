@@ -22,6 +22,7 @@ interface ExamplesDrawerProps {
   isLoading: boolean;
   setTabs: React.Dispatch<React.SetStateAction<Tab[]>>;
   setActiveTabId?: (id: string) => void;
+  setExamples: React.Dispatch<React.SetStateAction<ExampleType[]>>;
 }
 
 function ExamplesDrawer({
@@ -29,6 +30,7 @@ function ExamplesDrawer({
   isLoading,
   setTabs,
   setActiveTabId,
+  setExamples,
 }: ExamplesDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -128,7 +130,12 @@ function ExamplesDrawer({
               <Separator />
             </div>
             <DrawerFooter className="p-4">
-              <AddExampleModal />
+              <AddExampleModal 
+                setExamples={setExamples} 
+                setTabs={setTabs} 
+                setActiveTabId={setActiveTabId}
+                onClose={() => setIsOpen(false)}
+              />
             </DrawerFooter>
             <DrawerClose asChild>
               <div className="absolute top-[50vh] right-[-37px] h-[10vh] transform -translate-y-1/2 bg-gray-100 p-2 rounded-r-lg border-y border-r border-solid border-gray-300 shadow-md hover:bg-gray-200 flex justify-center items-center dark:bg-neutral-900 dark:border-neutral-800">
