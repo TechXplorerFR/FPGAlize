@@ -15,6 +15,7 @@ function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [playing, setPlaying] = useState(false);
+  const [resetTriggered, setResetTriggered] = useState(false);
 
   // Initialize with empty files
   const emptyFile = new File([""], "empty.v", { type: "text/plain" });
@@ -237,6 +238,15 @@ function App() {
     }
   }
 
+  // Handle reset simulation function
+  const handleResetSimulation = () => {
+    setResetTriggered(true);
+    // Reset the trigger after a short delay so it can be triggered again
+    setTimeout(() => {
+      setResetTriggered(false);
+    }, 100);
+  };
+
   // Load example files when the component mounts
   useEffect(() => {
     // Load built-in examples
@@ -285,6 +295,7 @@ function App() {
         examples={examples}
         playing={playing}
         setPlaying={setPlaying}
+        onResetSimulation={handleResetSimulation}
       />
       <TabsBar
         setActiveTabId={setActiveTabId}
@@ -299,6 +310,7 @@ function App() {
         tabs={tabs}
         isLoading={isLoading}
         playing={playing}
+        resetTriggered={resetTriggered}
       />
       <Toaster />
     </>

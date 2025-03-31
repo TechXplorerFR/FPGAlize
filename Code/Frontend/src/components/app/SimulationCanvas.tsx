@@ -60,10 +60,12 @@ export default function SimulationCanvas({
   activeTabId,
   examples,
   playing,
+  resetTriggered = false,
 }: {
   activeTabId: string;
   examples: Example[];
   playing: boolean;
+  resetTriggered?: boolean;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1428,6 +1430,23 @@ export default function SimulationCanvas({
       }
     };
   }, [gateInputStates, playing]);
+
+  // Update the useEffect to reset states when the stop button is clicked
+  useEffect(() => {
+    if (resetTriggered) {
+      // Reset all impulses to clear circles from the canvas
+      setImpulses({});
+      
+      // Reset active inputs 
+      setActiveInputs(new Set());
+      
+      // Reset gate input states
+      setGateInputStates(new Map());
+      
+      // Reset activated outputs
+      setActivatedOutputs(new Set());
+    }
+  }, [resetTriggered]);
 
   return (
     <div
