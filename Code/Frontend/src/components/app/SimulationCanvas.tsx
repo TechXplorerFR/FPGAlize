@@ -1242,6 +1242,193 @@ export default function SimulationCanvas({
     return () => clearInterval(intervalId);
   }, [elements, connections, playing, clockFrequency]);
   
+  // Add state to track input states for logic gates
+  const [gateInputStates, setGateInputStates] = useState<
+    Map<number, Map<string, boolean>>
+  >(new Map());
+  
+  // Function to evaluate gate logic based on inputs
+  const evaluateGateLogic = useCallback(
+    (gateType: string, inputs: Map<string, boolean>): boolean => {
+      const in1 = inputs.get('in1') || false;
+      const in2 = inputs.get('in2') || false;
+      
+      switch (gateType.toLowerCase()) {
+        case 'and':
+          return in1 && in2;
+        case 'or':
+          return in1 || in2;
+        case 'xor':
+          return in1 !== in2;
+        case 'nand':
+          return !(in1 && in2);
+        case 'nor':
+          return !(in1 || in2);
+        case 'nxor':
+          return in1 === in2;
+        default:
+          return false;
+      }
+    },
+    []
+  );
+
+  // Function to check if an element is a logic gate
+  const isLogicGate = useCallback((elementType: string): boolean => {
+    const logicGateTypes = ['and', 'or', 'xor', 'nand', 'nor', 'nxor'];
+    return logicGateTypes.includes(elementType.toLowerCase());
+  }, []);
+
+  // Reset gate input states when example changes
+  useEffect(() => {
+    setGateInputStates(new Map());
+  }, [activeTabId]);
+  
+  // Modify the impulse propagation logic to handle logic gates
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (playing) {
+        setImpulses((prev) => {
+          const updated = { ...prev };
+          const impulsesPendingPropagation: {
+            destElementId: number;
+            wireNames: string[];
+          }[] = [];
+  
+          Object.entries(updated).forEach(([connName, positions]) => {
+            if (positions.length > 0) {
+              const finishedImpulses = positions.filter((pos) => pos >= 0.99);
+  
+              const newPositions = positions
+                .map((pos) => pos + 0.01)
+                .filter((pos) => pos <= 1);
+  
+              if (finishedImpulses.length > 0) {
+                const connection = connections.find(
+                  (conn) => conn.name === connName
+                );
+                if (connection) {
+                  const destElement = elements.find(
+                    (el) =>
+                      el.inputs &&
+                      el.inputs.some((input) => input.wireName === connName)
+                  );
+  
+                  if (destElement) {
+                    // Handle logic gates
+                    if (isLogicGate(destElement.type)) {
+                      // Find which input received the signal
+                      const inputPort = destElement.inputs.find(
+                        input => input.wireName === connName
+                      );
+                      
+                      if (inputPort) {
+                        // Update the input state for this gate
+                        setGateInputStates(prevStates => {
+                          const newStates = new Map(prevStates);
+                          const gateInputs = newStates.get(destElement.id) || new Map();
+                          
+                          // Set this input to true (signal received)
+                          gateInputs.set(inputPort.inputName || '', true);
+                          newStates.set(destElement.id, gateInputs);
+                          
+                          return newStates;
+                        });
+                        
+                        // Get current inputs for this gate
+                        const currentInputs = gateInputStates.get(destElement.id) || new Map();
+                        
+                        // If we have at least one input set, evaluate the gate logic
+                        if (currentInputs.size > 0) {
+                          // Evaluate the gate logic
+                          const outputValue = evaluateGateLogic(destElement.type, currentInputs);
+                          
+                          // If the gate evaluates to true, propagate the signal
+                          if (outputValue && destElement.outputs && destElement.outputs.length > 0) {
+                            impulsesPendingPropagation.push({
+                              destElementId: destElement.id,
+                              wireNames: destElement.outputs.map((o) => o.wireName),
+                            });
+                          }
+                        }
+                      }
+                    } 
+                    // Handle other element types as before
+                    else if (destElement.outputs && destElement.outputs.length > 0) {
+                      impulsesPendingPropagation.push({
+                        destElementId: destElement.id,
+                        wireNames: destElement.outputs.map((o) => o.wireName),
+                      });
+                    }
+                  }
+                }
+              }
+  
+              if (newPositions.length > 0) {
+                updated[connName] = newPositions;
+              } else {
+                delete updated[connName];
+              }
+            }
+          });
+  
+          impulsesPendingPropagation.forEach(({ wireNames }) => {
+            wireNames.forEach((wireName) => {
+              const nextConn = connections.find(
+                (conn) => conn.name === wireName
+              );
+              if (nextConn) {
+                if (!updated[wireName]) {
+                  updated[wireName] = [];
+                }
+                updated[wireName].push(0);
+              }
+            });
+          });
+  
+          return updated;
+        });
+      }
+    }, 1 / (clockFrequency * 100) * 1000);
+  
+    return () => clearInterval(intervalId);
+  }, [elements, connections, playing, clockFrequency, isLogicGate, evaluateGateLogic, gateInputStates]);
+
+  // Reset input states of a gate after signal propagation (with delay)
+  useEffect(() => {
+    if (!playing) return;
+    
+    // Create map to track timeouts for each gate
+    const gateTimeouts: Map<number, NodeJS.Timeout> = new Map();
+    
+    // When gate input states change and signals are propagated, schedule reset
+    for (const [gateId, inputs] of gateInputStates.entries()) {
+      if (inputs.size > 0) {
+        // Clear any existing timeout
+        if (gateTimeouts.has(gateId)) {
+          clearTimeout(gateTimeouts.get(gateId));
+        }
+        
+        // Schedule input state reset after a delay
+        const timeoutId = setTimeout(() => {
+          setGateInputStates(prev => {
+            const newStates = new Map(prev);
+            newStates.delete(gateId);
+            return newStates;
+          });
+        }, 1000); // 1 second delay before resetting inputs
+        
+        gateTimeouts.set(gateId, timeoutId);
+      }
+    }
+    
+    return () => {
+      // Clear all timeouts when component unmounts
+      for (const timeoutId of gateTimeouts.values()) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [gateInputStates, playing]);
 
   return (
     <div
