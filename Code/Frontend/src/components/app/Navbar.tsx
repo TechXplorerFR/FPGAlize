@@ -13,6 +13,7 @@ interface NavbarProps {
   examples: Example[];
   playing: boolean;
   setPlaying: (value: boolean) => void;
+  onResetSimulation: () => void;
 }
 
 export default function Navbar({
@@ -21,12 +22,14 @@ export default function Navbar({
   activeTabId,
   examples,
   playing,
-  setPlaying
+  setPlaying,
+  onResetSimulation,
 }: NavbarProps) {
-
   const handleExport = () => {
     if (!activeTabId || activeTabId === "") {
-      toastMessage.warning("No active tab selected. Please select a file first.");
+      toastMessage.warning(
+        "No active tab selected. Please select a file first."
+      );
       return;
     }
     const currentExample = examples.find(
@@ -35,7 +38,7 @@ export default function Navbar({
 
     // Export the PostSythesis .v and .sdf file in a zip
     const zip = new JSZip();
-    if(currentExample?.originalVerilogFile) {
+    if (currentExample?.originalVerilogFile) {
       zip.file(
         `original-${currentExample.originalVerilogFileInformation.name}.v`,
         currentExample.originalVerilogFile
@@ -60,6 +63,19 @@ export default function Navbar({
         `${currentExample?.originalVerilogFileInformation.name}.zip`
       );
     });
+  };
+
+  const handleReset = () => {
+    // Stop simulation if it's playing
+    if (playing) {
+      setPlaying(false);
+    }
+    
+    // Call the reset function
+    onResetSimulation();
+    
+    // Provide feedback to the user
+    toastMessage.info("Simulation reset");
   };
 
   return (
@@ -95,7 +111,12 @@ export default function Navbar({
             <Play className="w-5 h-5 text-green-500" />
           )}
         </Button>
-        <Button variant="ghost" size="icon">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handleReset}
+          title="Reset simulation"
+        >
           <Square className="w-5 h-5" />
         </Button>
       </div>

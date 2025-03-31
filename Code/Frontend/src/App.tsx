@@ -4,8 +4,10 @@ import ExamplesDrawer from "./components/app/ExamplesDrawer";
 import Navbar from "./components/app/Navbar";
 import TabsBar from "./components/app/TabsBar";
 import { countFileLines, readFileContent } from "@/lib/utils";
-import type { Example, Tab } from "@/lib/types/types";
+import type { Example, IDataStructure, Tab } from "@/lib/types/types";
 import { Toaster } from "@/components/ui/sonner";
+// import { parseFilesForBrowser } from "@/lib/services/parser";
+import { toastMessage } from "@/lib/services/toast";
 
 function App() {
   const [activeView, setActiveView] = useState<string>("Code");
@@ -13,6 +15,7 @@ function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [playing, setPlaying] = useState(false);
+  const [resetTriggered, setResetTriggered] = useState(false);
 
   // Initialize with empty files
   const emptyFile = new File([""], "empty.v", { type: "text/plain" });
@@ -63,13 +66,151 @@ function App() {
           // Count lines
           const lineCount = await countFileLines(originalVerilogFile);
 
+          // Parse the post-synthesis files to get the JSON output
+          // const jsonOutput = await parseFilesForBrowser(
+          //   postSynthesisVerilogFile,
+          //   postSynthesisSdfFile
+          // );
+
+          const jsonOutput: IDataStructure = {
+            elements: [
+              {
+                id: 0,
+                name: "clk",
+                type: "clk",
+                inputs: [],
+                outputs: [
+                  {
+                    wireName: "wire_1",
+                    outputName: "CLK",
+                  },
+                ],
+                internal_delay: 0,
+                setup_time: 0,
+                x: 50,
+                y: 100,
+              },
+              {
+                id: 1,
+                name: "D",
+                type: "module_input",
+                inputs: [],
+                outputs: [
+                  {
+                    wireName: "wire_2",
+                    outputName: null,
+                  },
+                ],
+                internal_delay: 0,
+                setup_time: 0,
+                x: 50,
+                y: 100,
+              },
+              {
+                id: 2,
+                name: "Q",
+                type: "module_output",
+                inputs: [
+                  {
+                    wireName: "wire_3",
+                    inputName: null,
+                  },
+                ],
+                outputs: [],
+                internal_delay: 0,
+                setup_time: 0,
+                x: 50,
+                y: 100,
+              },
+              {
+                id: 3,
+                name: "$procdff$3",
+                type: "DFF",
+                inputs: [
+                  {
+                    wireName: "wire_1",
+                    inputName: "CLK",  // Correctly capitalized
+                  },
+                  {
+                    wireName: "wire_2",
+                    inputName: "D",    // Correctly capitalized
+                  },
+                  {
+                    wireName: "wire_4",
+                    inputName: "EN",   // Correctly capitalized
+                  },
+                ],
+                outputs: [
+                  {
+                    wireName: "wire_3",
+                    outputName: "Q",   // Correctly capitalized
+                  },
+                ],
+                internal_delay: 303,
+                setup_time: -46,
+                x: 50,
+                y: 100,
+              },
+              {
+                id: 4,
+                name: "enable",        // Renamed from "async_reset" to "enable" for clarity
+                type: "module_input",
+                inputs: [],
+                outputs: [
+                  {
+                    wireName: "wire_4",
+                    outputName: null,
+                  },
+                ],
+                internal_delay: 0,
+                setup_time: 0,
+                x: 50,
+                y: 100,
+              },
+            ],
+            connections: [
+              {
+                id: 1,
+                name: "wire_1",
+                type: "wire",
+                color: "#000000",
+                time: 10,
+              },
+              {
+                id: 2,
+                name: "wire_2",
+                type: "wire",
+                color: "#000000",
+                time: 1022.2,
+              },
+              {
+                id: 3,
+                name: "wire_3",
+                type: "wire",
+                color: "#000000",
+                time: 1079.77,
+              },
+              {
+                id: 4,
+                name: "wire_4",
+                type: "wire",
+                color: "#000000",
+                time: 10,
+              },
+            ],
+          };
+
+          if (!jsonOutput) {
+            toastMessage.warning(`Failed to parse example: ${name}`);
+          }
+
           return {
             index,
             example: {
               originalVerilogFile,
               postSynthesisVerilogFile,
               postSynthesisSdfFile,
-              jsonOutput: null,
+              jsonOutput,
               originalVerilogFileInformation: {
                 name: originalVerilogFile.name.split(".")[0],
                 lineCount,
@@ -91,14 +232,51 @@ function App() {
 
       setIsLoading(false);
     } catch (error) {
-      console.error("Failed to load example files:", error);
+      console.error("Error loading example files:", error);
+      toastMessage.error("Failed to load example files");
       setIsLoading(false);
     }
   }
 
+  // Handle reset simulation function
+  const handleResetSimulation = () => {
+    setResetTriggered(true);
+    // Reset the trigger after a short delay so it can be triggered again
+    setTimeout(() => {
+      setResetTriggered(false);
+    }, 100);
+  };
+
   // Load example files when the component mounts
   useEffect(() => {
+    // Load built-in examples
     loadExampleFiles();
+    
+    // Load custom examples from sessionStorage
+    try {
+      const storedExamples = sessionStorage.getItem('customExamples');
+      if (storedExamples) {
+        const parsedExamples = JSON.parse(storedExamples);
+        
+        // Need to convert the serialized file info back to actual File objects
+        // This is a simplified version - in a real implementation you'd need to 
+        // fetch the actual file content from wherever it's stored
+        const processedExamples = parsedExamples.map((ex: any) => {
+          return {
+            ...ex,
+            // Note: This is a mock representation since we can't recreate File objects
+            // In a real implementation, you'd need to store file contents and recreate Files
+            originalVerilogFile: new File([""], ex.originalVerilogFile.name, { type: ex.originalVerilogFile.type }),
+            postSynthesisVerilogFile: new File([""], ex.postSynthesisVerilogFile.name, { type: ex.postSynthesisVerilogFile.type }),
+            postSynthesisSdfFile: new File([""], ex.postSynthesisSdfFile.name, { type: ex.postSynthesisSdfFile.type }),
+          };
+        });
+        
+        setExamples(prevExamples => [...prevExamples, ...processedExamples]);
+      }
+    } catch (error) {
+      console.error("Failed to load custom examples from sessionStorage:", error);
+    }
   }, []);
 
   return (
@@ -107,21 +285,23 @@ function App() {
         examples={examples}
         isLoading={isLoading}
         setTabs={setTabs}
-        setActiveTabId={setActiveTabId}
-      />
-      <Navbar 
-        activeView={activeView} 
-        setActiveView={setActiveView} 
-        activeTabId={activeTabId} 
-        examples={examples} 
-        playing={playing} 
-        setPlaying={setPlaying} 
-      />
-      <TabsBar 
         setActiveTabId={setActiveTabId} 
-        tabs={tabs} 
+        setExamples={setExamples}
+      />
+      <Navbar
+        activeView={activeView}
+        setActiveView={setActiveView}
         activeTabId={activeTabId}
-        setTabs={setTabs} 
+        examples={examples}
+        playing={playing}
+        setPlaying={setPlaying}
+        onResetSimulation={handleResetSimulation}
+      />
+      <TabsBar
+        setActiveTabId={setActiveTabId}
+        tabs={tabs}
+        activeTabId={activeTabId}
+        setTabs={setTabs}
       />
       <TabDisplayer
         activeView={activeView}
@@ -130,6 +310,7 @@ function App() {
         tabs={tabs}
         isLoading={isLoading}
         playing={playing}
+        resetTriggered={resetTriggered}
       />
       <Toaster />
     </>

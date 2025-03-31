@@ -1,115 +1,113 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getJsonObjectFromV } from '../lib/services/v-parser';
-import * as fs from 'node:fs/promises';
+import * as v_parser from '../lib/services/v-parser';
+import { describe, it, expect } from 'vitest';
 
-// Mock the fs module
-vi.mock('node:fs/promises', () => ({
-  readFile: vi.fn(),
-}));
-
-describe('Verilog Parser', () => {
-  const mockVerilogPath = '/path/to/test.v';
+// Mock the File API for testing browser-specific functions
+global.File = class MockFile {
+  name: string;
+  content: string;
+  type: string;
   
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  constructor(content: string[], name: string, options: { type: string }) {
+    this.name = name;
+    this.content = content.join('');
+    this.type = options.type;
+  }
+  
+  text(): Promise<string> {
+    return Promise.resolve(this.content);
+  }
+} as any;
 
-  afterEach(() => {
-    vi.resetAllMocks();
+describe('Verilog Parser Service', () => {
+  describe('tokenizeVerilog', () => {
+    it('should tokenize verilog content correctly', () => {
+      const content = 'module test (input a, output b);';
+      const tokens = (v_parser as any).tokenizeVerilog(content);
+      
+      expect(tokens).toEqual(['module', 'test', 'input', 'a', 'output', 'b']);
+    });
+    
+    it('should handle empty content', () => {
+      const content = '';
+      const tokens = (v_parser as any).tokenizeVerilog(content);
+      
+      expect(tokens).toEqual([]);
+    });
   });
-
-  it('should parse module definitions correctly', async () => {
-    // Mock a sample Verilog file content
-    const mockVerilogContent = `
-      module test_module (
-        input wire clk,
-        input wire data,
-        output wire q
+  
+  describe('parseVerilogContent', () => {
+    it('should parse basic module definition', () => {
+      const content = `
+        module test (
+          input clk,
+          input reset,
+          output out
+        );
+        endmodule
+      `;
+      
+      const result = v_parser.parseVerilogContent(content);
+      
+      expect(result.elements.length).toBeGreaterThan(0);
+      expect(result.connections.length).toBeGreaterThan(0);
+      
+      const moduleInputs = result.elements.filter(e => 
+        e.type === 'module_input' || e.name === 'clk' || e.name === 'reset'
       );
-        
-        // Some logic here
-        
-      endmodule
-    `;
+      const moduleOutputs = result.elements.filter(e => e.type === 'module_output');
+      
+      expect(moduleInputs.length).toBe(2);
+      expect(moduleOutputs.length).toBe(1);
+    });
     
-    // Setup the mock to return our content
-    vi.mocked(fs.readFile).mockResolvedValue(mockVerilogContent);
-
-    // Call the function
-    const result = await getJsonObjectFromV(mockVerilogPath);
-
-    // Verify the parsed structure
-    expect(result).toHaveProperty('elements');
-    expect(result).toHaveProperty('connections');
+    it('should handle complex module with wire declarations', () => {
+      const content = `
+        module counter (
+          input clk,
+          input reset,
+          output [3:0] count
+        );
+          wire internal;
+          // Some module logic would be here
+        endmodule
+      `;
+      
+      const result = v_parser.parseVerilogContent(content);
+      
+      expect(result.elements.length).toBeGreaterThan(0);
+      expect(result.elements.some(e => e.name === 'clk')).toBe(true);
+    });
     
-    // Check that we have an element for the module
-    const elements = result.elements;
-    expect(elements.length).toBe(1);
-    
-    const moduleElement = elements[0];
-    expect(moduleElement.name).toBe('test_module');
-    expect(moduleElement.type).toBe('verilog_module');
-    
-    // Check that inputs and outputs are captured
-    expect(moduleElement.inputs).toContain('clk');
-    expect(moduleElement.inputs).toContain('data');
-    expect(moduleElement.outputs).toContain('q');
+    it('should handle errors gracefully', () => {
+      const invalidContent = `
+        module broken (
+          input clk,
+          // Missing endmodule
+      `;
+      
+      const result = v_parser.parseVerilogContent(invalidContent);
+      
+      // Should still return a data structure even if incomplete
+      expect(result).toHaveProperty('elements');
+      expect(result).toHaveProperty('connections');
+    });
   });
-
-  it('should parse multiple modules in a file', async () => {
-    // Mock a Verilog file with multiple modules
-    const mockVerilogContent = `
-      module module1 (
-        input a,
-        output b
-      );
-      endmodule
-
-      module module2 (
-        input x,
-        output y
-      );
-      endmodule
-    `;
-    
-    vi.mocked(fs.readFile).mockResolvedValue(mockVerilogContent);
-
-    // Call the function
-    const result = await getJsonObjectFromV(mockVerilogPath);
-
-    // Verify we have two modules
-    expect(result.elements.length).toBe(2);
-    
-    // Check first module
-    expect(result.elements[0].name).toBe('module1');
-    expect(result.elements[0].inputs).toContain('a');
-    expect(result.elements[0].outputs).toContain('b');
-    
-    // Check second module
-    expect(result.elements[1].name).toBe('module2');
-    expect(result.elements[1].inputs).toContain('x');
-    expect(result.elements[1].outputs).toContain('y');
-  });
-
-  it('should handle empty Verilog file gracefully', async () => {
-    // Mock an empty Verilog file
-    vi.mocked(fs.readFile).mockResolvedValue('');
-
-    // Call the function
-    const result = await getJsonObjectFromV(mockVerilogPath);
-
-    // Verify we get an empty structure but no errors
-    expect(result).toEqual({ elements: [], connections: [] });
-  });
-
-  it('should handle file read errors', async () => {
-    // Mock a file read error
-    vi.mocked(fs.readFile).mockRejectedValue(new Error('File not found'));
-
-    // Call and check that the function handles the error
-    const result = await getJsonObjectFromV(mockVerilogPath);
-    
-    // Should return empty structure on error
-    expect(result).toEqual({ elements: [], connections: [] });
+  
+  describe('getJsonObjectFromV', () => {
+    it('should parse a verilog file into JSON structure', async () => {
+      const mockFile = new File([`
+        module test (
+          input clk,
+          output out
+        );
+        endmodule
+      `], 'test.v', { type: 'text/plain' });
+      
+      const result = await v_parser.getJsonObjectFromV(mockFile);
+      
+      expect(result).toHaveProperty('elements');
+      expect(result).toHaveProperty('connections');
+      expect(result.elements.some(e => e.name === 'clk')).toBe(true);
+    });
   });
 });

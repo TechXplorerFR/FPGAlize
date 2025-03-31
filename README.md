@@ -1,76 +1,122 @@
-# Web FPGA Simulator (Team 7)
+# FPGAlize 👋
 
-## 🚀 Project Overview
-This project aims to develop a **web-based interface** for an **FPGA simulator**. The interface will allow users (students and teachers) to visualize **signal propagation inside an FPGA**. 
+![GitHub stars](https://img.shields.io/github/stars/algosup/2024-2025-project-4-web-fpga-team-7?style=social) ![GitHub watchers](https://img.shields.io/github/watchers/algosup/2024-2025-project-4-web-fpga-team-7?style=social) ![GitHub repo size](https://img.shields.io/github/repo-size/algosup/2024-2025-project-4-web-fpga-team-7) ![GitHub language count](https://img.shields.io/github/languages/count/algosup/2024-2025-project-4-web-fpga-team-7) ![GitHub top language](https://img.shields.io/github/languages/top/algosup/2024-2025-project-4-web-fpga-team-7) ![GitHub last commit](https://img.shields.io/github/last-commit/algosup/2024-2025-project-4-web-fpga-team-7?color=red)
 
-### 📚 Documents
-- **[Functional Specifications](Documents/FunctionalSpecifications/FunctionalSpecifications.md)**
-- **[Technical Specifications](Documents/TechnicalSpecifications/TechnicalSpecifications.md)**
-- **[Project Charter](Documents/Management/ProjectCharter.md)**
-- **[Test Plan](Documents/QA/TestPlan.md)**
-- **[Test Cases](Documents/QA/TestCases.md)**
-- **[User Manual](Documents/UserManual/User%20Manual.pdf)**
+FPGAlize is a **self-hosted** web platform that provides an **interactive and visual environment** for exploring FPGA signal behavior. 🖥️⚡ It allows users to **observe, analyze, and manipulate** signals in real time, making FPGA development more accessible for learners, researchers, and engineers.
 
-### 🔹 Key Features
-- **2D Visualization** of BELs and signal routing in the FPGA
-- **Real-time simulation** with adjustable speed controls (x1, x2, x4…)
-- **Preloaded Verilog Applications** for educational use
-- **Teacher Dashboard** to upload Verilog files and testbenches
-- **Integration with Impulse and ModelSim** for simulation
+## 🔑 Key Features
 
-## 👤 Our Team
+- 🎨 **2D Visualization** of BELs and signal routing
+- ⚡ **Real-time simulation** with adjustable speed controls
+- 📜 **Preloaded Verilog Applications** for educational use
+- 👨‍🏫 **Teacher Dashboard** to upload Verilog files and testbenches
 
-### **Team Members**
+<!-- To replace by a GIF -->
+![Example FPGAlize image](demo.png)
 
-| Photo                                                                  | Name                   | Role                | Links                                                                                                                                                                                                                                           |
-| ---------------------------------------------------------------------- | ---------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Pierre's Photo](https://github.com/Pierre2103.png?size=100)          | **Pierre GORIN**       | Project Manager     | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/pierre-gorin-61a784221/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/Pierre2103) |
+## 🚀 Installation
+
+> [!TIP]
+> For ease of use, you can access our public demo following [this link](https://2024-2025-project-4-web-fpga-team-7.vercel.app/)
+
+### Prerequisites 🛠️
+Ensure you have the following installed:
+- **Node.js** v23.7.0 or higher
+- **NPM** v11.1.0 or higher
+
+### Install from GitHub 🏗️
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/algosup/2024-2025-project-4-web-fpga-team-7.git
+   cd 2024-2025-project-4-web-fpga-team-7
+   ```
+2. Install dependencies and start the post-build server:
+   ```bash
+   cd Code/Frontend
+   npm install
+   npm run build
+   npm run preview
+   ```
+3. Access the application at `http://localhost:4173`.
+
+> [!NOTE]
+> You can start the server in Development Mode by running `npm run dev` and access the application at `http://localhost:5173`.
+
+> [!CAUTION]
+> The `dev` branch contains the latest unstable features. Use at your own risk.
+
+### Alternative Installation via Scripts ⚙️
+
+**Windows (PowerShell):**
+```ps1
+cd Scripts
+./win-setup.ps1
+```
+
+**Linux/macOS:**
+```bash
+cd Scripts
+./unix-setup.sh
+```
+
+### 🐳 Quick Start with Docker
+
+1. **Pull and run the container** (no need to build manually):
+   ```bash
+   docker pull ghcr.io/techxplorerfr/test-actions/myapp:latest
+   docker run -p 4173:4173 ghcr.io/techxplorerfr/test-actions/myapp:latest
+   ```
+
+2. **Access FPGAlize** at `http://localhost:4173`.
+
+## 🛠️ How to Add Custom Examples
+
+> [!NOTE]
+> To add your own example to the application, you currently need to do the synthesis and Place & Route of your Verilog file to extract a [Standard Delay Format File (.sdf)](https://en.wikipedia.org/wiki/Standard_Delay_Format) and [Verilog File (.v)](https://en.wikipedia.org/wiki/Verilog). We highly recommend you using [AMD Vivado Design Suite](https://www.amd.com/fr/products/software/adaptive-socs-and-fpgas/vivado.html).
+
+To add your custom examples to FPGAlize:
+
+1. Open the left drawer and click the **Import Button**.
+2. Drop your files in the corresponding field of the modal which appeared, and then click **Create Example**.
+![Examples](examples.png)
+
+Your example is created and opened as the active tab.
+
+<!-- Add a GIF here -->
+
+## 📚 Documentation
+- [Functional Specifications](Documents/FunctionalSpecifications/FunctionalSpecifications.md)
+- [Technical Specifications](Documents/TechnicalSpecifications/TechnicalSpecifications.md)
+- [Project Charter](Documents/Management/ProjectCharter.md)
+- [Test Plan](Documents/QA/TestPlan.md)
+- [Test Cases](Documents/QA/TestCases.md)
+- [User Manual](Documents/UserManual/UserManual.pdf)
+
+## 📜 License
+
+This project is licensed under the [MIT](./LICENSE.md) License.
+
+## 💬 Support
+
+For questions or suggestions, open an issue in the [Issue Section](https://github.com/algosup/2024-2025-project-4-web-fpga-team-7/issues).
+
+## 👥 Contributing
+
+See the [Contributing Guidelines](./CONTRIBUTING.md) for details on how to contribute.
+
+## ✍️ Authors & Acknowledgments
+
+### Our Team 🚀
+| Photo                                                                  | Name                   | Role                | Links                                                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------- | ---------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Pierre's Photo](https://github.com/Pierre2103.png?size=100)          | **Pierre GORIN**       | Project Manager     | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/pierre-gorin-61a784221/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/Pierre2103)                   |
 | ![Aurélien's Photo](https://github.com/aurelienfernandez.png?size=100) | **Aurélien FERNANDEZ** | Program Manager     | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/aur%C3%A9lien-fernandez-4971201b8/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/aurelienfernandez) |
-| ![Abderrazaq's Photo](https://github.com/Amakran2003.png?size=100)     | **Abderrazaq MAKRAN**  | Technical Lead      | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/abderrazaq-makran/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/Amakran2003) |
-| ![Guillaume's Photo](https://github.com/Guillaume18100.png?size=100)   | **Guillaume DERAMCHI** | Quality Assurance   | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/guillaume-deramchi/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/Guillaume18100) |
-| ![Enzo's Photo](https://github.com/EnzoGuillouche.png?size=100)        | **Enzo GUILLOUCHE**    | Software Engineer 1 | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/enzoguillouche/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/EnzoGuillouche) |
-| ![Antoine's Photo](https://github.com/TechXplorerFR.png?size=100)      | **Antoine PREVOST**    | Software Engineer 2 | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/antoine-prevost-dev/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/TechXplorerFR) |
-| ![Max's Photo](https://github.com/maxbernard3.png?size=100)            | **Max BERNARD**        | Technical Writer    | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/max-bernard-b77680210/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/maxbernard3) |
+| ![Abderrazaq's Photo](https://github.com/Amakran2003.png?size=100)     | **Abderrazaq MAKRAN**  | Technical Lead      | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/abderrazaq-makran/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/Amakran2003)                       |
+| ![Guillaume's Photo](https://github.com/Guillaume18100.png?size=100)   | **Guillaume DERAMCHI** | Quality Assurance   | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/guillaume-deramchi/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/Guillaume18100)                   |
+| ![Enzo's Photo](https://github.com/EnzoGuillouche.png?size=100)        | **Enzo GUILLOUCHE**    | Software Engineer 1 | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/enzoguillouche/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/EnzoGuillouche)                       |
+| ![Antoine's Photo](https://github.com/TechXplorerFR.png?size=100)      | **Antoine PREVOST**    | Software Engineer 2 | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/antoine-prevost-dev/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/TechXplorerFR)                   |
+| ![Max's Photo](https://github.com/maxbernard3.png?size=100)            | **Max BERNARD**        | Technical Writer    | <img src="Documents/Management/img/icons/linkedin.svg" width="20px"> [LinkedIn](https://www.linkedin.com/in/max-bernard-b77680210/) <br> <img src="Documents/Management/img/icons/github.svg" width="20px"> [GitHub](https://github.com/maxbernard3)                   |
 
-## 🛠 Technologies Used
-### **Backend**
-- NanoXplore Impulse
-- ModelSim
 
-### **Frontend**
-- To be decided
-
-### **Other Tools**
-- Trello for project management
-- GitHub for version control
-- Slack for communication
-
-## 📂 Project Structure
-```
-.
-├── Code
-│   ├── Backend
-│   └── Frontend
-├── Documents
-│   ├── FunctionalSpecifications
-│   │   ├── FunctionalSpecifications.md
-│   │   └── img
-│   │       └── placeholder.png
-│   ├── Management
-│   │   ├── BestPractices.md
-│   │   ├── ProjectCharter.md
-│   │   └── img
-│   ├── QA
-│   │   ├── TestCases.md
-│   │   ├── TestPlan.md
-│   │   └── img
-│   ├── TechnicalSpecifications
-│   │   ├── TechnicalSpecifications.md
-│   │   └── img
-│   └── UserManual
-│       ├── User Manual.pdf
-│       └── img
-├── LICENSE.md
-├── README.md
-└── Scripts
-```
+**Happy coding with FPGAlize!** 🎉

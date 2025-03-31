@@ -22,6 +22,7 @@ interface ExamplesDrawerProps {
   isLoading: boolean;
   setTabs: React.Dispatch<React.SetStateAction<Tab[]>>;
   setActiveTabId?: (id: string) => void;
+  setExamples: React.Dispatch<React.SetStateAction<ExampleType[]>>;
 }
 
 function ExamplesDrawer({
@@ -29,34 +30,54 @@ function ExamplesDrawer({
   isLoading,
   setTabs,
   setActiveTabId,
+  setExamples,
 }: ExamplesDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Handler to close drawer after handling example click
   const handleExampleClick = (index: number) => {
-    if (examples.length > 0 && examples[index]) {
-      // Pass the tab data as before
-      if (setTabs)
-        setTabs((prev) => [
-          ...prev,
-          {
-            id: examples[index].originalVerilogFileInformation.name,
-            name: examples[index].originalVerilogFileInformation.name,
-            content: examples[index].originalVerilogFile || "",
-            language: "verilog",
-          },
-        ]);
-
-      // Set the active tab if provided
-      if (setActiveTabId) {
-        setActiveTabId(examples[index].originalVerilogFileInformation.name);
-      } else {
-        toast.error("Failed to load example");
-      }
-    } else {
-      toast.error("Failed to load example");
+    const example = examples[index];
+    
+    if (!example || !example.originalVerilogFileInformation) {
+      toast.error("Failed to load example: Invalid example data");
+      return;
     }
-    // Close the drawer
+    
+    // Get the existing tabs
+    setTabs((prevTabs) => {
+      // Check if tab already exists
+      const existingTabIndex = prevTabs.findIndex(
+        (tab) => tab.name === example.originalVerilogFileInformation.name
+      );
+      
+      if (existingTabIndex !== -1) {
+        // Tab exists, just activate it
+        if (setActiveTabId) {
+          setActiveTabId(prevTabs[existingTabIndex].id);
+        }
+        return prevTabs;
+      } else {
+        try {
+          // Create a new tab with a unique ID
+          const newTab: Tab = {
+            id: example.originalVerilogFileInformation.name,
+            name: example.originalVerilogFileInformation.name,
+            example: example,
+          };
+          
+          // Add the new tab and set it as active
+          if (setActiveTabId) {
+            setActiveTabId(example.originalVerilogFileInformation.name);
+          }
+          toast.success(`Loaded ${newTab.name}`);
+          return [...prevTabs, newTab];
+        } catch (error) {
+          toast.error(`Failed to create tab: ${error instanceof Error ? error.message : String(error)}`);
+          return prevTabs;
+        }
+      }
+    });
+    
+    // Close the drawer after selection
     setIsOpen(false);
   };
 
@@ -109,7 +130,12 @@ function ExamplesDrawer({
               <Separator />
             </div>
             <DrawerFooter className="p-4">
-              <AddExampleModal />
+              <AddExampleModal 
+                setExamples={setExamples} 
+                setTabs={setTabs} 
+                setActiveTabId={setActiveTabId}
+                onClose={() => setIsOpen(false)}
+              />
             </DrawerFooter>
             <DrawerClose asChild>
               <div className="absolute top-[50vh] right-[-37px] h-[10vh] transform -translate-y-1/2 bg-gray-100 p-2 rounded-r-lg border-y border-r border-solid border-gray-300 shadow-md hover:bg-gray-200 flex justify-center items-center dark:bg-neutral-900 dark:border-neutral-800">

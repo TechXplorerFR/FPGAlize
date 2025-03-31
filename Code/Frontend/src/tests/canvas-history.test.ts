@@ -4,26 +4,19 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { CanvasHistory, useCanvasHistory, type CanvasState } from '../lib/services/canvas-history';
+import { type IElement, type IConnection } from "../lib/types/types";
 
-// Mock Element type
-type Element = {
-  id: number;
-  name: string;
-  x: number;
-  y: number;
-  connectedTo: number[];
-  icon: string; // Add missing property
-  isDragging: boolean; // Add missing property
-};
 describe('CanvasHistory', () => {
-  const createMockElement = (id: number, x: number, y: number): Element => ({
+  const createMockElement = (id: number, x: number, y: number): IElement => ({
     id,
     name: `Element ${id}`,
+    type: `type-${id}`,
     x,
     y,
-    connectedTo: [],
-    icon: 'default-icon', // Provide a default value for icon
-    isDragging: false, // Provide a default value for isDragging
+    inputs: [],
+    outputs: [],
+    internal_delay: 0,
+    setup_time: 0
   });
 
   const createInitialState = (): CanvasState => {
@@ -31,10 +24,14 @@ describe('CanvasHistory', () => {
       createMockElement(1, 10, 10),
       createMockElement(2, 100, 100),
     ];
+    const connections: IConnection[] = [];
     
     return {
       elements,
-      elementPositions: new Map(elements.map(el => [el.id.toString(), { x: el.x, y: el.y }])),
+      connections,
+      elementPositions: new Map(
+        elements.map((el) => [el.id.toString(), { x: el.x ?? 0, y: el.y ?? 0 }])
+      ),
     };
   };
 
@@ -56,6 +53,7 @@ describe('CanvasHistory', () => {
     // Create a modified state
     const newState: CanvasState = {
       elements: [...initialState.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(initialState.elementPositions),
     };
     
@@ -75,6 +73,7 @@ describe('CanvasHistory', () => {
     // Push a modified state
     const newState: CanvasState = {
       elements: [...initialState.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(initialState.elementPositions),
     };
     
@@ -99,6 +98,7 @@ describe('CanvasHistory', () => {
     // Push a modified state
     const newState: CanvasState = {
       elements: [...initialState.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(initialState.elementPositions),
     };
     
@@ -125,6 +125,7 @@ describe('CanvasHistory', () => {
     // Push multiple new states
     const newState1: CanvasState = {
       elements: [...initialState.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(initialState.elementPositions),
     };
     
@@ -135,6 +136,7 @@ describe('CanvasHistory', () => {
     
     const newState2: CanvasState = {
       elements: [...newState1.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(newState1.elementPositions),
     };
     
@@ -155,6 +157,7 @@ describe('CanvasHistory', () => {
     // Push state 1
     const state1: CanvasState = {
       elements: [...initialState.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(initialState.elementPositions),
     };
     
@@ -166,6 +169,7 @@ describe('CanvasHistory', () => {
     // Push state 2
     const state2: CanvasState = {
       elements: [...state1.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(state1.elementPositions),
     };
     
@@ -181,6 +185,7 @@ describe('CanvasHistory', () => {
     // Create state3 from the current history state, not from state1 variable
     const state3: CanvasState = {
       elements: undoResult ? [...undoResult.elements] : [...initialState.elements],
+      connections: undoResult ? [...undoResult.connections] : [...initialState.connections],
       elementPositions: undoResult ? new Map(undoResult.elementPositions) : new Map(initialState.elementPositions),
     };
     
@@ -201,14 +206,16 @@ describe('CanvasHistory', () => {
 });
 
 describe('useCanvasHistory hook', () => {
-  const createMockElement = (id: number, x: number, y: number): Element => ({
+  const createMockElement = (id: number, x: number, y: number): IElement => ({
     id,
     name: `Element ${id}`,
+    type: `type-${id}`,
     x,
     y,
-    connectedTo: [],
-    icon: 'default-icon', // Provide a default value for icon
-    isDragging: false, // Provide a default value for isDragging
+    inputs: [],
+    outputs: [],
+    internal_delay: 0,
+    setup_time: 0
   });
 
   const createInitialState = (): CanvasState => {
@@ -216,10 +223,14 @@ describe('useCanvasHistory hook', () => {
       createMockElement(1, 10, 10),
       createMockElement(2, 100, 100),
     ];
+    const connections: IConnection[] = [];
     
     return {
       elements,
-      elementPositions: new Map(elements.map(el => [el.id.toString(), { x: el.x, y: el.y }])),
+      connections,
+      elementPositions: new Map(
+        elements.map((el) => [el.id.toString(), { x: el.x ?? 0, y: el.y ?? 0 }])
+      ),
     };
   };
 
@@ -249,6 +260,7 @@ describe('useCanvasHistory hook', () => {
     // Create a new state to push
     const newState: CanvasState = {
       elements: [...initialState.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(initialState.elementPositions),
     };
     
@@ -281,6 +293,7 @@ describe('useCanvasHistory hook', () => {
     // Create a new state to push
     const newState: CanvasState = {
       elements: [...initialState.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(initialState.elementPositions),
     };
     
@@ -317,6 +330,7 @@ describe('useCanvasHistory hook', () => {
     // Push multiple states
     const state1: CanvasState = {
       elements: [...initialState.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(initialState.elementPositions),
     };
     
@@ -328,6 +342,7 @@ describe('useCanvasHistory hook', () => {
     
     const state2: CanvasState = {
       elements: [...state1.elements],
+      connections: [...initialState.connections],
       elementPositions: new Map(state1.elementPositions),
     };
     
