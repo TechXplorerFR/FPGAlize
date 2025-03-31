@@ -58,9 +58,21 @@ export const elementPortConfigs: Record<string, ElementPortConfig> = {
       { id: 'out', x: 1, y: 0.3, type: 'output' }
     ]
   },
+  'module_input_en' : {
+    inputs: [],
+    outputs: [
+      { id: 'out', x: 1, y: 0.3, type: 'output' }
+    ]
+  },
   'module_output': {
     inputs: [
-      { id: 'in', x: 0, y: 0.3, type: 'input' }
+      { id: 'in', x: 0, y: 0.5, type: 'input' }
+    ],
+    outputs: []
+  },
+  'module_output_en' : {
+    inputs: [
+      { id: 'in', x: 0, y: 0.5, type: 'input' }
     ],
     outputs: []
   },
