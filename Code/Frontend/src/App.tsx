@@ -15,6 +15,7 @@ function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [playing, setPlaying] = useState(false);
+  const [resetTriggered, setResetTriggered] = useState(false);
 
   // Initialize with empty files
   const emptyFile = new File([""], "empty.v", { type: "text/plain" });
@@ -81,7 +82,7 @@ function App() {
                 outputs: [
                   {
                     wireName: "wire_1",
-                    outputName: null,
+                    outputName: "CLK",
                   },
                 ],
                 internal_delay: 0,
@@ -237,9 +238,45 @@ function App() {
     }
   }
 
+  // Handle reset simulation function
+  const handleResetSimulation = () => {
+    setResetTriggered(true);
+    // Reset the trigger after a short delay so it can be triggered again
+    setTimeout(() => {
+      setResetTriggered(false);
+    }, 100);
+  };
+
   // Load example files when the component mounts
   useEffect(() => {
+    // Load built-in examples
     loadExampleFiles();
+    
+    // Load custom examples from sessionStorage
+    try {
+      const storedExamples = sessionStorage.getItem('customExamples');
+      if (storedExamples) {
+        const parsedExamples = JSON.parse(storedExamples);
+        
+        // Need to convert the serialized file info back to actual File objects
+        // This is a simplified version - in a real implementation you'd need to 
+        // fetch the actual file content from wherever it's stored
+        const processedExamples = parsedExamples.map((ex: any) => {
+          return {
+            ...ex,
+            // Note: This is a mock representation since we can't recreate File objects
+            // In a real implementation, you'd need to store file contents and recreate Files
+            originalVerilogFile: new File([""], ex.originalVerilogFile.name, { type: ex.originalVerilogFile.type }),
+            postSynthesisVerilogFile: new File([""], ex.postSynthesisVerilogFile.name, { type: ex.postSynthesisVerilogFile.type }),
+            postSynthesisSdfFile: new File([""], ex.postSynthesisSdfFile.name, { type: ex.postSynthesisSdfFile.type }),
+          };
+        });
+        
+        setExamples(prevExamples => [...prevExamples, ...processedExamples]);
+      }
+    } catch (error) {
+      console.error("Failed to load custom examples from sessionStorage:", error);
+    }
   }, []);
 
   return (
@@ -248,7 +285,8 @@ function App() {
         examples={examples}
         isLoading={isLoading}
         setTabs={setTabs}
-        setActiveTabId={setActiveTabId}
+        setActiveTabId={setActiveTabId} 
+        setExamples={setExamples}
       />
       <Navbar
         activeView={activeView}
@@ -257,6 +295,7 @@ function App() {
         examples={examples}
         playing={playing}
         setPlaying={setPlaying}
+        onResetSimulation={handleResetSimulation}
       />
       <TabsBar
         setActiveTabId={setActiveTabId}
@@ -271,6 +310,7 @@ function App() {
         tabs={tabs}
         isLoading={isLoading}
         playing={playing}
+        resetTriggered={resetTriggered}
       />
       <Toaster />
     </>

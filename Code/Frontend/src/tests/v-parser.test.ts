@@ -1,5 +1,22 @@
-import { describe, it, expect } from 'vitest';
 import * as v_parser from '../lib/services/v-parser';
+import { describe, it, expect } from 'vitest';
+
+// Mock the File API for testing browser-specific functions
+global.File = class MockFile {
+  name: string;
+  content: string;
+  type: string;
+  
+  constructor(content: string[], name: string, options: { type: string }) {
+    this.name = name;
+    this.content = content.join('');
+    this.type = options.type;
+  }
+  
+  text(): Promise<string> {
+    return Promise.resolve(this.content);
+  }
+} as any;
 
 describe('Verilog Parser Service', () => {
   describe('tokenizeVerilog', () => {

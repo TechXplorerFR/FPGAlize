@@ -52,7 +52,7 @@ export function calculateConnectionPath(
   const path: Point[] = [{ x: source.x, y: source.y }];
   
   // Minimum distance segments should extend from components
-  const minExtension = 15;
+  const minExtension = 40;
   
   // Different routing strategies based on source and destination directions
   if (
