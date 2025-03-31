@@ -9,7 +9,7 @@ This project aims to develop a **web-based interface** for an **FPGA simulator**
 - **[Project Charter](Documents/Management/ProjectCharter.md)**
 - **[Test Plan](Documents/QA/TestPlan.md)**
 - **[Test Cases](Documents/QA/TestCases.md)**
-- **[User Manual](Documents/UserManual/UserManual/User%20Manual.pdf)**
+- **[User Manual](Documents/UserManual/User%20Manual.pdf)**
 
 ### 🔹 Key Features
 - **2D Visualization** of BELs and signal routing in the FPGA
@@ -68,7 +68,7 @@ This project aims to develop a **web-based interface** for an **FPGA simulator**
 │   │   ├── TechnicalSpecifications.md
 │   │   └── img
 │   └── UserManual
-│       ├── UserManual.pdf
+│       ├── User Manual.pdf
 │       └── img
 ├── LICENSE.md
 ├── README.md
