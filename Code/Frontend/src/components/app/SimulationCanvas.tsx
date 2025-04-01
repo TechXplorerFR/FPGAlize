@@ -1,124 +1,392 @@
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import {
-  Example,
-  type IElement,
-  type IConnection,
-  type ConnectionEndpoints,
-} from "@/lib/types/types";
+import { useRef, useState, useCallback, useEffect, useMemo } from "react";
+import { Example, type IConnection } from "@/lib/types/types";
 import CanvasActionBar from "./CanvasActionBar";
 import { getTheme } from "../theme-provider";
-import {
-  useCanvasHistory,
-  type CanvasState,
-} from "@/lib/services/canvas-history";
+import { useCanvasHistory } from "@/lib/services/canvas-history";
 import { toast } from "sonner";
-import { calculatePortPosition } from "@/lib/config/element-ports";
-import {
-  calculateConnectionPath,
-  getPointAlongPath,
-  type EdgePoint,
-} from "@/lib/utils/connection-router";
+import { IElement } from "@/lib/types/types";
 
-// Debounce helper function
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
+// Helper type for wire segments
+type Point = {
+  x: number;
+  y: number;
+};
 
-  return (...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
+// Add a type for signal propagation
+type Signal = {
+  connectionName: string;
+  position: number; // 0-1 to represent progress along the wire (percentage)
+  points: Point[]; // The path points this signal is following
+  totalLength: number; // Total length of the path
+  createdAt: number; // Timestamp when signal was created
+  sourceName: string; // Name of source element
+  destName: string; // Name of destination element
+};
 
-// Calculate exact edge point based on port direction and element dimensions
-function calculateEdgePoint(
-  x: number,
-  y: number,
-  direction: "left" | "right" | "top" | "bottom",
-  elementX: number,
-  elementY: number,
-  width: number,
-  height: number
-): { x: number; y: number } {
-  switch (direction) {
-    case "left":
-      return { x: elementX, y };
-    case "right":
-      return { x: elementX + width / 1.5, y };
-    case "top":
-      return { x, y: elementY };
-    case "bottom":
-      return { x, y: elementY + height / 1.5 };
-    default:
-      return { x, y };
+// Add a type for tracking flip-flop internal state
+type FlipFlopState = {
+  id: number;
+  name: string;
+  hasD: boolean; // Whether D input is active
+  hasEn: boolean; // Whether En input is active (always true for DFF_NE)
+  outputValue: boolean; // Current output value
+  lastClockTime: number; // Last time clock was received
+  type: string; // Store the flip-flop type for reference
+};
+
+// Function to get the specific port position for an element based on type and port name
+const getPortPosition = (
+  element: IElement,
+  portType: "input" | "output",
+  portName: string,
+  elements: IElement[] = [],
+  connections: IConnection[] = []
+): Point => {
+  const size = 50;
+  const x = element.x || 0;
+  const y = element.y || 0;
+
+  // Default positions (centered on sides)
+  let portX = portType === "input" ? x : x + size;
+  let portY = y + size / 2;
+
+  // For flip-flops, position the ports according to their function
+  if (element.type === "DFF" || element.type === "DFF_NE") {
+    if (portType === "input") {
+      // Try to determine the port type based on its connection to other elements
+      const origin = getSignalOriginType(portName, elements, connections);
+
+      // Determine port position based on the port's purpose
+      if (origin.name === "D") {
+        // D input at the top-left (25% from top)
+        portX = x;
+        portY = y + size * 0.25;
+      } else if (origin.name === "clk") {
+        // Clock input at the bottom-center
+        portX = x;
+        portY = y + size * 0.8; // Bottom of element
+      } else if (origin.name === "enable") {
+        // Enable input at the top area
+        portX = x;
+        portY = y + size * 0.55; // Middle of element
+      } else {
+        // Fallback to using the port name or index
+        portX = x;
+        portY = y + size * 0.25;
+      }
+    } else {
+      // Output Q is on the right side, centered
+      portX = x + size;
+      portY = y + size / 2;
+    }
   }
-}
 
+  return { x: portX, y: portY };
+};
+
+// Function to calculate orthogonal path with corners
+const calculateOrthogonalPath = (
+  sourceElement: IElement,
+  destElement: IElement,
+  connection: IConnection,
+  allElements: IElement[] = [],
+  allConnections: IConnection[] = []
+): Point[] => {
+  // Find which port on the source element this connection comes from
+  const sourcePort = sourceElement.outputs?.find(
+    (output) => output.wireName === connection.name
+  );
+
+  // Find which port on the destination element this connection goes to
+  const destPort = destElement.inputs?.find(
+    (input) => input.wireName === connection.name
+  );
+
+  // Get port positions using the new helper function, passing all elements and connections
+  const sourcePos = getPortPosition(
+    sourceElement,
+    "output",
+    sourcePort?.wireName || connection.name,
+    allElements,
+    allConnections
+  );
+
+  const destPos = getPortPosition(
+    destElement,
+    "input",
+    destPort?.wireName || connection.name,
+    allElements,
+    allConnections
+  );
+
+  const startX = sourcePos.x;
+  const startY = sourcePos.y;
+  const endX = destPos.x;
+  const endY = destPos.y;
+
+  const path: Point[] = [];
+
+  // Add the starting point
+  path.push({ x: startX, y: startY });
+
+  // Calculate the midpoint X
+  const midX = startX + (endX - startX) / 2;
+
+  // Add the first corner point
+  path.push({ x: midX, y: startY });
+
+  // Add the second corner point
+  path.push({ x: midX, y: endY });
+
+  // Add the end point
+  path.push({ x: endX, y: endY });
+
+  return path;
+};
+
+// Add a function to automatically arrange elements based on connections
+const arrangeElements = (
+  elements: IElement[],
+  connections: IConnection[]
+): IElement[] => {
+  // Clone the elements to avoid modifying the original array
+  const arrangedElements = [...elements];
+
+  // If there are no elements, return empty array
+  if (arrangedElements.length === 0) return arrangedElements;
+
+  // Step 1: Create a dependency graph to determine element order
+  const dependencyGraph: Record<number, number[]> = {};
+  arrangedElements.forEach((el) => {
+    dependencyGraph[el.id] = [];
+  });
+
+  // Add connections to dependency graph
+  connections.forEach((conn) => {
+    const sourceElement = arrangedElements.find(
+      (el) =>
+        el.outputs && el.outputs.some((output) => output.wireName === conn.name)
+    );
+
+    const destElement = arrangedElements.find(
+      (el) =>
+        el.inputs && el.inputs.some((input) => input.wireName === conn.name)
+    );
+
+    if (sourceElement && destElement) {
+      // Add destination to source's dependencies
+      dependencyGraph[sourceElement.id].push(destElement.id);
+    }
+  });
+
+  // Step 2: Topological sort to determine layers of elements
+  const visited = new Set<number>();
+  const layers: number[][] = [];
+
+  // First identify inputs, clocks, and sources (elements without inputs)
+  const sourceLayers = arrangedElements
+    .filter(
+      (el) =>
+        el.type === "module_input" ||
+        el.type === "clk" ||
+        !el.inputs ||
+        el.inputs.length === 0
+    )
+    .map((el) => el.id);
+
+  layers.push(sourceLayers);
+  sourceLayers.forEach((id) => visited.add(id));
+
+  // Breadth-first search to build the layers
+  let currentLayer = sourceLayers;
+  while (currentLayer.length > 0) {
+    const nextLayer: number[] = [];
+
+    // Find all elements that depend on the current layer
+    currentLayer.forEach((srcId) => {
+      dependencyGraph[srcId].forEach((destId) => {
+        if (!visited.has(destId)) {
+          // Check if all dependencies of this element are already visited
+          const el = arrangedElements.find((e) => e.id === destId);
+          if (el && el.inputs) {
+            const inputElements = el.inputs
+              .map((input) => {
+                const source = arrangedElements.find(
+                  (e) =>
+                    e.outputs &&
+                    e.outputs.some(
+                      (output) => output.wireName === input.wireName
+                    )
+                );
+                return source?.id;
+              })
+              .filter((id) => id !== undefined) as number[];
+
+            // If all dependencies are visited, add to the next layer
+            if (inputElements.every((id) => visited.has(id))) {
+              nextLayer.push(destId);
+              visited.add(destId);
+            }
+          }
+        }
+      });
+    });
+
+    if (nextLayer.length > 0) {
+      layers.push(nextLayer);
+    }
+
+    currentLayer = nextLayer;
+  }
+
+  // Check for any remaining elements not in layers (possibly due to cycles)
+  const remainingElements = arrangedElements
+    .map((el) => el.id)
+    .filter((id) => !visited.has(id));
+
+  if (remainingElements.length > 0) {
+    layers.push(remainingElements);
+  }
+
+  // Step 3: Assign positions to elements based on their layer
+  const HORIZONTAL_SPACING = 200; // Space between layers
+  const VERTICAL_SPACING = 100; // Space between elements in the same layer
+
+  layers.forEach((layerIds, layerIndex) => {
+    const layerX = 100 + layerIndex * HORIZONTAL_SPACING;
+
+    layerIds.forEach((id, elementIndex) => {
+      const layerY = 100 + elementIndex * VERTICAL_SPACING;
+
+      // Find the element and update its position
+      const elementToUpdate = arrangedElements.find((el) => el.id === id);
+      if (elementToUpdate) {
+        elementToUpdate.x = layerX;
+        elementToUpdate.y = layerY;
+      }
+    });
+  });
+
+  return arrangedElements;
+};
+
+// Add this function after other helper functions but before the main component
+const getSignalOriginType = (
+  connectionName: string,
+  elements: IElement[],
+  connections: IConnection[]
+): { type: string; name: string } => {
+  // Find the connection object first
+  const connection = connections.find((conn) => conn.name === connectionName);
+  if (!connection) {
+    return { type: "unknown", name: "unknown" };
+  }
+
+  // Find the source element (the element that has this connection in its outputs)
+  const sourceElement = elements.find(
+    (el) =>
+      el.outputs &&
+      el.outputs.some((output) => output.wireName === connectionName)
+  );
+
+  if (!sourceElement) {
+    return { type: "unknown", name: "unknown" };
+  }
+
+  // Return both the type and name of the source element
+  return {
+    type: sourceElement.type || "unknown",
+    name: sourceElement.name || `element-${sourceElement.id}`,
+  };
+};
+
+// Modify the component props to include a callback for play state changes
 export default function SimulationCanvas({
   activeTabId,
   examples,
   playing,
   resetTriggered = false,
+  onPlayingChange
 }: {
   activeTabId: string;
   examples: Example[];
   playing: boolean;
   resetTriggered?: boolean;
+  onPlayingChange?: (isPlaying: boolean) => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [elements, setElements] = useState<IElement[]>([]);
   const [connections, setConnections] = useState<IConnection[]>([]);
-  const [connectionEndpoints, setConnectionEndpoints] = useState<
-    ConnectionEndpoints[]
-  >([]);
 
   // Get theme inside component body
   const theme = getTheme();
   const isDarkTheme = theme === "dark";
 
-  const [draggingElement, setDraggingElement] = useState<number | null>(null);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [startPan, setStartPan] = useState({ x: 0, y: 0 });
-  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-  const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = 100%
+  // Add a state variable for tracking if simulation is running
+  const [runningSimulation, setRunningSimulation] = useState<boolean>(false);
+  
+  // Add a state variable to track if the simulation is paused (vs reset/stopped)
+  const [isPaused, setIsPaused] = useState<boolean>(false);
 
-  // Add state to track if element was actually dragged vs just clicked
+  // Synchronize runningSimulation with the playing prop
+  useEffect(() => {
+    if (playing) {
+      setRunningSimulation(true);
+      setIsPaused(false);
+    } else {
+      setRunningSimulation(false);
+      // If we were running and now we're not, we're paused (not stopped)
+      setIsPaused(runningSimulation);
+    }
+  }, [playing, runningSimulation]);
+
+  const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = 100%
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+
+  // Add state variables for dragging functionality
+  const [draggingElement, setDraggingElement] = useState<number | null>(null);
   const [dragStartPos, setDragStartPos] = useState<{
     x: number;
     y: number;
   } | null>(null);
   const [elementWasDragged, setElementWasDragged] = useState(false);
-
-  // Track when elements are actually being modified by user actions
   const [elementsModified, setElementsModified] = useState(false);
 
-  // Change impulses state to store arrays of positions for each connection
-  const [impulses, setImpulses] = useState<{ [key: string]: number[] }>({});
-  
-  // Add a new state to track active module inputs (continuously sending signals)
-  const [activeInputs, setActiveInputs] = useState<Set<number>>(new Set());
-  
-  // Add clock frequency state (default: 1Hz)
+  // Add clock frequency state (default: 20Hz)
   const [clockFrequency, setClockFrequency] = useState<number>(20);
 
-  // Add a new state to store preloaded images
+  // Calculate the interval time based on formula 1/(frequency*10)
+  const signalSpeed = useMemo(() => {
+    // Ensure a minimum speed even at very low frequencies
+    // Use a reasonable range that works from 1Hz to 100Hz
+    return Math.max(0.2, Math.min(2, 1 / clockFrequency)); 
+  }, [clockFrequency]);
+
+  // Add state to track active signals on wires
+  const [activeSignals, setActiveSignals] = useState<Signal[]>([]);
+
+  // Add state for flip-flop internal values
+  const [flipFlopStates, setFlipFlopStates] = useState<FlipFlopState[]>([]);
+
+  // Add state to track which input elements are active
+  const [activeInputs, setActiveInputs] = useState<number[]>([]);
+
+  // Add state to track which output elements are active with their activation time
+  const [activeOutputs, setActiveOutputs] = useState<{ [id: number]: number }>(
+    {}
+  );
+
+  // Add a state to keep track of the clicked element (for differentiating click vs drag)
+  const [clickedElement, setClickedElement] = useState<IElement | null>(null);
+
+  // Add a new state for storing preloaded images
   const [componentImages, setComponentImages] = useState<{
     [key: string]: HTMLImageElement;
   }>({});
 
-  // Add a new state for image dimensions
-  const [imageDimensions, setImageDimensions] = useState<{
-    [key: string]: { width: number; height: number };
-  }>({});
-
-  // Maximum size for component boundaries
-  const MAX_COMPONENT_SIZE = 90;
-
-  // Define a mapping of element types to image filenames - memoize to prevent recreating on each render
+  // Define a mapping of element types to image filenames
   const elementTypeToImageMap = useMemo(
     () => ({
       module_input: "module_input",
@@ -140,15 +408,165 @@ export default function SimulationCanvas({
       xor: "xor",
     }),
     []
-  ); // Empty dependency array as this mapping never changes
+  );
+
+  // Initialize the canvas history
+  const { pushState, undo, redo, canUndo, canRedo } = useCanvasHistory({
+    elements: [],
+    connections: [],
+    elementPositions: new Map(),
+  });
+
+  // Add a new state to track active signals at each flip-flop input
+  const [activeFlipFlopInputs, setActiveFlipFlopInputs] = useState<{
+    [flipFlopId: number]: {
+      D: boolean;
+      En: boolean;
+      lastEnUpdateTime: number;
+    };
+  }>({});
+
+  // Add state variables for panning functionality
+  const [isPanning, setIsPanning] = useState<boolean>(false);
+  const [panStartPos, setPanStartPos] = useState<{ x: number; y: number } | null>(null);
+
+  // IMPORTANT: Define handleSignalArrival before it's used in useEffect hooks
+  const handleSignalArrival = useCallback(
+    (signal: Signal) => {
+      // Find the destination element
+      const destElement = elements.find(
+        (el) =>
+          el.inputs &&
+          el.inputs.some((input) => input.wireName === signal.connectionName)
+      );
+
+      if (!destElement) return;
+
+      // Get the signal origin information
+      const origin = getSignalOriginType(
+        signal.connectionName,
+        elements,
+        connections
+      );
+
+      // For debugging
+      console.debug(
+        `Signal arrived: ${signal.connectionName}, from ${origin.type} (${
+          origin.name
+        }) to ${destElement.type} (${
+          destElement.name || `element-${destElement.id}`
+        })`
+      );
+
+      // Get the input port this signal is connected to
+      const inputPort = destElement.inputs?.find(
+        (input) => input.wireName === signal.connectionName
+      );
+      if (!inputPort) return;
+
+      // If this is a module_output, activate it
+      if (destElement.type === "module_output") {
+        setActiveOutputs((prev) => ({
+          ...prev,
+          [destElement.id]: performance.now(), // Record current time
+        }));
+      }
+
+      // If this is a flip-flop, update its state
+      if (destElement.type === "DFF" || destElement.type === "DFF_NE") {
+        // Determine which input this signal is connected to based on the input name and origin
+        const portIndex = destElement.inputs?.indexOf(inputPort);
+        const inputName = inputPort.inputName?.toUpperCase() || "";
+
+        // Use input name first if available, then try to guess based on origin
+        const isClockInput =
+          inputName === "CLK" || origin.type === "clk" || portIndex === 0; // First input is often clock in our example
+
+        const isDInput =
+          inputName === "D" ||
+          (origin.type === "module_input" && signal.sourceName === "D") ||
+          portIndex === 1; // Second input is D in our example
+
+        const isEnInput =
+          inputName === "EN" ||
+          (origin.type === "module_input" &&
+            (signal.sourceName === "enable" || signal.sourceName === "EN")) ||
+          portIndex === 2; // Third input is enable in our example
+
+        setFlipFlopStates((prev) => {
+          // Find the flip-flop state
+          const ffIndex = prev.findIndex((ff) => ff.id === destElement.id);
+          if (ffIndex === -1) return prev;
+
+          const newStates = [...prev];
+          const currentTime = performance.now();
+
+          if (isDInput) {
+            // Update D input state - store the value but don't update output yet
+            newStates[ffIndex] = { ...newStates[ffIndex], hasD: true };
+            console.debug(`D input signal received at ${destElement.name}`);
+          } else if (isEnInput) {
+            // Update Enable input state (only relevant for DFF, not DFF_NE)
+            if (destElement.type === "DFF") {
+              newStates[ffIndex] = { ...newStates[ffIndex], hasEn: true };
+              console.debug(`Enable signal received at ${destElement.name}`);
+
+              // Record the time this enable signal was received
+              setActiveFlipFlopInputs((prev) => ({
+                ...prev,
+                [destElement.id]: {
+                  ...(prev[destElement.id] || {
+                    D: false,
+                    En: false,
+                    lastEnUpdateTime: 0,
+                  }),
+                  En: true,
+                  lastEnUpdateTime: currentTime,
+                },
+              }));
+            }
+          } else if (isClockInput) {
+            console.debug(`Clock signal received at ${destElement.name}`);
+            const ff = newStates[ffIndex];
+
+            // Debounce clock to prevent multiple triggers
+            if (currentTime - ff.lastClockTime < 50) return prev;
+
+            // Update last clock time
+            newStates[ffIndex] = { ...ff, lastClockTime: currentTime };
+
+            // On posedge of clock:
+            // For DFF: Only update output if enable is active
+            // For DFF_NE: Always update output on clock edge (has no enable input)
+            const isEnabled = destElement.type === "DFF_NE" || ff.hasEn;
+            
+            if (isEnabled) {
+              // Only when enabled, update output value to the current D input value
+              newStates[ffIndex] = {
+                ...newStates[ffIndex],
+                outputValue: ff.hasD, // Set output to current D input value
+              };
+            }
+            // If not enabled, keep the existing output value (blocked from changing)
+
+            // Reset D input after processing the clock edge
+            newStates[ffIndex] = {
+              ...newStates[ffIndex],
+              hasD: false,
+            };
+          }
+
+          return newStates;
+        });
+      }
+    },
+    [elements, connections]
+  );
 
   // Preload images when component mounts
   useEffect(() => {
     const imageCache: { [key: string]: HTMLImageElement } = {};
-    const dimensionsCache: {
-      [key: string]: { width: number; height: number };
-    } = {};
-    const themePrefix = isDarkTheme ? "d" : "w";
+    const themePrefix = isDarkTheme ? "d" : "w"; // 'd' for dark theme, 'w' for white/light theme
 
     // Create a list of all images to load
     const imagePromises = Object.entries(elementTypeToImageMap).map(
@@ -162,22 +580,6 @@ export default function SimulationCanvas({
           const img = new Image();
           img.onload = () => {
             imageCache[type] = img;
-
-            // Calculate dimensions that preserve aspect ratio within MAX_COMPONENT_SIZE boundary
-            const aspectRatio = img.naturalWidth / img.naturalHeight;
-            let width, height;
-
-            if (aspectRatio >= 1) {
-              // Image is wider or square
-              width = MAX_COMPONENT_SIZE;
-              height = MAX_COMPONENT_SIZE / aspectRatio;
-            } else {
-              // Image is taller
-              height = MAX_COMPONENT_SIZE;
-              width = MAX_COMPONENT_SIZE * aspectRatio;
-            }
-
-            dimensionsCache[type] = { width, height };
             resolve();
           };
           img.onerror = (e) => {
@@ -193,43 +595,8 @@ export default function SimulationCanvas({
     // When all images are loaded, update the state
     Promise.all(imagePromises).then(() => {
       setComponentImages(imageCache);
-      setImageDimensions(dimensionsCache);
     });
   }, [isDarkTheme, elementTypeToImageMap]); // Reload images when theme changes
-
-  // Initialize the canvas history
-  const initialCanvasState: CanvasState = {
-    elements: [],
-    connections: [],
-    elementPositions: new Map(),
-  };
-
-  const { pushState, undo, redo, reset, canUndo, canRedo } =
-    useCanvasHistory(initialCanvasState);
-
-  // Update history when canvas elements change (debounced to avoid too many history entries)
-  const debouncedPushState = useCallback(
-    debounce(() => {
-      // Only push state if elements were actually modified by user actions
-      if (elementsModified) {
-        const currentState: CanvasState = {
-          elements,
-          connections,
-          elementPositions: new Map(
-            elements.map((el) => [
-              el.id.toString(),
-              { x: el.x ?? 0, y: el.y ?? 0 },
-            ])
-          ),
-        };
-
-        pushState(currentState);
-        // Reset the modified flag after pushing state
-        setElementsModified(false);
-      }
-    }, 500), // 500ms debounce time
-    [elements, connections, pushState, elementsModified]
-  );
 
   // Load data from active example
   useEffect(() => {
@@ -240,75 +607,103 @@ export default function SimulationCanvas({
     );
 
     if (activeExample && activeExample.jsonOutput) {
-      // Simple positioning strategy - distribute elements in a grid
-      const positionedElements = activeExample.jsonOutput.elements.map(
-        (el, index) => {
-          const row = Math.floor(index / 4); // 4 elements per row
-          const col = index % 4;
+      // Extract elements and connections
+      const rawElements = activeExample.jsonOutput.elements;
+      const rawConnections = activeExample.jsonOutput.connections;
 
-          return {
-            ...el,
-            x: 100 + col * 150, // Space elements horizontally
-            y: 100 + row * 100, // Space elements vertically
-          };
-        }
-      );
-      setElements(positionedElements);
-      setConnections(activeExample.jsonOutput.connections);
+      // Apply automatic layout to elements based on connections
+      const arrangedElements = arrangeElements(rawElements, rawConnections);
 
-      // Reset view when loading a new example
+      // Set the arranged elements and connections
+      setElements(arrangedElements);
+      setConnections(rawConnections);
+
+      // Reset zoom and center view
       resetZoom();
-
-      // Center the view on the elements
-      centerViewOnElements(positionedElements);
     } else {
-      toast.warning("No active example found");
-      console.warn("No active example found for:", activeTabId);
-      // Clear the canvas if no example is selected
+      // If no example is selected, show warning and clear canvas
+      if (activeTabId) {
+        toast.warning("No active example found");
+        console.warn("No active example found for:", activeTabId);
+      }
+
+      // Clear the canvas
       setElements([]);
       setConnections([]);
     }
   }, [activeTabId, examples]);
 
-  // Helper function to center the view on elements
-  const centerViewOnElements = useCallback((els: IElement[]) => {
-    if (els.length === 0 || !containerRef.current) return;
-
-    // Calculate bounds
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-
-    els.forEach((el) => {
-      const x = el.x ?? 0;
-      const y = el.y ?? 0;
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x + 50); // Assuming elements are 50x50
-      maxY = Math.max(maxY, y + 50);
-    });
-
-    // Calculate center of elements and container
-    const elementsWidth = maxX - minX;
-    const elementsHeight = maxY - minY;
-    const elementsCenterX = minX + elementsWidth / 2;
-    const elementsCenterY = minY + elementsHeight / 2;
-
-    const containerWidth = containerRef.current.clientWidth;
-    const containerHeight = containerRef.current.clientHeight;
-
-    // Set pan offset to center elements
-    setPanOffset({
-      x: containerWidth / 2 - elementsCenterX,
-      y: containerHeight / 2 - elementsCenterY,
-    });
-  }, []);
-
   // Make sure state is pushed to history after relevant operations
   useEffect(() => {
-    debouncedPushState();
-  }, [elementsModified, debouncedPushState]);
+    if (elementsModified) {
+      const currentState = {
+        elements,
+        connections,
+        elementPositions: new Map(
+          elements.map((el) => [
+            el.id.toString(),
+            { x: el.x ?? 0, y: el.y ?? 0 },
+          ])
+        ),
+      };
+
+      pushState(currentState);
+      // Reset the modified flag after pushing state
+      setElementsModified(false);
+    }
+  }, [elementsModified, elements, connections, pushState]);
+
+  // Initialize flip-flop states when elements change
+  useEffect(() => {
+    // Find all flip-flops in the elements
+    const flipFlops = elements.filter(
+      (el) => el.type === "DFF" || el.type === "DFF_NE"
+    );
+
+    // Initialize state for each flip-flop
+    setFlipFlopStates(
+      flipFlops.map((ff) => ({
+        id: ff.id,
+        name: ff.name || `flip-flop-${ff.id}`, // Add a fallback name
+        hasD: false,
+        hasEn: ff.type === "DFF_NE", // DFF_NE (no enable) always has enable "true"
+        outputValue: false,
+        lastClockTime: 0,
+        type: ff.type, // Store the type to check during reset
+      }))
+    );
+
+    // Also initialize the active flip-flop inputs tracker
+    const initialFlipFlopInputs: {
+      [id: number]: { D: boolean; En: boolean; lastEnUpdateTime: number };
+    } = {};
+    flipFlops.forEach((ff) => {
+      initialFlipFlopInputs[ff.id] = {
+        D: false,
+        En: ff.type === "DFF_NE", // DFF_NE always has enable active
+        lastEnUpdateTime: 0,
+      };
+    });
+    setActiveFlipFlopInputs(initialFlipFlopInputs);
+  }, [elements]);
+
+  // Reset flip-flop states when simulation is reset
+  useEffect(() => {
+    if (resetTriggered) {
+      setFlipFlopStates((prev) =>
+        prev.map((ff) => ({
+          ...ff,
+          hasD: false,
+          hasEn: ff.type === "DFF_NE", // Keep always true for DFF_NE
+          outputValue: false,
+          lastClockTime: 0,
+        }))
+      );
+
+      // Reset active inputs
+      setActiveInputs([]);
+    }
+  }, [resetTriggered]);
 
   // Handle undo action
   const handleUndo = useCallback(() => {
@@ -328,603 +723,78 @@ export default function SimulationCanvas({
     }
   }, [redo]);
 
-  // Handle reset action
+  // Function to reset zoom
+  const resetZoom = useCallback(() => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  }, []);
+
+  // Update handleReset to use the callback to notify parent
   const handleReset = useCallback(() => {
-    const initialState = reset();
-    setElements(initialState.elements as IElement[]);
-    setConnections(initialState.connections);
-  }, [reset]);
-
-  // Update connection endpoints when elements or connections change
-  useEffect(() => {
-    if (elements.length === 0 || connections.length === 0) {
-      setConnectionEndpoints([]);
-      return;
-    }
-
-    const newConnectionEndpoints: ConnectionEndpoints[] = [];
-
-    connections.forEach((connection) => {
-      // Find source element (element that has this connection name in its outputs)
-      const sourceElement = elements.find(
-        (el) =>
-          el.outputs &&
-          el.outputs.some((output) => output.wireName === connection.name)
-      );
-
-      // Find destination element (element that has this connection name in its inputs)
-      const destElement = elements.find(
-        (el) =>
-          el.inputs &&
-          el.inputs.some((input) => input.wireName === connection.name)
-      );
-
-      if (sourceElement && destElement) {
-        // Find the specific output and input ports that use this connection
-        const sourceOutput = sourceElement.outputs.find(
-          (output) => output.wireName === connection.name
-        );
-
-        const destInput = destElement.inputs.find(
-          (input) => input.wireName === connection.name
-        );
-
-        // Use the port names (or default to empty string if null)
-        const sourcePort = sourceOutput?.outputName || "";
-        const destPort = destInput?.inputName || "";
-
-        newConnectionEndpoints.push({
-          connection,
-          sourceElement,
-          destElement,
-          sourcePort,
-          destPort,
-        });
-      }
-    });
-    setConnectionEndpoints(newConnectionEndpoints);
-  }, [elements, connections]);
-
-  // Get connection endpoints based on element and connection - enhanced to include path calculation
-  const getConnectionPoints = useCallback(
-    (endpoint: ConnectionEndpoints) => {
-      const { sourceElement, destElement, sourcePort, destPort } = endpoint;
-
-      // Get the dimensions for source and target elements
-      const sourceDimensions = imageDimensions[sourceElement.type] || {
-        width: 50,
-        height: 50,
-      };
-      const destDimensions = imageDimensions[destElement.type] || {
-        width: 50,
-        height: 50,
-      };
-
-      // Calculate port positions with directions using the enhanced function
-      const startPortInfo = calculatePortPosition(
-        sourceElement,
-        sourcePort,
-        "output",
-        sourceDimensions
-      );
-
-      const endPortInfo = calculatePortPosition(
-        destElement,
-        destPort,
-        "input",
-        destDimensions
-      );
-
-      // Use calculated positions or fall back to element centers
-      const startX =
-        startPortInfo?.x ?? (sourceElement.x ?? 0) + sourceDimensions.width / 2;
-      const startY =
-        startPortInfo?.y ??
-        (sourceElement.y ?? 0) + sourceDimensions.height / 2;
-      const endX =
-        endPortInfo?.x ?? (destElement.x ?? 0) + destDimensions.width / 2;
-      const endY =
-        endPortInfo?.y ?? (destElement.y ?? 0) + destDimensions.height / 2;
-
-      // Get port directions
-      const sourceDirection = startPortInfo?.direction || "right";
-      const destDirection = endPortInfo?.direction || "left";
-
-      // Calculate exact edge points where connections should start/end
-      const sourceEdge = calculateEdgePoint(
-        startX,
-        startY,
-        sourceDirection,
-        sourceElement.x ?? 0,
-        sourceElement.y ?? 0,
-        sourceDimensions.width,
-        sourceDimensions.height
-      );
-
-      const destEdge = calculateEdgePoint(
-        endX,
-        endY,
-        destDirection,
-        destElement.x ?? 0,
-        destElement.y ?? 0,
-        destDimensions.width,
-        destDimensions.height
-      );
-
-      // Calculate the connection path using the router utility
-      const sourceEdgeWithDirection: EdgePoint = {
-        ...sourceEdge,
-        direction: sourceDirection,
-      };
-
-      const destEdgeWithDirection: EdgePoint = {
-        ...destEdge,
-        direction: destDirection,
-      };
-
-      // Generate the complete path for the connection
-      const path = calculateConnectionPath(
-        sourceEdgeWithDirection,
-        destEdgeWithDirection
-      );
-
-      return {
-        startX,
-        startY,
-        endX,
-        endY,
-        sourceDirection,
-        destDirection,
-        sourceEdge,
-        destEdge,
-        path,
-      };
-    },
-    [imageDimensions]
-  );
-
-  // Memoize drawCanvas to prevent recreation on each render
-  const drawCanvas = useCallback(() => {
-    const canvasRef = canvas.current;
-    if (!canvasRef) return;
-    const ctx = canvasRef.getContext("2d");
-    if (!ctx) return;
-
-    // Clear with the appropriate background color
-    ctx.fillStyle = isDarkTheme ? "#171717" : "#ffffff";
-    ctx.fillRect(0, 0, canvasRef.width, canvasRef.height);
-
-    // Apply transformations (scale and translate)
-    ctx.save();
-    ctx.translate(panOffset.x, panOffset.y);
-    ctx.scale(zoomLevel, zoomLevel);
-
-    // Debug info
-    if (elements.length === 0) {
-      ctx.restore();
-      ctx.fillStyle = isDarkTheme ? "#ffffff" : "#000000";
-      ctx.font = "16px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        "No elements to display. Select an example from the drawer.",
-        canvasRef.width / 2,
-        canvasRef.height / 2
-      );
-      return;
-    }
-
-    // Draw connections with path-based routing
-    ctx.strokeStyle = isDarkTheme ? "rgb(226,226,226)" : "black";
-    ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
-
-    connectionEndpoints.forEach((endpoint) => {
-      const { sourceEdge, destEdge, path } = getConnectionPoints(endpoint);
-
-      const { connection } = endpoint;
-
-      // Draw the connection path
-      ctx.beginPath();
-
-      // Draw all segments of the path
-      if (path && path.length > 1) {
-        ctx.moveTo(path[0].x, path[0].y);
-
-        for (let i = 1; i < path.length; i++) {
-          ctx.lineTo(path[i].x, path[i].y);
-        }
-      } else {
-        // Fallback to direct line if path calculation failed
-        ctx.moveTo(sourceEdge.x, sourceEdge.y);
-        ctx.lineTo(destEdge.x, destEdge.y);
-      }
-
-      ctx.stroke();
-
-      // Draw all impulses along the calculated path
-      const impulsePositions: number[] = impulses[connection.name] || [];
-      if (path && path.length > 1) {
-        impulsePositions.forEach(position => {
-          // Get position along the path based on the impulse percentage
-          const impulsePoint = getPointAlongPath(path, position);
-
-          // Draw the impulse
-          ctx.fillStyle = connection.color || "blue";
-          ctx.beginPath();
-          ctx.arc(impulsePoint.x, impulsePoint.y, 5 / zoomLevel, 0, Math.PI * 2);
-          ctx.fill();
-        });
-      }
-    });
-
-    // Draw elements
-    elements.forEach((el) => {
-      // Get the image for this element type directly
-      const image = componentImages[el.type];
-
-      // If the image is loaded, draw it
-      if (image) {
-        // Get the calculated dimensions that preserve aspect ratio
-        const dimensions = imageDimensions[el.type] || {
-          width: 50,
-          height: 50,
-        };
-
-        // Center the image within the element's area
-        const x = (el.x ?? 0) + (50 - dimensions.width) / 2;
-        const y = (el.y ?? 0) + (50 - dimensions.height) / 2;
-
-        // Draw the image with proper aspect ratio
-        ctx.drawImage(image, x, y, dimensions.width, dimensions.height);
-      }
-    });
-
-    ctx.restore();
-  }, [
-    elements,
-    connectionEndpoints,
-    panOffset,
-    zoomLevel,
-    impulses,
-    isDarkTheme,
-    getConnectionPoints,
-    componentImages,
-    imageDimensions,
-  ]);
-
-  // Store elements in sessionStorage whenever they change
-  useEffect(() => {
-    sessionStorage.setItem("elements", JSON.stringify(elements));
-    sessionStorage.setItem("connections", JSON.stringify(connections));
-  }, [elements, connections]);
-
-  // Draw canvas whenever necessary
-  useEffect(() => {
-    drawCanvas();
-  }, [drawCanvas, canvasSize, elements]); // Added elements as a dependency
-
-  useEffect(() => {
-    // Debounced resize function to prevent excessive resizing
-    const debouncedResize = debounce(() => {
-      const canvasRef = canvas.current;
-      const containerElement = containerRef.current;
-
-      if (canvasRef && containerElement) {
-        // Get the current size of the container
-        const { width, height } = containerElement.getBoundingClientRect();
-
-        // Only update if dimensions actually changed
-        if (width !== canvasSize.width || height !== canvasSize.height) {
-          // Update the canvas dimensions
-          canvasRef.width = width;
-          canvasRef.height = height;
-
-          // Update the state (this will trigger redrawing)
-          setCanvasSize({ width, height });
-        }
-      }
-    }, 10); // 100ms debounce time
-
-    const resizeObserver = new ResizeObserver(() => {
-      debouncedResize();
-    });
-
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-      // Initial size setup
-      debouncedResize();
-    }
-
-    window.addEventListener("resize", debouncedResize);
-
-    return () => {
-      if (containerRef.current) {
-        resizeObserver.disconnect();
-      }
-      window.removeEventListener("resize", debouncedResize);
-    };
-  }, [canvasSize.width, canvasSize.height]);
-
-  // New state to track module_output elements that have received signals
-  const [activatedOutputs, setActivatedOutputs] = useState<Set<string>>(
-    new Set()
-  );
-
-  // Modified effect to handle module_output state based on active signals AND activation history
-  useEffect(() => {
-    // ...existing code...
-  }, [impulses, activatedOutputs, playing]);
-
-  // Add an effect to reset activated outputs when switching to non-playing state
-  useEffect(() => {
-    if (!playing) {
-      setActivatedOutputs(new Set());
-    }
-  }, [playing]);
-
-  // Add an effect to handle clock impulses when simulation is playing
-  useEffect(() => {
-    let clockIntervalId: number | undefined;
-    
-    if (playing) {
-      // Find all clock elements
-      const clockElements = elements.filter(el => el.type === 'clk');
-      
-      if (clockElements.length > 0) {
-        // Find all connections from clock elements
-        const clockConnections = clockElements.flatMap(clockElement => 
-          connections.filter(conn => {
-            // Find the output wire name of this clock element
-            const output = clockElement.outputs?.find(out => out.outputName === 'CLK');
-            return output && output.wireName === conn.name;
-          })
-        );
-        
-        // Set up interval to update clock impulses
-        const intervalTime = 1000 / clockFrequency; // Convert Hz to ms
-        
-        clockIntervalId = window.setInterval(() => {
-          // Update impulses for all clock connections
-          clockConnections.forEach(conn => {
-            setImpulses(prev => {
-              // Get current positions array or initialize an empty array
-              const positions = Array.isArray(prev[conn.name]) ? [...prev[conn.name]] : [];
-              
-              // If no positions or all positions are near the end, add a new impulse at the start
-              if (positions.length === 0 || Math.min(...positions.map(p => p || 0)) > 0.9) {
-                positions.push(0); // Add a new impulse at the start
-              }
-              
-              // Move existing impulses forward
-              const newPositions = positions.map(pos => pos + 0.02).filter(pos => pos <= 1);
-              
-              return { ...prev, [conn.name]: newPositions };
-            });
-          });
-        }, intervalTime);
-      }
+    if (runningSimulation) {
+      setRunningSimulation(false);
     }
     
-    return () => {
-      if (clockIntervalId !== undefined) {
-        window.clearInterval(clockIntervalId);
-      }
-    };
-  }, [playing, elements, connections, clockFrequency]);
-
-  // Modified function to animate impulses along connections
-  const animateImpulses = useCallback((connectionsToAnimate: IConnection[], continuous: boolean = false, sourceElementId?: number) => {
-    let startTime: number;
-    const duration = 1000; // Animation duration in ms
+    // When resetting, we're not in a paused state
+    setIsPaused(false);
     
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      
-      // Update impulse positions
-      setImpulses(prev => {
-        const updated = { ...prev };
-        connectionsToAnimate.forEach(conn => {
-          // Initialize array if needed
-          if (!updated[conn.name]) {
-            updated[conn.name] = [];
-          }
-          
-          // Add new impulse to the connection
-          updated[conn.name].push(0);
-        });
-        return updated;
-      });
-      
-      // If not continuous animation and playing, clear impulses when they reach the end
-      // Only clean up automatically if we're playing and not in continuous mode
-      if (!continuous && playing) {
-        setTimeout(() => {
-          setImpulses(prev => {
-            const updated = { ...prev };
-            connectionsToAnimate.forEach(conn => {
-              // Remove all impulses for this connection after animation completes
-              delete updated[conn.name];
-            });
-            return updated;
-          });
-        }, duration + 100);
-      }
-    };
-    
-    // Start animation
-    window.requestAnimationFrame(animate);
-    
-    // If continuous mode is enabled, schedule next impulse (only if playing)
-    if (continuous && sourceElementId !== undefined && playing) {
-      setTimeout(() => {
-        // Check if the input is still active before sending next impulse
-        if (activeInputs.has(sourceElementId)) {
-          animateImpulses(connectionsToAnimate, true, sourceElementId);
-        }
-      }, 50); // Send a new impulse every 50ms
+    // Always notify parent component
+    if (onPlayingChange) {
+      onPlayingChange(false);
     }
-  }, [activeInputs, playing]); // Added playing as dependency
-
-  // Modified function to initiate impulse from module_input
-  const initiateImpulseFromModuleInput = useCallback((element: IElement, continuous: boolean = true) => {
-    // Find all connections that start from this module_input
-    const outputWires = element.outputs?.map(output => output.wireName) || [];
     
-    // Find all connections that match these wire names
-    const relevantConnections = connections.filter(conn => 
-      outputWires.includes(conn.name)
+    // Always clear all signals when resetting
+    setActiveSignals([]);
+    
+    // Reset flip-flop states
+    setFlipFlopStates((prev) =>
+      prev.map((ff) => ({
+        ...ff,
+        hasD: false,
+        hasEn: ff.type === "DFF_NE", // Keep always true for DFF_NE
+        outputValue: false,
+        lastClockTime: 0,
+      }))
     );
     
-    if (relevantConnections.length === 0) return;
+    // Reset active inputs and outputs
+    setActiveInputs([]);
+    setActiveOutputs({});
     
-    // Toggle active state for this input (only if playing or activating for first time)
-    setActiveInputs(prev => {
-      const newActiveInputs = new Set(prev);
-      if (continuous) {
-        if (newActiveInputs.has(element.id)) {
-          // If already active, deactivate
-          newActiveInputs.delete(element.id);
-        } else {
-          // If not active, activate and start continuous impulses if playing
-          newActiveInputs.add(element.id);
-          // Send initial impulse immediately if playing
-          if (playing) {
-            animateImpulses(relevantConnections, false);
-          }
-        }
-      } else if (playing) {
-        // Single impulse mode - just animate once if playing
-        animateImpulses(relevantConnections, false);
-      }
-      return newActiveInputs;
-    });
-  }, [connections, animateImpulses, playing]); // Added playing as dependency
+    // Auto-arrange elements
+    const arrangedElements = arrangeElements(elements, connections);
+    setElements(arrangedElements);
+    setElementsModified(true);
+    
+    // Reset zoom and pan
+    resetZoom();
+  }, [runningSimulation, elements, connections, setElementsModified, resetZoom, onPlayingChange]);
 
-  // Add effect to update impulse positions
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      // Only update impulse positions if playing is true
-      if (playing) {
-        setImpulses(prev => {
-          const updated = { ...prev };
-          const impulsesPendingPropagation: { destElementId: number; wireNames: string[] }[] = [];
-          
-          // Update each impulse position for each connection
-          Object.entries(updated).forEach(([connName, positions]) => {
-            if (positions.length > 0) {
-              // Get finished impulses (reached end of connection)
-              const finishedImpulses = positions.filter(pos => pos >= 0.98);
-              
-              // Move each impulse forward
-              const newPositions = positions.map(pos => pos + 0.02).filter(pos => pos <= 1);
-              
-              // If we have impulses that just reached the end
-              if (finishedImpulses.length > 0) {
-                // Find the connection details to know destination element
-                const connection = connections.find(conn => conn.name === connName);
-                if (connection) {
-                  // Find the element this connection leads to
-                  const destElement = elements.find(el => 
-                    el.inputs && el.inputs.some(input => input.wireName === connName)
-                  );
-                  
-                  if (destElement && destElement.outputs && destElement.outputs.length > 0) {
-                    // Queue this element's outputs for impulse propagation
-                    impulsesPendingPropagation.push({
-                      destElementId: destElement.id,
-                      wireNames: destElement.outputs.map(o => o.wireName)
-                    });
-                  }
-                }
-              }
-              
-              // Only keep impulses that haven't reached the end
-              if (newPositions.length > 0) {
-                updated[connName] = newPositions;
-              } else {
-                delete updated[connName];
-              }
-            }
-          });
-          
-          // Propagate impulses to next connections
-          impulsesPendingPropagation.forEach(({ wireNames }) => {
-            wireNames.forEach(wireName => {
-              // Find any connections that match this wire name
-              const nextConn = connections.find(conn => conn.name === wireName);
-              if (nextConn) {
-                // Initialize array if needed
-                if (!updated[wireName]) {
-                  updated[wireName] = [];
-                }
-                
-                // Add new impulse at the start of this connection
-                updated[wireName].push(0);
-              }
-            });
-          });
-          
-          return updated;
-        });
-      }
-      // When not playing, we don't update the impulses, so they remain frozen in place
-    }, 20); // Update positions every 20ms for smooth animation
-    
-    return () => clearInterval(intervalId);
-  }, [elements, connections, playing]); // Added playing as dependency
+  // Function to handle zoom from the action bar
+  const handleZoomChange = (newZoomPercent: number) => {
+    const newZoom = newZoomPercent / 100;
+    setZoomLevel(newZoom);
+  };
 
-  // New effect to add circles every 50ms for active inputs
-  useEffect(() => {
-    if (activeInputs.size === 0) return;
-    
-    const intervalId = setInterval(() => {
-      // Only generate new impulses if playing is true
-      if (playing) {
-        // For each active input, generate new impulses
-        activeInputs.forEach(inputId => {
-          // Find the element
-          const element = elements.find(el => el.id === inputId);
-          if (!element) return;
-          
-          // Find the output wires for this element
-          const outputWires = element.outputs?.map(output => output.wireName) || [];
-          
-          // Find relevant connections
-          const relevantConnections = connections.filter(conn => 
-            outputWires.includes(conn.name)
-          );
-          
-          if (relevantConnections.length === 0) return;
-          
-          // Add a new impulse at the start of each connection
-          setImpulses(prev => {
-            const updated = { ...prev };
-            relevantConnections.forEach(conn => {
-              // Initialize array if needed
-              if (!updated[conn.name]) {
-                updated[conn.name] = [];
-              }
-              
-              // Add new impulse to the connection
-              updated[conn.name].push(0);
-            });
-            return updated;
-          });
-        });
-      }
-    }, 50); // Create new circles every 50ms
-    
-    return () => clearInterval(intervalId);
-  }, [activeInputs, elements, connections, playing]); // Added playing as dependency
+  // Function to handle clock frequency change
+  const handleClockFrequencyChange = (newFrequency: number) => {
+    setClockFrequency(Math.max(1, Math.min(100, newFrequency))); // Limit between 1Hz and 100Hz
+  };
 
+  // Update handleMouseDown to support right-click panning
   const handleMouseDown = (event: React.MouseEvent) => {
-    const { offsetX, offsetY, button } = event.nativeEvent;
-
-    if (button === 1 || button === 2) {
-      // Middle or right-click to start panning
+    // Right mouse button (button 2) for panning
+    if (event.button === 2) {
+      event.preventDefault(); // Prevent context menu
       setIsPanning(true);
-      setStartPan({ x: offsetX, y: offsetY });
+      setPanStartPos({ x: event.clientX, y: event.clientY });
       return;
     }
+    
+    // Only proceed for left mouse button (button 0)
+    if (event.button !== 0) return;
+
+    const { offsetX, offsetY } = event.nativeEvent;
 
     // Convert screen coordinates to canvas coordinates
     const canvasX = (offsetX - panOffset.x) / zoomLevel;
@@ -935,34 +805,50 @@ export default function SimulationCanvas({
     // Reset the drag flag
     setElementWasDragged(false);
 
-    const element = elements.find((el) => {
-      // Get the actual dimensions for proper hit detection
-      const dimensions = imageDimensions[el.type] || { width: 50, height: 50 };
+    // Find element under the cursor
+    const foundElement = elements.find((el) => {
+      const size = 50; // Element size
+      const x = el.x || 0;
+      const y = el.y || 0;
+
       return (
-        canvasX >= (el.x ?? 0) &&
-        canvasX <= (el.x ?? 0) + dimensions.width &&
-        canvasY >= (el.y ?? 0) &&
-        canvasY <= (el.y ?? 0) + dimensions.height
+        canvasX >= x &&
+        canvasX <= x + size &&
+        canvasY >= y &&
+        canvasY <= y + size
       );
     });
 
-    if (element) {
-      setDraggingElement(element.id);
+    if (foundElement) {
+      // Store the clicked element for later (to handle click vs drag)
+      setClickedElement(foundElement);
+
+      // Set dragging element regardless of element type
+      setDraggingElement(foundElement.id);
+    } else {
+      setClickedElement(null);
     }
   };
 
+  // Update handleMouseMove to support panning
   const handleMouseMove = (event: React.MouseEvent) => {
-    if (isPanning) {
-      const { offsetX, offsetY } = event.nativeEvent;
-      setPanOffset((prev) => ({
-        x: prev.x + (offsetX - startPan.x),
-        y: prev.y + (offsetY - startPan.y),
+    // Handle panning with right mouse button
+    if (isPanning && panStartPos) {
+      const dx = event.clientX - panStartPos.x;
+      const dy = event.clientY - panStartPos.y;
+      
+      setPanOffset(prev => ({
+        x: prev.x + dx,
+        y: prev.y + dy
       }));
-      setStartPan({ x: offsetX, y: offsetY });
+      
+      setPanStartPos({ x: event.clientX, y: event.clientY });
       return;
     }
-
+    
+    // Handle dragging elements (existing functionality)
     if (draggingElement === null) return;
+
     const { offsetX, offsetY } = event.nativeEvent;
 
     // Convert screen coordinates to canvas coordinates
@@ -978,6 +864,7 @@ export default function SimulationCanvas({
       setElementWasDragged(true);
     }
 
+    // Update element position
     setElements((prev) =>
       prev.map((el) =>
         el.id === draggingElement
@@ -991,462 +878,618 @@ export default function SimulationCanvas({
     );
   };
 
-  const handleMouseUp = (event: React.MouseEvent) => {
-    if (event.button === 1 || event.button === 2) {
+  // Update handleMouseUp to end panning
+  const handleMouseUp = () => {
+    // End panning if we were panning
+    if (isPanning) {
       setIsPanning(false);
-      // Set elements modified when panning ends
-      if (isPanning) {
+      setPanStartPos(null);
+      return;
+    }
+    
+    // If we have a clicked element and it wasn't dragged, handle it as a click
+    if (clickedElement && !elementWasDragged) {
+      // If clicking on an input module, toggle its active state
+      if (clickedElement.type === "module_input") {
+        setActiveInputs((prev) => {
+          const isActive = prev.includes(clickedElement.id);
+          return isActive
+            ? prev.filter((id) => id !== clickedElement.id) // Remove if already active
+            : [...prev, clickedElement.id]; // Add if not active
+        });
         setElementsModified(true);
       }
-      return; // Exit early for non-left clicks
     }
-
-    // Check if we clicked an element but didn't drag it
-    if (draggingElement !== null && !elementWasDragged && event.button === 0) {
-      // Find the clicked element
-      const clickedElement = elements.find((el) => el.id === draggingElement);
-
-      // If the clicked element is a module_input or module_input_en
-      if (clickedElement && 
-          (clickedElement.type === "module_input" || clickedElement.type === "module_input_en")) {
-        
-        // Toggle between types
-        const newType =
-          clickedElement.type === "module_input"
-            ? "module_input_en"
-            : "module_input";
-
-        setElements((prev) =>
-          prev.map((el) =>
-            el.id === clickedElement.id
-              ? {
-                  ...el,
-                  type: newType,
-                }
-              : el
-          )
-        );
-
-        // Mark elements as modified
-        setElementsModified(true);
-
-        // Generate impulse from this module input (with continuous flow)
-        initiateImpulseFromModuleInput(clickedElement);
-
-        // Force an immediate redraw
-        setTimeout(() => drawCanvas(), 0);
-      }
-    }
-
-    // Set elements modified when dragging ends
-    if (draggingElement !== null && elementWasDragged) {
+    // Otherwise, if dragging ended, update the history
+    else if (draggingElement !== null && elementWasDragged) {
       setElementsModified(true);
     }
 
-    // Reset drag state
+    // Reset all drag/click state
     setDraggingElement(null);
     setDragStartPos(null);
     setElementWasDragged(false);
+    setClickedElement(null);
+  };
+  
+  // Add event handler for context menu to prevent it during canvas interaction
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    return false;
   };
 
-  // Modified wheel handler for both zoom and pan
-  const handleWheel = (event: React.WheelEvent) => {
-    // Check if Ctrl key is pressed for zooming
-    if (event.ctrlKey) {
-      // Set elements modified when zooming
-      setElementsModified(true);
-      const delta = -event.deltaY * 0.01; // Adjust sensitivity
-      const newZoom = Math.max(0.1, Math.min(5, zoomLevel + delta)); // Limit zoom between 10% and 500%
+  // Modified canvas drawing function to use images and orthogonal wire paths
+  const drawCanvas = useCallback(() => {
+    const canvasRef = canvas.current;
+    if (!canvasRef) return;
 
-      // Get mouse position relative to canvas
-      const rect = canvas.current?.getBoundingClientRect();
-      if (!rect) return;
+    const ctx = canvasRef.getContext("2d");
+    if (!ctx) return;
 
-      const mouseX = event.clientX - rect.left;
-      const mouseY = event.clientY - rect.top;
+    // Clear canvas with appropriate background color
+    ctx.fillStyle = isDarkTheme ? "#171717" : "#ffffff";
+    ctx.fillRect(0, 0, canvasRef.width, canvasRef.height);
 
-      // Calculate zoom center point (where mouse is pointing)
-      const mouseCanvasX = (mouseX - panOffset.x) / zoomLevel;
-      const mouseCanvasY = (mouseY - panOffset.y) / zoomLevel;
+    // Apply transformations (scale and translate)
+    ctx.save();
+    ctx.translate(panOffset.x, panOffset.y);
+    ctx.scale(zoomLevel, zoomLevel);
 
-      // Calculate new pan offset to keep the point under mouse fixed
-      const newPanOffsetX = mouseX - mouseCanvasX * newZoom;
-      const newPanOffsetY = mouseY - mouseCanvasY * newZoom;
-
-      setPanOffset({
-        x: newPanOffsetX,
-        y: newPanOffsetY,
-      });
-
-      setZoomLevel(newZoom);
-    } else {
-      // Set elements modified when panning with wheel
-      setElementsModified(true);
-      // Regular panning with wheel
-      setPanOffset((prev) => ({
-        x: prev.x - event.deltaX,
-        y: prev.y - event.deltaY,
-      }));
+    // Debug info if no elements
+    if (elements.length === 0) {
+      ctx.restore();
+      ctx.fillStyle = isDarkTheme ? "#ffffff" : "#000000";
+      ctx.font = "16px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        "No elements to display. Select an example from the drawer.",
+        canvasRef.width / 2,
+        canvasRef.height / 2
+      );
+      return;
     }
-  };
 
-  // Function to handle zoom from the action bar
-  const handleZoomChange = (newZoomPercent: number) => {
-    // Set elements modified when changing zoom from action bar
-    setElementsModified(true);
-    const newZoom = newZoomPercent / 100;
-    setZoomLevel(newZoom);
-  };
+    // Draw connections with orthogonal paths
+    ctx.strokeStyle = isDarkTheme ? "rgb(226,226,226)" : "black";
+    ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
 
-  // Function to reset zoom
-  const resetZoom = () => {
-    // Set elements modified when resetting zoom
-    setElementsModified(true);
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-  };
-
-  // Function to handle clock frequency change
-  const handleClockFrequencyChange = (newFrequency: number) => {
-    setClockFrequency(Math.max(1, Math.min(100, newFrequency))); // Limit between 1Hz and 100Hz
-  };
-
-  // Add cleanup for active inputs when component unmounts or when switching examples
-  useEffect(() => {
-    return () => {
-      setActiveInputs(new Set());
-      setImpulses({});
-    };
-  }, [activeTabId]); // Reset active inputs when changing tabs/examples
-
-  // Update impulses for clock elements
-  useEffect(() => {
-    let clockIntervalId: number | undefined;
-  
-    if (playing) {
-      const clockElements = elements.filter((el) => el.type === "clk");
-  
-      if (clockElements.length > 0) {
-        const clockConnections = clockElements.flatMap((clockElement) =>
-          connections.filter((conn) => {
-            const output = clockElement.outputs?.find(
-              (out) => out.outputName === "CLK"
-            );
-            return output && output.wireName === conn.name;
-          })
-        );
-  
-        const intervalTime = 1 / (clockFrequency * 100) * 1000; // Convert to ms
-  
-        clockIntervalId = window.setInterval(() => {
-          clockConnections.forEach((conn) => {
-            setImpulses((prev) => {
-              const positions = Array.isArray(prev[conn.name])
-                ? [...prev[conn.name]]
-                : [];
-  
-              if (
-                positions.length === 0 ||
-                Math.min(...positions) > 0.99
-              ) {
-                positions.push(0); // Add a new impulse at the start
-              }
-  
-              const newPositions = positions
-                .map((pos) => pos + 0.01) // Move by 1/100th of the wire
-                .filter((pos) => pos <= 1);
-  
-              return { ...prev, [conn.name]: newPositions };
-            });
-          });
-        }, intervalTime);
-      }
-    }
-  
-    return () => {
-      if (clockIntervalId !== undefined) {
-        window.clearInterval(clockIntervalId);
-      }
-    };
-  }, [playing, elements, connections, clockFrequency]);
-  
-  // Update impulse propagation logic
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (playing) {
-        setImpulses((prev) => {
-          const updated = { ...prev };
-          const impulsesPendingPropagation: {
-            destElementId: number;
-            wireNames: string[];
-          }[] = [];
-  
-          Object.entries(updated).forEach(([connName, positions]) => {
-            if (positions.length > 0) {
-              const finishedImpulses = positions.filter((pos) => pos >= 0.99);
-  
-              const newPositions = positions
-                .map((pos) => pos + 0.01) // Move by 1/100th of the wire
-                .filter((pos) => pos <= 1);
-  
-              if (finishedImpulses.length > 0) {
-                const connection = connections.find(
-                  (conn) => conn.name === connName
-                );
-                if (connection) {
-                  const destElement = elements.find(
-                    (el) =>
-                      el.inputs &&
-                      el.inputs.some((input) => input.wireName === connName)
-                  );
-  
-                  if (
-                    destElement &&
-                    destElement.outputs &&
-                    destElement.outputs.length > 0
-                  ) {
-                    impulsesPendingPropagation.push({
-                      destElementId: destElement.id,
-                      wireNames: destElement.outputs.map((o) => o.wireName),
-                    });
-                  }
-                }
-              }
-  
-              if (newPositions.length > 0) {
-                updated[connName] = newPositions;
-              } else {
-                delete updated[connName];
-              }
-            }
-          });
-  
-          impulsesPendingPropagation.forEach(({ wireNames }) => {
-            wireNames.forEach((wireName) => {
-              const nextConn = connections.find(
-                (conn) => conn.name === wireName
-              );
-              if (nextConn) {
-                if (!updated[wireName]) {
-                  updated[wireName] = [];
-                }
-                updated[wireName].push(0);
-              }
-            });
-          });
-  
-          return updated;
-        });
-      }
-    }, 1 / (clockFrequency * 100) * 1000); // Update every 1/(frequency x 1000) seconds
-  
-    return () => clearInterval(intervalId);
-  }, [elements, connections, playing, clockFrequency]);
-  
-  // Add state to track input states for logic gates
-  const [gateInputStates, setGateInputStates] = useState<
-    Map<number, Map<string, boolean>>
-  >(new Map());
-  
-  // Function to evaluate gate logic based on inputs
-  const evaluateGateLogic = useCallback(
-    (gateType: string, inputs: Map<string, boolean>): boolean => {
-      const in1 = inputs.get('in1') || false;
-      const in2 = inputs.get('in2') || false;
+    connections.forEach((connection) => {
+      // Find source and destination elements for this connection
+      const sourceElement = elements.find(el => 
+        el.outputs && el.outputs.some(output => connection.name.includes(output.wireName))
+      );
       
-      switch (gateType.toLowerCase()) {
-        case 'and':
-          return in1 && in2;
-        case 'or':
-          return in1 || in2;
-        case 'xor':
-          return in1 !== in2;
-        case 'nand':
-          return !(in1 && in2);
-        case 'nor':
-          return !(in1 || in2);
-        case 'nxor':
-          return in1 === in2;
-        default:
-          return false;
-      }
-    },
-    []
-  );
+      const destElement = elements.find(el => 
+        el.inputs && el.inputs.some(input => connection.name.includes(input.wireName))
+      );
 
-  // Function to check if an element is a logic gate
-  const isLogicGate = useCallback((elementType: string): boolean => {
-    const logicGateTypes = ['and', 'or', 'xor', 'nand', 'nor', 'nxor'];
-    return logicGateTypes.includes(elementType.toLowerCase());
+      if (sourceElement && destElement) {
+        // Use the enhanced path calculation function, passing all elements and connections
+        const path = calculateOrthogonalPath(
+          sourceElement,
+          destElement,
+          connection,
+          elements,
+          connections
+        );
+
+        // Draw the path
+        ctx.beginPath();
+        ctx.moveTo(path[0].x, path[0].y);
+
+        // Draw all path segments
+        for (let i = 1; i < path.length; i++) {
+          ctx.lineTo(path[i].x, path[i].y);
+        }
+
+        ctx.stroke();
+      }
+    });
+
+    // Draw elements
+    elements.forEach((el) => {
+      const x = el.x || 0;
+      const y = el.y || 0;
+      const size = 50;
+
+      // Determine which image to use, checking if input or output is active
+      let elementType = el.type;
+      if (el.type === "module_input" && activeInputs.includes(el.id)) {
+        elementType = "module_input_en"; // Use enabled input image
+      } else if (el.type === "module_output" && activeOutputs[el.id]) {
+        elementType = "module_output_en"; // Use enabled output image
+      }
+
+      // For flip-flops, use the enabled image if output is true
+      if (el.type === "DFF" || el.type === "DFF_NE") {
+        const ffState = flipFlopStates.find((ff) => ff.id === el.id);
+        if (ffState?.outputValue) {
+          // First draw the regular image
+          const image = componentImages[elementType];
+          if (image) {
+            ctx.drawImage(image, x, y, size, size);
+          } else {
+            let color: string;
+
+            // Use type assertion to fix the TypeScript error
+            const elementType = el.type as string;
+
+            switch (elementType) {
+              case "clk":
+                color = "blue";
+                break;
+              case "module_input_en":
+                color = "green";
+                break;
+              case "module_output_en":
+                color = "red";
+                break;
+              case "DFF_NE":
+                color = "purple";
+                break;
+              default:
+                color = "gray";
+            }
+
+            // Draw element as rectangle with label
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, size, size);
+
+            // Draw border
+            ctx.strokeStyle = isDarkTheme ? "white" : "black";
+            ctx.lineWidth = 1 / zoomLevel;
+            ctx.strokeRect(x, y, size, size);
+          }
+
+          // Add a green indicator dot for active flip-flops
+          ctx.fillStyle = "#00ff00";
+          ctx.beginPath();
+          ctx.arc(x + size - 10, y + 10, 5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Draw input state indicators
+          if (ffState) {
+            // Small indicator for D input
+            ctx.fillStyle = ffState.hasD ? "#00ff00" : "#ff0000";
+            ctx.beginPath();
+            ctx.arc(x + 5, y + size * 0.25, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Small indicator for En input
+            ctx.fillStyle = ffState.hasEn ? "#00ff00" : "#ff0000";
+            ctx.beginPath();
+            ctx.arc(x + 5, y + size * 0.75, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          return; // Skip the regular drawing code below
+        }
+      }
+
+      // Get the image for this element type
+      const image = componentImages[elementType];
+
+      // If image is loaded, draw it
+      if (image) {
+        ctx.drawImage(image, x, y, size, size);
+      } else {
+        // Fallback to colored rectangle if image is not loaded
+        let color;
+        switch (el.type) {
+          case "clk":
+            color = "blue";
+            break;
+          case "module_input":
+          case "module_input_en":
+            color = "green";
+            break;
+          case "module_output":
+          case "module_output_en":
+            color = "red";
+            break;
+          case "DFF":
+          case "DFF_NE":
+            color = "purple";
+            break;
+          default:
+            color = "gray";
+        }
+
+        // Draw element as rectangle with label
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, size, size);
+
+        // Draw border
+        ctx.strokeStyle = isDarkTheme ? "white" : "black";
+        ctx.lineWidth = 1 / zoomLevel;
+        ctx.strokeRect(x, y, size, size);
+      }
+
+      // Always draw element name below the image for clarity
+      ctx.fillStyle = isDarkTheme ? "white" : "black";
+      ctx.font = `${12 / zoomLevel}px Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(el.name || `element-${el.id}`, x + size / 2, y + size + 5);
+    });
+
+    // Draw signals as small black circles - always draw signals if they exist
+    // Remove the conditional for drawing signals - always draw them if they exist
+    if (activeSignals.length > 0) {
+      ctx.fillStyle = isDarkTheme ? "#ffffff" : "#000000";
+
+      activeSignals.forEach((signal) => {
+        if (signal.position < 1.0 && signal.points.length >= 2) {
+          // Calculate the total length of the path (should already be in signal.totalLength)
+          const totalLength = signal.totalLength;
+
+          // Calculate distance to travel based on progress
+          const targetDistance = totalLength * signal.position;
+
+          // Find the points between which the signal currently is
+          let currentDistance = 0;
+          let segmentIndex = 0;
+
+          for (let i = 0; i < signal.points.length - 1; i++) {
+            const dx = signal.points[i + 1].x - signal.points[i].x;
+            const dy = signal.points[i + 1].y - signal.points[i].y;
+            const segmentLength = Math.sqrt(dx * dx + dy * dy);
+
+            if (currentDistance + segmentLength >= targetDistance) {
+              segmentIndex = i;
+              break;
+            }
+
+            currentDistance += segmentLength;
+          }
+
+          // Calculate position within the current segment
+          const p1 = signal.points[segmentIndex];
+          const p2 = signal.points[segmentIndex + 1];
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const segmentLength = Math.sqrt(dx * dx + dy * dy);
+          const segmentProgress =
+            (targetDistance - currentDistance) / segmentLength;
+
+          // Calculate the exact position of the signal
+          const signalX = p1.x + dx * segmentProgress;
+          const signalY = p1.y + dy * segmentProgress;
+
+          // Draw the signal
+          ctx.beginPath();
+          ctx.arc(signalX, signalY, 4 / zoomLevel, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    ctx.restore();
+  }, [
+    elements,
+    connections,
+    panOffset,
+    zoomLevel,
+    isDarkTheme,
+    componentImages,
+    runningSimulation,
+    isPaused, // Add isPaused as a dependency
+    activeSignals,
+    activeInputs,
+    activeOutputs, // Add activeOutputs to dependencies
+    flipFlopStates,
+  ]);
+
+  // Handle canvas resize
+  useEffect(() => {
+    function handleResize() {
+      if (containerRef.current && canvas.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        canvas.current.width = width;
+        canvas.current.height = height;
+        setCanvasSize({ width, height });
+      }
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
-  // Reset gate input states when example changes
+  // Draw canvas whenever necessary
   useEffect(() => {
-    setGateInputStates(new Map());
-  }, [activeTabId]);
-  
-  // Modify the impulse propagation logic to handle logic gates
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (playing) {
-        setImpulses((prev) => {
-          const updated = { ...prev };
-          const impulsesPendingPropagation: {
-            destElementId: number;
-            wireNames: string[];
-          }[] = [];
-  
-          Object.entries(updated).forEach(([connName, positions]) => {
-            if (positions.length > 0) {
-              const finishedImpulses = positions.filter((pos) => pos >= 0.99);
-  
-              const newPositions = positions
-                .map((pos) => pos + 0.01)
-                .filter((pos) => pos <= 1);
-  
-              if (finishedImpulses.length > 0) {
-                const connection = connections.find(
-                  (conn) => conn.name === connName
-                );
-                if (connection) {
-                  const destElement = elements.find(
-                    (el) =>
-                      el.inputs &&
-                      el.inputs.some((input) => input.wireName === connName)
-                  );
-  
-                  if (destElement) {
-                    // Handle logic gates
-                    if (isLogicGate(destElement.type)) {
-                      // Find which input received the signal
-                      const inputPort = destElement.inputs.find(
-                        input => input.wireName === connName
-                      );
-                      
-                      if (inputPort) {
-                        // Update the input state for this gate
-                        setGateInputStates(prevStates => {
-                          const newStates = new Map(prevStates);
-                          const gateInputs = newStates.get(destElement.id) || new Map();
-                          
-                          // Set this input to true (signal received)
-                          gateInputs.set(inputPort.inputName || '', true);
-                          newStates.set(destElement.id, gateInputs);
-                          
-                          return newStates;
-                        });
-                        
-                        // Get current inputs for this gate
-                        const currentInputs = gateInputStates.get(destElement.id) || new Map();
-                        
-                        // If we have at least one input set, evaluate the gate logic
-                        if (currentInputs.size > 0) {
-                          // Evaluate the gate logic
-                          const outputValue = evaluateGateLogic(destElement.type, currentInputs);
-                          
-                          // If the gate evaluates to true, propagate the signal
-                          if (outputValue && destElement.outputs && destElement.outputs.length > 0) {
-                            impulsesPendingPropagation.push({
-                              destElementId: destElement.id,
-                              wireNames: destElement.outputs.map((o) => o.wireName),
-                            });
-                          }
-                        }
-                      }
-                    } 
-                    // Handle other element types as before
-                    else if (destElement.outputs && destElement.outputs.length > 0) {
-                      impulsesPendingPropagation.push({
-                        destElementId: destElement.id,
-                        wireNames: destElement.outputs.map((o) => o.wireName),
-                      });
-                    }
-                  }
-                }
-              }
-  
-              if (newPositions.length > 0) {
-                updated[connName] = newPositions;
-              } else {
-                delete updated[connName];
-              }
-            }
-          });
-  
-          impulsesPendingPropagation.forEach(({ wireNames }) => {
-            wireNames.forEach((wireName) => {
-              const nextConn = connections.find(
-                (conn) => conn.name === wireName
-              );
-              if (nextConn) {
-                if (!updated[wireName]) {
-                  updated[wireName] = [];
-                }
-                updated[wireName].push(0);
-              }
-            });
-          });
-  
-          return updated;
-        });
-      }
-    }, 1 / (clockFrequency * 100) * 1000);
-  
-    return () => clearInterval(intervalId);
-  }, [elements, connections, playing, clockFrequency, isLogicGate, evaluateGateLogic, gateInputStates]);
+    drawCanvas();
+  }, [drawCanvas, canvasSize, elements]);
 
-  // Reset input states of a gate after signal propagation (with delay)
+  // Add effect to handle simulation running
   useEffect(() => {
-    if (!playing) return;
-    
-    // Create map to track timeouts for each gate
-    const gateTimeouts: Map<number, NodeJS.Timeout> = new Map();
-    
-    // When gate input states change and signals are propagated, schedule reset
-    for (const [gateId, inputs] of gateInputStates.entries()) {
-      if (inputs.size > 0) {
-        // Clear any existing timeout
-        if (gateTimeouts.has(gateId)) {
-          clearTimeout(gateTimeouts.get(gateId));
-        }
-        
-        // Schedule input state reset after a delay
-        const timeoutId = setTimeout(() => {
-          setGateInputStates(prev => {
-            const newStates = new Map(prev);
-            newStates.delete(gateId);
-            return newStates;
-          });
-        }, 1000); // 1 second delay before resetting inputs
-        
-        gateTimeouts.set(gateId, timeoutId);
-      }
+    // Only clear signals when completely stopping (reset), not when pausing
+    if (!runningSimulation && !isPaused) {
+      setActiveSignals([]);
+      return;
     }
-    
-    return () => {
-      // Clear all timeouts when component unmounts
-      for (const timeoutId of gateTimeouts.values()) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [gateInputStates, playing]);
 
-  // Update the useEffect to reset states when the stop button is clicked
+    // If paused, don't create or move signals, but keep existing ones visible
+    if (!runningSimulation) {
+      return;
+    }
+
+    // Find the clock element
+    const clockElement = elements.find((el) => el.type === "clk");
+    if (!clockElement) return;
+
+    // Find all connections that originate from the clock
+    const clockConnections = connections.filter((conn) => {
+      const sourceElement = elements.find(
+        (el) =>
+          el.outputs &&
+          el.outputs.some((output) => output.wireName === conn.name)
+      );
+      return sourceElement?.id === clockElement.id;
+    });
+
+    // Create a timer to emit signals from the clock, active inputs, and active flip-flops
+    const clockInterval = setInterval(() => {
+      setActiveSignals((prevSignals) => {
+        // Check for existing signals on each connection
+        const updatedSignals = [...prevSignals];
+
+        // Emit signals from active inputs as well
+        const inputConnections = connections.filter((conn) => {
+          const sourceElement = elements.find(
+            (el) =>
+              el.outputs &&
+              el.outputs.some((output) => output.wireName === conn.name)
+          );
+          return (
+            sourceElement &&
+            sourceElement.type === "module_input" &&
+            activeInputs.includes(sourceElement.id)
+          );
+        });
+
+        // Find flip-flops with active outputs
+        const activeFlipFlopConnections = connections.filter((conn) => {
+          const sourceElement = elements.find(
+            (el) =>
+              el.outputs && 
+              el.outputs.some((output) => output.wireName === conn.name)
+          );
+          
+          if (!sourceElement || (sourceElement.type !== "DFF" && sourceElement.type !== "DFF_NE")) {
+            return false;
+          }
+          
+          // Check if this flip-flop has active output
+          const ffState = flipFlopStates.find((ff) => ff.id === sourceElement.id);
+          return ffState && ffState.outputValue === true;
+        });
+
+        // Combine all signal sources: clock, active inputs, and active flip-flops
+        const allSignalSources = [
+          ...clockConnections, 
+          ...inputConnections,
+          ...activeFlipFlopConnections
+        ];
+
+        allSignalSources.forEach((conn) => {
+          // Check if there's already a signal on this connection
+          const signalExists = updatedSignals.some(
+            (signal) => signal.connectionName === conn.name
+          );
+          if (signalExists) return; // Don't emit if a signal is already present
+
+          // Find the source and destination elements
+          const source = elements.find(
+            (el) =>
+              el.outputs &&
+              el.outputs.some((output) => output.wireName === conn.name)
+          );
+          const dest = elements.find(
+            (el) =>
+              el.inputs &&
+              el.inputs.some((input) => input.wireName === conn.name)
+          );
+
+          if (source && dest) {
+            // Get the origin information
+            const origin = getSignalOriginType(
+              conn.name,
+              elements,
+              connections
+            );
+            console.debug(
+              `Creating signal from ${origin.type} (${origin.name}) to ${
+                dest.name || `element-${dest.id}`
+              }`
+            );
+
+            // Calculate path for the signal using actual port positions
+            const points = calculateOrthogonalPath(
+              source,
+              dest,
+              conn,
+              elements,
+              connections
+            );
+
+            // Calculate total path length
+            let totalLength = 0;
+            for (let i = 0; i < points.length - 1; i++) {
+              const dx = points[i + 1].x - points[i].x;
+              const dy = points[i + 1].y - points[i].y;
+              totalLength += Math.sqrt(dx * dx + dy * dy);
+            }
+
+            // Create a new signal at the start of the wire
+            updatedSignals.push({
+              connectionName: conn.name,
+              position: 0, // Start at position 0 (0%)
+              points,
+              totalLength,
+              createdAt: performance.now(),
+              sourceName: source.name || `element-${source.id}`,
+              destName: dest.name || `element-${dest.id}`,
+            });
+          }
+        });
+
+        return updatedSignals;
+      });
+    }, 1000 / clockFrequency); // Emit signals at the clock frequency
+
+    // Create a timer to move signals along wires
+    const signalInterval = setInterval(() => {
+      setActiveSignals((prev) => {
+        // Move each signal along its wire
+        const updatedSignals = prev.map((signal) => {
+          // Fixed increment to ensure signals always progress
+          // Scale the increment with signal speed but ensure a minimum movement
+          const speedIncrement = Math.max(0.01, 0.05 / signalSpeed);
+          const newPosition = signal.position + speedIncrement;
+
+          // If signal just completed (crossed the 1.0 threshold), trigger the handleSignalArrival
+          if (signal.position < 1.0 && newPosition >= 1.0) {
+            handleSignalArrival(signal);
+          }
+
+          return {
+            ...signal,
+            // Increment position by a percentage that ensures consistent travel time
+            position: newPosition,
+          };
+        });
+
+        // Remove signals that reached the end (position >= 1.0 meaning 100%)
+        return updatedSignals.filter((signal) => signal.position < 1.0);
+      });
+    }, 10); // Update frequently for smooth animation
+
+    return () => {
+      clearInterval(clockInterval);
+      clearInterval(signalInterval);
+    };
+  }, [
+    runningSimulation,
+    isPaused, // Add isPaused as a dependency
+    elements,
+    connections,
+    clockFrequency,
+    signalSpeed,
+    activeInputs,
+    handleSignalArrival,
+    flipFlopStates, // Add flipFlopStates as a dependency
+  ]);
+
+  // Add an effect to track and reset enable signals
+  useEffect(() => {
+    if (!runningSimulation && !isPaused) return;
+
+    // Check every 200ms for flip-flops that haven't received an enable signal recently
+    const resetInterval = setInterval(() => {
+      const now = performance.now();
+      const SIGNAL_TIMEOUT = 500; // Consider signal gone after 500ms
+
+      // For each flip-flop with DFF type (not DFF_NE), check if enable signal is stale
+      setFlipFlopStates((prev) => {
+        let changed = false;
+        const newStates = [...prev];
+
+        newStates.forEach((ff, index) => {
+          // Skip DFF_NE which always has enable on
+          if (ff.type === "DFF_NE") return;
+
+          // Get the signal state for this flip-flop
+          const ffInputs = activeFlipFlopInputs[ff.id];
+
+          // If this flip-flop has enable input and it's stale (too old)
+          if (
+            ffInputs &&
+            ffInputs.En &&
+            now - ffInputs.lastEnUpdateTime > SIGNAL_TIMEOUT
+          ) {
+            // Mark the enable signal as inactive
+            setActiveFlipFlopInputs((prev) => ({
+              ...prev,
+              [ff.id]: {
+                ...prev[ff.id],
+                En: false,
+              },
+            }));
+
+            // Also update the flip-flop state
+            newStates[index] = {
+              ...newStates[index],
+              hasEn: false,
+            };
+
+            changed = true;
+          }
+        });
+
+        return changed ? newStates : prev;
+      });
+    }, 200);
+
+    return () => clearInterval(resetInterval);
+  }, [runningSimulation, isPaused, activeFlipFlopInputs]);
+
+  // Add an effect to reset output signals after a timeout
+  useEffect(() => {
+    // Only clear outputs when fully stopping, not when paused
+    if (!runningSimulation && !isPaused) {
+      setActiveOutputs({});
+      return;
+    }
+
+    if (!runningSimulation) {
+      // If paused, exit early but keep output states
+      return;
+    }
+
+    // Check every 500ms for output signals that have timed out
+    const resetOutputsInterval = setInterval(() => {
+      const now = performance.now();
+      const OUTPUT_SIGNAL_TIMEOUT = 500; // Output stays active for 500ms
+
+      setActiveOutputs((prev) => {
+        const newActiveOutputs = { ...prev };
+        let changed = false;
+
+        // Check each active output
+        Object.entries(prev).forEach(([id, timestamp]) => {
+          if (now - timestamp > OUTPUT_SIGNAL_TIMEOUT) {
+            // Remove outputs that have timed out
+            delete newActiveOutputs[Number(id)];
+            changed = true;
+          }
+        });
+
+        return changed ? newActiveOutputs : prev;
+      });
+    }, 200);
+
+    return () => clearInterval(resetOutputsInterval);
+  }, [runningSimulation, isPaused]);
+
+  // Reset active outputs when simulation is reset
   useEffect(() => {
     if (resetTriggered) {
-      // Reset all impulses to clear circles from the canvas
-      setImpulses({});
-      
-      // Reset active inputs 
-      setActiveInputs(new Set());
-      
-      // Reset gate input states
-      setGateInputStates(new Map());
-      
-      // Reset activated outputs
-      setActivatedOutputs(new Set());
+      // Reset active outputs
+      setActiveOutputs({});
     }
   }, [resetTriggered]);
+
+  // Add a button to the action bar for auto-arranging elements
+  const handleAutoArrange = useCallback(() => {
+    // Arrange elements and update them
+    const arrangedElements = arrangeElements(elements, connections);
+    setElements(arrangedElements);
+    setElementsModified(true);
+  }, [elements, connections]);
 
   return (
     <div
@@ -1459,8 +1502,8 @@ export default function SimulationCanvas({
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onWheel={handleWheel}
-        onContextMenu={(e) => e.preventDefault()}
+        onMouseLeave={handleMouseUp}
+        onContextMenu={handleContextMenu}
       />
       <div className="relative">
         <div className="absolute bottom-2 left-6">
@@ -1477,6 +1520,7 @@ export default function SimulationCanvas({
             canRedo={canRedo}
             clockFrequency={clockFrequency}
             onClockFrequencyChange={handleClockFrequencyChange}
+            onAutoArrange={handleAutoArrange}
           />
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, ZoomIn, ZoomOut, RefreshCw, Clock } from "lucide-react";
+import { Undo2, Redo2, ZoomIn, ZoomOut, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useState } from "react";
+import { GitBranchPlus } from "lucide-react";
 
 interface CanvasActionBarProps {
   zoom: number;
@@ -21,6 +22,7 @@ interface CanvasActionBarProps {
   canRedo?: boolean;
   clockFrequency: number;
   onClockFrequencyChange: (frequency: number) => void;
+  onAutoArrange?: () => void; // Add the new prop type
 }
 
 const CanvasActionBar = ({
@@ -29,11 +31,11 @@ const CanvasActionBar = ({
   onResetZoom,
   onUndo,
   onRedo,
-  onReset,
   canUndo,
   canRedo,
   clockFrequency,
   onClockFrequencyChange,
+  onAutoArrange, // Add the new prop for auto arrangement
 }: CanvasActionBarProps) => {
   const [isEditingFrequency, setIsEditingFrequency] = useState(false);
   const [frequencyInput, setFrequencyInput] = useState(
@@ -143,7 +145,7 @@ const CanvasActionBar = ({
             </TooltipContent>
           </Tooltip>
           
-          <Tooltip>
+          {/* <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
@@ -156,6 +158,25 @@ const CanvasActionBar = ({
             <TooltipContent>
               <p>Reset canvas</p>
             </TooltipContent>
+          </Tooltip> */}
+        </div>
+
+        <div className="h-6 w-px bg-gray-300 dark:bg-neutral-700" />
+
+        {/* Auto-arrange button */}
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="outline"
+                aria-label="Auto Arrange"
+                onClick={onAutoArrange}
+              >
+                <GitBranchPlus className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Auto Arrange Components</TooltipContent>
           </Tooltip>
         </div>
 
