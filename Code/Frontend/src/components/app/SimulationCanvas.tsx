@@ -412,6 +412,10 @@ export default function SimulationCanvas({
     };
   }>({});
 
+  // Add state variables for panning functionality
+  const [isPanning, setIsPanning] = useState<boolean>(false);
+  const [panStartPos, setPanStartPos] = useState<{ x: number; y: number } | null>(null);
+
   // IMPORTANT: Define handleSignalArrival before it's used in useEffect hooks
   const handleSignalArrival = useCallback(
     (signal: Signal) => {
@@ -484,7 +488,7 @@ export default function SimulationCanvas({
           const currentTime = performance.now();
 
           if (isDInput) {
-            // Update D input state
+            // Update D input state - store the value but don't update output yet
             newStates[ffIndex] = { ...newStates[ffIndex], hasD: true };
             console.debug(`D input signal received at ${destElement.name}`);
           } else if (isEnInput) {
@@ -517,93 +521,21 @@ export default function SimulationCanvas({
             // Update last clock time
             newStates[ffIndex] = { ...ff, lastClockTime: currentTime };
 
-            // Apply flip-flop logic on clock edge
-            // For DFF (with enable):
-            // - Only update output if enable is active
-            // For DFF_NE (no enable):
-            // - Always update output on clock edge
-
-            const shouldUpdateOutput =
-              destElement.type === "DFF_NE" || // Always update for DFF_NE
-              (destElement.type === "DFF" && ff.hasEn); // Only update for DFF if enable is active
-
-            if (shouldUpdateOutput) {
+            // On posedge of clock:
+            // For DFF: Only update output if enable is active
+            // For DFF_NE: Always update output on clock edge (has no enable input)
+            const isEnabled = destElement.type === "DFF_NE" || ff.hasEn;
+            
+            if (isEnabled) {
+              // Only when enabled, update output value to the current D input value
               newStates[ffIndex] = {
                 ...newStates[ffIndex],
-                outputValue: ff.hasD, // Set output to D input value
+                outputValue: ff.hasD, // Set output to current D input value
               };
-
-              // If output is now true, emit a signal after a small delay
-              if (newStates[ffIndex].outputValue) {
-                setTimeout(() => {
-                  // Find output connection from this flip-flop
-                  const outputConn = connections.find((conn) => {
-                    const source = elements.find(
-                      (el) =>
-                        el.id === destElement.id &&
-                        el.outputs &&
-                        el.outputs.some(
-                          (output) => output.wireName === conn.name
-                        )
-                    );
-                    return !!source;
-                  });
-
-                  if (outputConn) {
-                    // Add a new signal on the output wire
-                    setActiveSignals((signals) => {
-                      const outputElement = elements.find(
-                        (el) => el.id === destElement.id
-                      );
-
-                      const targetElement = elements.find(
-                        (el) =>
-                          el.inputs &&
-                          el.inputs.some(
-                            (input) => input.wireName === outputConn.name
-                          )
-                      );
-
-                      if (!outputElement || !targetElement) return signals;
-
-                      // Create the signal
-                      const path = calculateOrthogonalPath(
-                        outputElement,
-                        targetElement,
-                        outputConn,
-                        elements,
-                        connections
-                      );
-
-                      // Calculate total path length
-                      let totalLength = 0;
-                      for (let i = 0; i < path.length - 1; i++) {
-                        const dx = path[i + 1].x - path[i].x;
-                        const dy = path[i + 1].y - path[i].y;
-                        totalLength += Math.sqrt(dx * dx + dy * dy);
-                      }
-
-                      return [
-                        ...signals,
-                        {
-                          connectionName: outputConn.name,
-                          position: 0,
-                          points: path,
-                          totalLength,
-                          createdAt: performance.now(),
-                          sourceName:
-                            outputElement.name || `element-${outputElement.id}`,
-                          destName:
-                            targetElement.name || `element-${targetElement.id}`,
-                        },
-                      ];
-                    });
-                  }
-                }, 100); // Small delay for visual clarity
-              }
             }
+            // If not enabled, keep the existing output value (blocked from changing)
 
-            // Reset D input after processing (regardless of whether output was updated)
+            // Reset D input after processing the clock edge
             newStates[ffIndex] = {
               ...newStates[ffIndex],
               hasD: false,
@@ -801,9 +733,18 @@ export default function SimulationCanvas({
     setClockFrequency(Math.max(1, Math.min(100, newFrequency))); // Limit between 1Hz and 100Hz
   };
 
-  // Handle mouse down event for dragging elements
+  // Update handleMouseDown to support right-click panning
   const handleMouseDown = (event: React.MouseEvent) => {
-    if (event.button !== 0) return; // Only proceed for left mouse button
+    // Right mouse button (button 2) for panning
+    if (event.button === 2) {
+      event.preventDefault(); // Prevent context menu
+      setIsPanning(true);
+      setPanStartPos({ x: event.clientX, y: event.clientY });
+      return;
+    }
+    
+    // Only proceed for left mouse button (button 0)
+    if (event.button !== 0) return;
 
     const { offsetX, offsetY } = event.nativeEvent;
 
@@ -841,8 +782,23 @@ export default function SimulationCanvas({
     }
   };
 
-  // Handle mouse move event for dragging elements
+  // Update handleMouseMove to support panning
   const handleMouseMove = (event: React.MouseEvent) => {
+    // Handle panning with right mouse button
+    if (isPanning && panStartPos) {
+      const dx = event.clientX - panStartPos.x;
+      const dy = event.clientY - panStartPos.y;
+      
+      setPanOffset(prev => ({
+        x: prev.x + dx,
+        y: prev.y + dy
+      }));
+      
+      setPanStartPos({ x: event.clientX, y: event.clientY });
+      return;
+    }
+    
+    // Handle dragging elements (existing functionality)
     if (draggingElement === null) return;
 
     const { offsetX, offsetY } = event.nativeEvent;
@@ -874,8 +830,15 @@ export default function SimulationCanvas({
     );
   };
 
-  // Handle mouse up event for dragging elements
-  const handleMouseUp = () => {
+  // Update handleMouseUp to end panning
+  const handleMouseUp = (event: React.MouseEvent) => {
+    // End panning if we were panning
+    if (isPanning) {
+      setIsPanning(false);
+      setPanStartPos(null);
+      return;
+    }
+    
     // If we have a clicked element and it wasn't dragged, handle it as a click
     if (clickedElement && !elementWasDragged) {
       // If clicking on an input module, toggle its active state
@@ -899,6 +862,12 @@ export default function SimulationCanvas({
     setDragStartPos(null);
     setElementWasDragged(false);
     setClickedElement(null);
+  };
+  
+  // Add event handler for context menu to prevent it during canvas interaction
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    return false;
   };
 
   // Modified canvas drawing function to use images and orthogonal wire paths
@@ -1211,7 +1180,7 @@ export default function SimulationCanvas({
       return sourceElement?.id === clockElement.id;
     });
 
-    // Create a timer to emit signals from the clock and process active inputs
+    // Create a timer to emit signals from the clock, active inputs, and active flip-flops
     const clockInterval = setInterval(() => {
       setActiveSignals((prevSignals) => {
         // Check for existing signals on each connection
@@ -1231,8 +1200,29 @@ export default function SimulationCanvas({
           );
         });
 
-        // Combine clock connections and input connections for signal generation
-        const allSignalSources = [...clockConnections, ...inputConnections];
+        // Find flip-flops with active outputs
+        const activeFlipFlopConnections = connections.filter((conn) => {
+          const sourceElement = elements.find(
+            (el) =>
+              el.outputs && 
+              el.outputs.some((output) => output.wireName === conn.name)
+          );
+          
+          if (!sourceElement || (sourceElement.type !== "DFF" && sourceElement.type !== "DFF_NE")) {
+            return false;
+          }
+          
+          // Check if this flip-flop has active output
+          const ffState = flipFlopStates.find((ff) => ff.id === sourceElement.id);
+          return ffState && ffState.outputValue === true;
+        });
+
+        // Combine all signal sources: clock, active inputs, and active flip-flops
+        const allSignalSources = [
+          ...clockConnections, 
+          ...inputConnections,
+          ...activeFlipFlopConnections
+        ];
 
         allSignalSources.forEach((conn) => {
           // Check if there's already a signal on this connection
@@ -1337,6 +1327,7 @@ export default function SimulationCanvas({
     signalSpeed,
     activeInputs,
     handleSignalArrival,
+    flipFlopStates, // Add flipFlopStates as a dependency
   ]);
 
   // Add an effect to track and reset enable signals
@@ -1453,6 +1444,7 @@ export default function SimulationCanvas({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onContextMenu={handleContextMenu}
       />
       <div className="relative">
         <div className="absolute bottom-2 left-6">
