@@ -136,7 +136,7 @@ export function parseVerilogContent(content: string): IDataStructure {
     const outputs: IElementOutput[] = [];
 
     // Parse input and output port connections
-    const portRegex = /\.(\w+)\(\\(\w+)\)/g;
+    const portRegex = /\.(\w+)\s*\(\s*\\([^)]+)\s*\)/g;
     let portMatch;
 
     while ((portMatch = portRegex.exec(portConnections)) !== null) {
