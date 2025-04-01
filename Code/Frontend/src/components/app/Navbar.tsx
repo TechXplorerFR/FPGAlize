@@ -2,7 +2,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Square } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 import { Example } from "@/lib/types/types";
 import { toastMessage } from "@/lib/services/toast";
 
@@ -23,7 +23,6 @@ export default function Navbar({
   examples,
   playing,
   setPlaying,
-  onResetSimulation,
 }: NavbarProps) {
   const handleExport = () => {
     if (!activeTabId || activeTabId === "") {
@@ -65,19 +64,6 @@ export default function Navbar({
     });
   };
 
-  const handleReset = () => {
-    // Stop simulation if it's playing
-    if (playing) {
-      setPlaying(false);
-    }
-    
-    // Call the reset function
-    onResetSimulation();
-    
-    // Provide feedback to the user
-    toastMessage.info("Simulation reset");
-  };
-
   return (
     <div className="flex items-center justify-between p-2 border-b w-full h-[7vh]">
       {/* Tab Selector */}
@@ -110,14 +96,6 @@ export default function Navbar({
           ) : (
             <Play className="w-5 h-5 text-green-500" />
           )}
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={handleReset}
-          title="Reset simulation"
-        >
-          <Square className="w-5 h-5" />
         </Button>
       </div>
 
