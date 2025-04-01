@@ -120,4 +120,3 @@ See the [Contributing Guidelines](./CONTRIBUTING.md) for details on how to contr
 
 
 **Happy coding with FPGAlize!** 🎉
-
