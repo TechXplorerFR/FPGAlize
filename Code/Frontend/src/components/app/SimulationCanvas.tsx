@@ -958,7 +958,7 @@ export default function SimulationCanvas({
       const sourceElement = elements.find(el => 
         el.outputs && el.outputs.some(output => connection.name.includes(output.wireName))
       );
-      
+
       const destElement = elements.find(el => 
         el.inputs && el.inputs.some(input => connection.name.includes(input.wireName))
       );

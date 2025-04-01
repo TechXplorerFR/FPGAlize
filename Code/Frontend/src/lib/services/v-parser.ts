@@ -30,6 +30,28 @@ export function parseVerilogContent(content: string): IDataStructure {
 
   const portDefinition = moduleMatch[2];
 
+  // Extract IO assignments to map ports to their wire names
+  const inputWireMap: Record<string, string> = {};
+  const outputWireMap: Record<string, string> = {};
+  
+  // Match lines like: assign \I1_output_0_0  = \I1 ;
+  const inputAssignRegex = /assign\s+\\(\w+(?:_output_\d+_\d+))\s*=\s*\\(\w+)\s*;/g;
+  let inputAssignMatch;
+  while ((inputAssignMatch = inputAssignRegex.exec(content)) !== null) {
+    const wireName = inputAssignMatch[1];
+    const portName = inputAssignMatch[2];
+    inputWireMap[portName] = wireName;
+  }
+  
+  // Match lines like: assign \O1  = \O1_input_0_0 ;
+  const outputAssignRegex = /assign\s+\\(\w+)\s*=\s*\\(\w+(?:_input_\d+_\d+))\s*;/g;
+  let outputAssignMatch;
+  while ((outputAssignMatch = outputAssignRegex.exec(content)) !== null) {
+    const portName = outputAssignMatch[1];
+    const wireName = outputAssignMatch[2];
+    outputWireMap[portName] = wireName;
+  }
+
   // Parse input and output ports
   const inputPortRegex = /input\s+\\(\w+)\s*,?/g;
   const outputPortRegex = /output\s+\\(\w+)\s*,?/g;
@@ -37,6 +59,7 @@ export function parseVerilogContent(content: string): IDataStructure {
   let inputMatch;
   while ((inputMatch = inputPortRegex.exec(portDefinition)) !== null) {
     const portName = inputMatch[1];
+    const wireName = inputWireMap[portName] || `${portName}_output_0_0`; // Fallback if not found
 
     // Create an element for this input port
     elements.push({
@@ -46,7 +69,7 @@ export function parseVerilogContent(content: string): IDataStructure {
       inputs: [],
       outputs: [
         {
-          wireName: `${portName}_output_0_0`, // Use actual wire name instead of placeholder
+          wireName: wireName,
           outputName: portName === "clk" ? "CLK" : null,
         },
       ],
@@ -60,6 +83,7 @@ export function parseVerilogContent(content: string): IDataStructure {
   let outputMatch;
   while ((outputMatch = outputPortRegex.exec(portDefinition)) !== null) {
     const portName = outputMatch[1];
+    const wireName = outputWireMap[portName] || `${portName}_input_0_0`; // Fallback if not found
 
     // Create an element for this output port
     elements.push({
@@ -68,7 +92,7 @@ export function parseVerilogContent(content: string): IDataStructure {
       type: "module_output",
       inputs: [
         {
-          wireName: `${portName}_input_0_0`, // Use actual wire name instead of placeholder
+          wireName: wireName,
           inputName: null,
         },
       ],
@@ -83,7 +107,6 @@ export function parseVerilogContent(content: string): IDataStructure {
   // Parse DFF instances specifically
   const dffRegex = /DFF\s+#\([\s\S]*?\)\s*\\(\w+)\s*\(([\s\S]*?)\);/g;
   let dffMatch;
-  
 
   while ((dffMatch = dffRegex.exec(content)) !== null) {
     const cellName = dffMatch[1];
@@ -104,23 +127,23 @@ export function parseVerilogContent(content: string): IDataStructure {
       // For DFF, map the ports appropriately
       if (portName === "Q") {
         outputs.push({
-          wireName: wireName, // Use actual wire name instead of placeholder
+          wireName: wireName,
           outputName: "Q",
         });
       } else if (portName === "D") {
         inputs.push({
-          wireName: wireName, // Use actual wire name instead of placeholder
+          wireName: wireName,
           inputName: "D",
         });
       } else if (portName === "enable") {
         inputs.push({
-          wireName: wireName, // Use actual wire name instead of placeholder
+          wireName: wireName,
           inputName: "enable",
         });
         hasEnableGate = true;
       } else if (portName === "clock") {
         inputs.push({
-          wireName: wireName, // Use actual wire name instead of placeholder
+          wireName: wireName,
           inputName: "CLK",
         });
       }
@@ -167,12 +190,12 @@ export function parseVerilogContent(content: string): IDataStructure {
       // Determine if this is an input or output port based on typical port names
       if (portName === "Q" || portName.startsWith("Y")) {
         outputs.push({
-          wireName: wireName, // Use actual wire name instead of placeholder
+          wireName: wireName,
           outputName: portName,
         });
       } else {
         inputs.push({
-          wireName: wireName, // Use actual wire name instead of placeholder
+          wireName: wireName,
           inputName: portName,
         });
       }
@@ -193,23 +216,27 @@ export function parseVerilogContent(content: string): IDataStructure {
   }
 
   // Parse interconnect instances to create connections
-  const interconnectRegex = /fpga_interconnect\s+\\([^(]+)\s*\(\s*\.datain\(\\([^)]+)\s*\),\s*\.dataout\(\\([^)]+)\s*\)\s*\);/g;
+  const interconnectRegex =
+    /fpga_interconnect\s+\\([^(]+)\s*\(\s*\.datain\(\\([^)]+)\s*\),\s*\.dataout\(\\([^)]+)\s*\)\s*\);/g;
   let interconnectMatch;
 
   while ((interconnectMatch = interconnectRegex.exec(content)) !== null) {
-    const connectionName = interconnectMatch[1].split("segment_")[1].trim();
+    // Extract source and destination names
     const sourceName = interconnectMatch[2];
     const destinationName = interconnectMatch[3];
-    
+
+    // Create connection name in source_to_destination format
+    const connectionName = `${sourceName}_to_${destinationName}`;
+
     // Create a connection with source and destination information
     connections.push({
       id: connectionIdCounter++,
       name: connectionName,
       type: "wire",
       color: "#000000", // Default color
-      time: 0,         // Default time delay
+      time: 0, // Default time delay
       source: sourceName,
-      destination: destinationName
+      destination: destinationName,
     });
   }
 
