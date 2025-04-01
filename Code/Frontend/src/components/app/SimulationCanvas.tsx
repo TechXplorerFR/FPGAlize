@@ -411,7 +411,7 @@ export default function SimulationCanvas({
   );
 
   // Initialize the canvas history
-  const { pushState, undo, redo, reset, canUndo, canRedo } = useCanvasHistory({
+  const { pushState, undo, redo, canUndo, canRedo } = useCanvasHistory({
     elements: [],
     connections: [],
     elementPositions: new Map(),
@@ -879,7 +879,7 @@ export default function SimulationCanvas({
   };
 
   // Update handleMouseUp to end panning
-  const handleMouseUp = (event: React.MouseEvent) => {
+  const handleMouseUp = () => {
     // End panning if we were panning
     if (isPanning) {
       setIsPanning(false);
