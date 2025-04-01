@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, ZoomIn, ZoomOut, RefreshCw, Clock } from "lucide-react";
+import { Undo2, Redo2, ZoomIn, ZoomOut, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -31,7 +31,6 @@ const CanvasActionBar = ({
   onResetZoom,
   onUndo,
   onRedo,
-  onReset,
   canUndo,
   canRedo,
   clockFrequency,

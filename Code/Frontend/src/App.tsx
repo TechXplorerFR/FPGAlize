@@ -4,7 +4,7 @@ import ExamplesDrawer from "./components/app/ExamplesDrawer";
 import Navbar from "./components/app/Navbar";
 import TabsBar from "./components/app/TabsBar";
 import { countFileLines, readFileContent } from "@/lib/utils";
-import type { Example, IDataStructure, Tab } from "@/lib/types/types";
+import type { Example, Tab } from "@/lib/types/types";
 import { Toaster } from "@/components/ui/sonner";
 import { parseFilesForBrowser } from "@/lib/services/parser";
 import { toastMessage } from "@/lib/services/toast";
