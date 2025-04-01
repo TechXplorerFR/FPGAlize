@@ -3,11 +3,15 @@ name: CI/CD Pipeline
 on:
   push:
     branches-ignore:
-      - documents  # Exclude pushes to the "documents" branch
+      - documents # Exclude pushes to the "documents" branch
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-test:
-    runs-on: self-hosted  # Use Windows runner
+    runs-on: self-hosted # Use Windows runner
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -16,8 +20,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: Code/Frontend/package-lock.json  # Ensure correct caching
+          cache: "npm"
+          cache-dependency-path: Code/Frontend/package-lock.json # Ensure correct caching
 
       - name: Install Dependencies
         working-directory: ./Code/Frontend
@@ -32,34 +36,62 @@ jobs:
         run: npm run test:unit
 
   docker-build-and-push:
-    needs: build-and-test  # Runs only if tests pass
+    needs: build-and-test
     runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry (Windows)
+      - name: Set up QEMU for multi-arch builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Display debugging information
+      - name: Debug Info
         shell: pwsh
         run: |
-          # $env:GHCR_PAT = "${{ secrets.GHCR_PAT }}"
-          $logFile = "C:\\actions-runner\docker_login_debug.txt"
-         
-          echo '${{ secrets.GHCR_PAT }}' | docker login ghcr.io -u 'TechXplorerFR' --password-stdin
+          Write-Host "GitHub Repository: ${{ github.repository }}"
+          Write-Host "Image Name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          Write-Host "Actor: ${{ github.actor }}"
 
-          "echo '${{ secrets.GHCR_PAT }}' | docker login ghcr.io -u 'TechXplorerFR' --password-stdin" | Out-File -FilePath $logFile -Encoding utf8 -Append
-          
-          # Check if login succeeded
-          if ($LASTEXITCODE -ne 0) {
-              Write-Host "❌ Docker login failed."
-              "❌ Docker login failed."
-              exit 1
-          } else {
-              Write-Host "✅ Docker login successful."
-              "✅ Docker login successful."
-          }
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
 
-      - name: Build Docker Image
-        run: docker build -t ghcr.io/techxplorerfr/test-actions/myapp:latest -f Dockerfile .
-
-      - name: Push Docker Image to GitHub Container Registry
-        run: docker push ghcr.io/techxplorerfr/test-actions/myapp:latest
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: true
+          sbom: true
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},name-canonical=true
+      
+      # Simplified deployment confirmation
+      - name: Confirm deployment
+        shell: pwsh
+        run: |
+          Write-Host "✅ Container successfully published to ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}:latest"
