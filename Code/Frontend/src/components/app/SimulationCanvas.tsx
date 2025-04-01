@@ -118,6 +118,9 @@ export default function SimulationCanvas({
   // Maximum size for component boundaries
   const MAX_COMPONENT_SIZE = 90;
 
+  // Add state to store wire delays for each connection
+  const [wireDelays, setWireDelays] = useState<{ [key: string]: number }>({});
+  
   // Define a mapping of element types to image filenames - memoize to prevent recreating on each render
   const elementTypeToImageMap = useMemo(
     () => ({
@@ -335,14 +338,41 @@ export default function SimulationCanvas({
     setConnections(initialState.connections);
   }, [reset]);
 
+  // Add function to calculate wire delays based on path length
+  const calculateWireDelay = useCallback(
+    (path: { x: number; y: number }[]): number => {
+      // Default minimum delay (milliseconds)
+      const MIN_DELAY = 50;
+      
+      // Calculate path length
+      let pathLength = 0;
+      if (path && path.length > 1) {
+        for (let i = 1; i < path.length; i++) {
+          const dx = path[i].x - path[i - 1].x;
+          const dy = path[i].y - path[i - 1].y;
+          pathLength += Math.sqrt(dx * dx + dy * dy);
+        }
+      }
+      
+      // Scale delay based on path length (longer wires = more delay)
+      // Using a factor to convert pixels to milliseconds
+      const DELAY_FACTOR = 0.5; // ms per pixel
+      
+      return Math.max(MIN_DELAY, Math.round(pathLength * DELAY_FACTOR));
+    },
+    []
+  );
+
   // Update connection endpoints when elements or connections change
   useEffect(() => {
     if (elements.length === 0 || connections.length === 0) {
       setConnectionEndpoints([]);
+      setWireDelays({});
       return;
     }
 
     const newConnectionEndpoints: ConnectionEndpoints[] = [];
+    const newWireDelays: { [key: string]: number } = {};
 
     connections.forEach((connection) => {
       // Find source element (element that has this connection name in its outputs)
@@ -380,10 +410,105 @@ export default function SimulationCanvas({
           sourcePort,
           destPort,
         });
+
+        // Calculate the path for this connection
+        const dimensions = imageDimensions[sourceElement.type] || {
+          width: 50,
+          height: 50,
+        };
+
+        const destDimensions = imageDimensions[destElement.type] || {
+          width: 50,
+          height: 50,
+        };
+
+        // Calculate port positions with directions
+        const startPortInfo = calculatePortPosition(
+          sourceElement,
+          sourcePort,
+          "output",
+          dimensions
+        );
+
+        const endPortInfo = calculatePortPosition(
+          destElement,
+          destPort,
+          "input",
+          destDimensions
+        );
+
+        // Use positions or fall back to element centers
+        const startX =
+          startPortInfo?.x ?? (sourceElement.x ?? 0) + dimensions.width / 2;
+        const startY =
+          startPortInfo?.y ??
+          (sourceElement.y ?? 0) + dimensions.height / 2;
+        const endX =
+          endPortInfo?.x ?? (destElement.x ?? 0) + destDimensions.width / 2;
+        const endY =
+          endPortInfo?.y ?? (destElement.y ?? 0) + destDimensions.height / 2;
+
+        // Get directions
+        const sourceDirection = startPortInfo?.direction || "right";
+        const destDirection = endPortInfo?.direction || "left";
+
+        // Create edge points
+        const sourceEdge = calculateEdgePoint(
+          startX,
+          startY,
+          sourceDirection,
+          sourceElement.x ?? 0,
+          sourceElement.y ?? 0,
+          dimensions.width,
+          dimensions.height
+        );
+
+        const destEdge = calculateEdgePoint(
+          endX,
+          endY,
+          destDirection,
+          destElement.x ?? 0,
+          destElement.y ?? 0,
+          destDimensions.width,
+          destDimensions.height
+        );
+
+        const sourceEdgeWithDirection: EdgePoint = {
+          ...sourceEdge,
+          direction: sourceDirection,
+        };
+
+        const destEdgeWithDirection: EdgePoint = {
+          ...destEdge,
+          direction: destDirection,
+        };
+
+        // Calculate the path
+        const path = calculateConnectionPath(
+          sourceEdgeWithDirection,
+          destEdgeWithDirection
+        );
+
+        // Calculate wire delay based on path length
+        // If source is clock, use a specific delay based on destination
+        if (sourceElement.type === 'clk') {
+          // Special clock handling - ensure consistent timing relative to clock frequency
+          // Longer delay for flip-flops, shorter for combinational logic
+          if (destElement.type.startsWith('DFF')) {
+            newWireDelays[connection.name] = 200; // Longer delay for flip-flops
+          } else {
+            newWireDelays[connection.name] = 100; // Default delay for other components
+          }
+        } else {
+          // For non-clock connections, calculate delay based on wire length
+          newWireDelays[connection.name] = connection.time || calculateWireDelay(path);
+        }
       }
     });
+    
     setConnectionEndpoints(newConnectionEndpoints);
-  }, [elements, connections]);
+    setWireDelays(newWireDelays);
+  }, [elements, connections, imageDimensions, calculateWireDelay]);
 
   // Get connection endpoints based on element and connection - enhanced to include path calculation
   const getConnectionPoints = useCallback(
@@ -692,6 +817,35 @@ export default function SimulationCanvas({
               // If no positions or all positions are near the end, add a new impulse at the start
               if (positions.length === 0 || Math.min(...positions.map(p => p || 0)) > 0.9) {
                 positions.push(0); // Add a new impulse at the start
+                
+                // Schedule propagation to next elements after wire delay
+                const wireDelay = wireDelays[conn.name] || 50;
+                setTimeout(() => {
+                  // Find the destination element
+                  const destElement = elements.find(el => 
+                    el.inputs?.some(input => input.wireName === conn.name)
+                  );
+                  
+                  if ((destElement?.outputs ?? []).length > 0) {
+                    // Get output wires of the destination element
+                    const outputWires = destElement?.outputs?.map(output => output.wireName) || [];
+                    
+                    // Add impulses to those output wires
+                    setImpulses(current => {
+                      const updated = { ...current };
+                      outputWires.forEach(wireName => {
+                        const outConn = connections.find(c => c.name === wireName);
+                        if (outConn) {
+                          if (!updated[wireName]) {
+                            updated[wireName] = [];
+                          }
+                          updated[wireName].push(0);
+                        }
+                      });
+                      return updated;
+                    });
+                  }
+                }, wireDelay);
               }
               
               // Move existing impulses forward
@@ -709,7 +863,7 @@ export default function SimulationCanvas({
         window.clearInterval(clockIntervalId);
       }
     };
-  }, [playing, elements, connections, clockFrequency]);
+  }, [playing, elements, connections, clockFrequency, wireDelays]);
 
   // Modified function to animate impulses along connections
   const animateImpulses = useCallback((connectionsToAnimate: IConnection[], continuous: boolean = false, sourceElementId?: number) => {
