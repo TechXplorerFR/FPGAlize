@@ -123,13 +123,87 @@ export function parseVerilogContent(content: string): IDataStructure {
     }
   }
 
-  // Parse cell instances
+  // Parse DFF instances specifically
+  const dffRegex = /DFF\s+#\([\s\S]*?\)\s*\\(\w+)\s*\(([\s\S]*?)\);/g;
+  let dffMatch;
+  let hasEnableGate: boolean = false;
+
+  while ((dffMatch = dffRegex.exec(content)) !== null) {
+    const cellName = dffMatch[1];
+    const portConnections = dffMatch[2];
+
+    const inputs: IElementInput[] = [];
+    const outputs: IElementOutput[] = [];
+
+    // Parse input and output port connections
+    const portRegex = /\.(\w+)\(\\(\w+)\)/g;
+    let portMatch;
+
+    while ((portMatch = portRegex.exec(portConnections)) !== null) {
+      const portName = portMatch[1];
+      const wireName = portMatch[2];
+
+      // Create a connection for this wire if it doesn't exist
+      if (!wireMap.has(wireName)) {
+        connections.push({
+          id: ++connectionIdCounter,
+          name: `wire_${connectionIdCounter}`,
+          type: "wire",
+          color: "#000000",
+          time: 0,
+        });
+        wireMap.set(wireName, connectionIdCounter);
+      }
+
+      const wireId = wireMap.get(wireName);
+      const connectionWireName = `wire_${wireId}`;
+
+      // For DFF, map the ports appropriately
+      if (portName === "Q") {
+        outputs.push({
+          wireName: connectionWireName,
+          outputName: "Q",
+        });
+      } else if (portName === "D") {
+        inputs.push({
+          wireName: connectionWireName,
+          inputName: "D",
+        });
+      } else if (portName === "enable") {
+        inputs.push({
+          wireName: connectionWireName,
+          inputName: "enable",
+        });
+        hasEnableGate = true;
+      } else if (portName === "clock") {
+        inputs.push({
+          wireName: connectionWireName,
+          inputName: "CLK",
+        });
+      }
+    }
+
+    // Create an element for this DFF
+    elements.push({
+      id: elementIdCounter++,
+      name: cellName,
+      type: hasEnableGate ? "DFF" : "DFF_NE",
+      inputs,
+      outputs,
+      internal_delay: 0,
+      setup_time: 0,
+      x: 50,
+      y: 100,
+    });
+  }
+
+  // Parse other cell instances
   const cellRegex = /(\w+)\s+(?:#\([^)]*\))?\s*\\(\w+)\s*\(([\s\S]*?)\);/g;
   let cellMatch;
 
   while ((cellMatch = cellRegex.exec(content)) !== null) {
-    if (cellMatch[1] === "fpga_interconnect") {
-      continue; // Skip interconnect instances
+    if (cellMatch[1] === "fpga_interconnect" || cellMatch[1] === "DFF") {
+      continue; // Skip interconnect instances and DFF (already processed)
     }
 
     const cellType = cellMatch[1];
@@ -163,7 +237,6 @@ export function parseVerilogContent(content: string): IDataStructure {
       const connectionWireName = `wire_${wireId}`;
 
       // Determine if this is an input or output port based on typical port names
-      // This is simplified and might need refinement for more complex Verilog
       if (portName === "Q" || portName.startsWith("Y")) {
         outputs.push({
           wireName: connectionWireName,
@@ -220,6 +293,11 @@ export function parseVerilogContent(content: string): IDataStructure {
       y: 100,
     });
   }
+
+  console.log({
+    elements,
+    connections,
+  });
 
   return {
     elements,

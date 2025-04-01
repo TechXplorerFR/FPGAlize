@@ -46,26 +46,27 @@ export async function parseFilesForBrowser(
     }
 
     const verilogContent = await getFileContent(verilogFile);
-    const sdfContent = await getFileContent(sdfFile);
+    // const sdfContent = await getFileContent(sdfFile);
 
     const verilogData = parseVerilogContent(verilogContent);
-    const sdfData = parseSdfContent(sdfContent);
+    // const sdfData = parseSdfContent(sdfContent);
 
     // Merge elements and connections
-    const mergedElements = mergeElements(
-      (await verilogData).elements,
-      (await sdfData).elements
-    );
-    const mergedConnections = mergeConnections(
-      (await verilogData).connections,
-      (await sdfData).connections
-    );
+    // const mergedElements = mergeElements(
+    //   (await verilogData).elements,
+    //   (await sdfData).elements
+    // );
+    // const mergedConnections = mergeConnections(
+    //   (await verilogData).connections,
+    //   (await sdfData).connections
+    // );
 
     // Clean up and finalize output
-    const finalElements = finalizeElements(mergedElements);
-    const finalConnections = finalizeConnections(mergedConnections);
+    // const finalElements = finalizeElements(mergedElements);
+    // const finalConnections = finalizeConnections(mergedConnections);
 
-    return { elements: finalElements, connections: finalConnections };
+    // return { elements: finalElements, connections: finalConnections };
+    return verilogData;
   } catch (error) {
     console.error("Error parsing files:", error);
     return null;
