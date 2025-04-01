@@ -146,7 +146,7 @@ const CanvasActionBar = ({
             </TooltipContent>
           </Tooltip>
           
-          <Tooltip>
+          {/* <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
@@ -159,7 +159,7 @@ const CanvasActionBar = ({
             <TooltipContent>
               <p>Reset canvas</p>
             </TooltipContent>
-          </Tooltip>
+          </Tooltip> */}
         </div>
 
         <div className="h-6 w-px bg-gray-300 dark:bg-neutral-700" />
