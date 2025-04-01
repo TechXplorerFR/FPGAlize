@@ -17,7 +17,7 @@ FPGAlize is a **self-hosted** web platform that provides an **interactive and vi
 ## 🚀 Installation
 
 > [!TIP]
-> We recommend that you use our public demo by following [this link](https://2024-2025-project-4-web-fpga-team-7.vercel.app/).
+> We recommend that you use our public demo by following [this link](https://fpgalize.vercel.app/).
 
 ### Prerequisites 🛠️
 Ensure you have the following installed:
