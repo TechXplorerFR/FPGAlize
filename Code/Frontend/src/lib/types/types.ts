@@ -38,7 +38,7 @@ export type Tab = {
  */
 export type IElement = {
   id: number;
-  name: string;
+  name: string; // Keep as required, but we'll handle undefined values in the code
   x: number | null;
   y: number | null;
   type: string;
