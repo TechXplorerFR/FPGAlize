@@ -38,7 +38,9 @@ type FlipFlopState = {
 const getPortPosition = (
   element: IElement,
   portType: "input" | "output",
-  portName: string
+  portName: string,
+  elements: IElement[] = [],
+  connections: IConnection[] = []
 ): Point => {
   const size = 50;
   const x = element.x || 0;
@@ -51,19 +53,26 @@ const getPortPosition = (
   // For flip-flops, position the ports according to their function
   if (element.type === "DFF" || element.type === "DFF_NE") {
     if (portType === "input") {
-      // Different input positions based on port name
-      if (portName.includes("D") || portName.endsWith("_0")) {
+      // Try to determine the port type based on its connection to other elements
+      const origin = getSignalOriginType(portName, elements, connections);
+
+      // Determine port position based on the port's purpose
+      if (origin.name === "D") {
         // D input at the top-left (25% from top)
         portX = x;
         portY = y + size * 0.25;
-      } else if (portName.includes("clk") || portName.endsWith("_1")) {
+      } else if (origin.name === "clk") {
         // Clock input at the bottom-center
-        portX = x + size / 2; // Center horizontally
-        portY = y + size; // Bottom of element
-      } else if (portName.includes("en") || portName.endsWith("_2")) {
-        // Enable input at the bottom-left (75% from top)
         portX = x;
-        portY = y + size * 0.75; // Make sure it's different from D input
+        portY = y + size * 0.8; // Bottom of element
+      } else if (origin.name === "enable") {
+        // Enable input at the top area
+        portX = x;
+        portY = y + size * 0.55; // Middle of element
+      } else {
+        // Fallback to using the port name or index
+        portX = x;
+        portY = y + size * 0.25;
       }
     } else {
       // Output Q is on the right side, centered
@@ -79,29 +88,35 @@ const getPortPosition = (
 const calculateOrthogonalPath = (
   sourceElement: IElement,
   destElement: IElement,
-  connection: IConnection
+  connection: IConnection,
+  allElements: IElement[] = [],
+  allConnections: IConnection[] = []
 ): Point[] => {
   // Find which port on the source element this connection comes from
-  const  sourcePort = sourceElement.outputs?.find(
+  const sourcePort = sourceElement.outputs?.find(
     (output) => output.wireName === connection.name
   );
- 
+
   // Find which port on the destination element this connection goes to
-  const  destPort = destElement.inputs?.find(
+  const destPort = destElement.inputs?.find(
     (input) => input.wireName === connection.name
   );
 
-  // Get port positions using the new helper function
+  // Get port positions using the new helper function, passing all elements and connections
   const sourcePos = getPortPosition(
     sourceElement,
     "output",
-    sourcePort?.wireName || connection.name
+    sourcePort?.wireName || connection.name,
+    allElements,
+    allConnections
   );
 
   const destPos = getPortPosition(
     destElement,
     "input",
-    destPort?.wireName || connection.name
+    destPort?.wireName || connection.name,
+    allElements,
+    allConnections
   );
 
   const startX = sourcePos.x;
@@ -255,6 +270,36 @@ const arrangeElements = (
   return arrangedElements;
 };
 
+// Add this function after other helper functions but before the main component
+const getSignalOriginType = (
+  connectionName: string,
+  elements: IElement[],
+  connections: IConnection[]
+): { type: string; name: string } => {
+  // Find the connection object first
+  const connection = connections.find((conn) => conn.name === connectionName);
+  if (!connection) {
+    return { type: "unknown", name: "unknown" };
+  }
+
+  // Find the source element (the element that has this connection in its outputs)
+  const sourceElement = elements.find(
+    (el) =>
+      el.outputs &&
+      el.outputs.some((output) => output.wireName === connectionName)
+  );
+
+  if (!sourceElement) {
+    return { type: "unknown", name: "unknown" };
+  }
+
+  // Return both the type and name of the source element
+  return {
+    type: sourceElement.type || "unknown",
+    name: sourceElement.name || `element-${sourceElement.id}`,
+  };
+};
+
 export default function SimulationCanvas({
   activeTabId,
   examples,
@@ -313,9 +358,11 @@ export default function SimulationCanvas({
 
   // Add state to track which input elements are active
   const [activeInputs, setActiveInputs] = useState<number[]>([]);
-  
+
   // Add state to track which output elements are active with their activation time
-  const [activeOutputs, setActiveOutputs] = useState<{[id: number]: number}>({});
+  const [activeOutputs, setActiveOutputs] = useState<{ [id: number]: number }>(
+    {}
+  );
 
   // Add a state to keep track of the clicked element (for differentiating click vs drag)
   const [clickedElement, setClickedElement] = useState<IElement | null>(null);
@@ -377,6 +424,22 @@ export default function SimulationCanvas({
 
       if (!destElement) return;
 
+      // Get the signal origin information
+      const origin = getSignalOriginType(
+        signal.connectionName,
+        elements,
+        connections
+      );
+
+      // For debugging
+      console.debug(
+        `Signal arrived: ${signal.connectionName}, from ${origin.type} (${
+          origin.name
+        }) to ${destElement.type} (${
+          destElement.name || `element-${destElement.id}`
+        })`
+      );
+
       // Get the input port this signal is connected to
       const inputPort = destElement.inputs?.find(
         (input) => input.wireName === signal.connectionName
@@ -385,20 +448,33 @@ export default function SimulationCanvas({
 
       // If this is a module_output, activate it
       if (destElement.type === "module_output") {
-        setActiveOutputs(prev => ({
+        setActiveOutputs((prev) => ({
           ...prev,
-          [destElement.id]: performance.now() // Record current time
+          [destElement.id]: performance.now(), // Record current time
         }));
       }
 
       // If this is a flip-flop, update its state
       if (destElement.type === "DFF" || destElement.type === "DFF_NE") {
-        // Determine which input this signal is connected to
+        // Determine which input this signal is connected to based on the input name and origin
         const portIndex = destElement.inputs?.indexOf(inputPort);
-        const isClockInput = portIndex === 1 || (inputPort.wireName && inputPort.wireName.includes("clk"));
-        const isDInput = portIndex === 0 || (inputPort.wireName && inputPort.wireName.includes("D"));
-        const isEnInput = portIndex === 2 || (inputPort.wireName && inputPort.wireName.includes("en"));
-        
+        const inputName = inputPort.inputName?.toUpperCase() || "";
+
+        // Use input name first if available, then try to guess based on origin
+        const isClockInput =
+          inputName === "CLK" || origin.type === "clk" || portIndex === 0; // First input is often clock in our example
+
+        const isDInput =
+          inputName === "D" ||
+          (origin.type === "module_input" && signal.sourceName === "D") ||
+          portIndex === 1; // Second input is D in our example
+
+        const isEnInput =
+          inputName === "EN" ||
+          (origin.type === "module_input" &&
+            (signal.sourceName === "enable" || signal.sourceName === "EN")) ||
+          portIndex === 2; // Third input is enable in our example
+
         setFlipFlopStates((prev) => {
           // Find the flip-flop state
           const ffIndex = prev.findIndex((ff) => ff.id === destElement.id);
@@ -406,52 +482,57 @@ export default function SimulationCanvas({
 
           const newStates = [...prev];
           const currentTime = performance.now();
-          
+
           if (isDInput) {
             // Update D input state
             newStates[ffIndex] = { ...newStates[ffIndex], hasD: true };
-          } 
-          else if (isEnInput) {
+            console.debug(`D input signal received at ${destElement.name}`);
+          } else if (isEnInput) {
             // Update Enable input state (only relevant for DFF, not DFF_NE)
             if (destElement.type === "DFF") {
               newStates[ffIndex] = { ...newStates[ffIndex], hasEn: true };
-              
+              console.debug(`Enable signal received at ${destElement.name}`);
+
               // Record the time this enable signal was received
-              setActiveFlipFlopInputs(prev => ({
-                ...prev, 
-                [destElement.id]: { 
-                  ...(prev[destElement.id] || { D: false, En: false, lastEnUpdateTime: 0 }),
+              setActiveFlipFlopInputs((prev) => ({
+                ...prev,
+                [destElement.id]: {
+                  ...(prev[destElement.id] || {
+                    D: false,
+                    En: false,
+                    lastEnUpdateTime: 0,
+                  }),
                   En: true,
-                  lastEnUpdateTime: currentTime 
-                }
+                  lastEnUpdateTime: currentTime,
+                },
               }));
             }
-          }
-          else if (isClockInput) {
+          } else if (isClockInput) {
+            console.debug(`Clock signal received at ${destElement.name}`);
             const ff = newStates[ffIndex];
-            
+
             // Debounce clock to prevent multiple triggers
             if (currentTime - ff.lastClockTime < 50) return prev;
-            
+
             // Update last clock time
             newStates[ffIndex] = { ...ff, lastClockTime: currentTime };
-            
+
             // Apply flip-flop logic on clock edge
             // For DFF (with enable):
             // - Only update output if enable is active
             // For DFF_NE (no enable):
             // - Always update output on clock edge
-            
-            const shouldUpdateOutput = 
+
+            const shouldUpdateOutput =
               destElement.type === "DFF_NE" || // Always update for DFF_NE
               (destElement.type === "DFF" && ff.hasEn); // Only update for DFF if enable is active
-              
+
             if (shouldUpdateOutput) {
               newStates[ffIndex] = {
                 ...newStates[ffIndex],
                 outputValue: ff.hasD, // Set output to D input value
               };
-              
+
               // If output is now true, emit a signal after a small delay
               if (newStates[ffIndex].outputValue) {
                 setTimeout(() => {
@@ -461,7 +542,9 @@ export default function SimulationCanvas({
                       (el) =>
                         el.id === destElement.id &&
                         el.outputs &&
-                        el.outputs.some((output) => output.wireName === conn.name)
+                        el.outputs.some(
+                          (output) => output.wireName === conn.name
+                        )
                     );
                     return !!source;
                   });
@@ -487,7 +570,9 @@ export default function SimulationCanvas({
                       const path = calculateOrthogonalPath(
                         outputElement,
                         targetElement,
-                        outputConn
+                        outputConn,
+                        elements,
+                        connections
                       );
 
                       // Calculate total path length
@@ -506,8 +591,10 @@ export default function SimulationCanvas({
                           points: path,
                           totalLength,
                           createdAt: performance.now(),
-                          sourceName: outputElement.name || `element-${outputElement.id}`,
-                          destName: targetElement.name || `element-${targetElement.id}`,
+                          sourceName:
+                            outputElement.name || `element-${outputElement.id}`,
+                          destName:
+                            targetElement.name || `element-${targetElement.id}`,
                         },
                       ];
                     });
@@ -515,11 +602,11 @@ export default function SimulationCanvas({
                 }, 100); // Small delay for visual clarity
               }
             }
-            
+
             // Reset D input after processing (regardless of whether output was updated)
             newStates[ffIndex] = {
               ...newStates[ffIndex],
-              hasD: false
+              hasD: false,
             };
           }
 
@@ -631,7 +718,7 @@ export default function SimulationCanvas({
     setFlipFlopStates(
       flipFlops.map((ff) => ({
         id: ff.id,
-        name: ff.name || `flip-flop-${ff.id}`,  // Add a fallback name
+        name: ff.name || `flip-flop-${ff.id}`, // Add a fallback name
         hasD: false,
         hasEn: ff.type === "DFF_NE", // DFF_NE (no enable) always has enable "true"
         outputValue: false,
@@ -639,14 +726,16 @@ export default function SimulationCanvas({
         type: ff.type, // Store the type to check during reset
       }))
     );
-    
+
     // Also initialize the active flip-flop inputs tracker
-    const initialFlipFlopInputs: {[id: number]: {D: boolean, En: boolean, lastEnUpdateTime: number}} = {};
-    flipFlops.forEach(ff => {
+    const initialFlipFlopInputs: {
+      [id: number]: { D: boolean; En: boolean; lastEnUpdateTime: number };
+    } = {};
+    flipFlops.forEach((ff) => {
       initialFlipFlopInputs[ff.id] = {
         D: false,
         En: ff.type === "DFF_NE", // DFF_NE always has enable active
-        lastEnUpdateTime: 0
+        lastEnUpdateTime: 0,
       };
     });
     setActiveFlipFlopInputs(initialFlipFlopInputs);
@@ -664,7 +753,7 @@ export default function SimulationCanvas({
           lastClockTime: 0,
         }))
       );
-      
+
       // Reset active inputs
       setActiveInputs([]);
     }
@@ -862,11 +951,13 @@ export default function SimulationCanvas({
       );
 
       if (sourceElement && destElement) {
-        // Use the enhanced path calculation function
+        // Use the enhanced path calculation function, passing all elements and connections
         const path = calculateOrthogonalPath(
           sourceElement,
           destElement,
-          connection
+          connection,
+          elements,
+          connections
         );
 
         // Draw the path
@@ -906,10 +997,10 @@ export default function SimulationCanvas({
             ctx.drawImage(image, x, y, size, size);
           } else {
             let color: string;
-            
+
             // Use type assertion to fix the TypeScript error
             const elementType = el.type as string;
-            
+
             switch (elementType) {
               case "clk":
                 color = "blue";
@@ -1163,20 +1254,26 @@ export default function SimulationCanvas({
           );
 
           if (source && dest) {
-            // Create paths and add a new signal
-            // ...existing code for creating signals...
-            
-            // Get port positions for this connection
-            const sourcePort = source.outputs?.find(
-              (output) => output.wireName === conn.name
+            // Get the origin information
+            const origin = getSignalOriginType(
+              conn.name,
+              elements,
+              connections
             );
-
-            const destPort = dest.inputs?.find(
-              (input) => input.wireName === conn.name
+            console.debug(
+              `Creating signal from ${origin.type} (${origin.name}) to ${
+                dest.name || `element-${dest.id}`
+              }`
             );
 
             // Calculate path for the signal using actual port positions
-            const points = calculateOrthogonalPath(source, dest, conn);
+            const points = calculateOrthogonalPath(
+              source,
+              dest,
+              conn,
+              elements,
+              connections
+            );
 
             // Calculate total path length
             let totalLength = 0;
@@ -1245,49 +1342,53 @@ export default function SimulationCanvas({
   // Add an effect to track and reset enable signals
   useEffect(() => {
     if (!runningSimulation) return;
-    
+
     // Check every 200ms for flip-flops that haven't received an enable signal recently
     const resetInterval = setInterval(() => {
       const now = performance.now();
       const SIGNAL_TIMEOUT = 500; // Consider signal gone after 500ms
-      
+
       // For each flip-flop with DFF type (not DFF_NE), check if enable signal is stale
-      setFlipFlopStates(prev => {
+      setFlipFlopStates((prev) => {
         let changed = false;
         const newStates = [...prev];
-        
+
         newStates.forEach((ff, index) => {
           // Skip DFF_NE which always has enable on
           if (ff.type === "DFF_NE") return;
-          
+
           // Get the signal state for this flip-flop
           const ffInputs = activeFlipFlopInputs[ff.id];
-          
+
           // If this flip-flop has enable input and it's stale (too old)
-          if (ffInputs && ffInputs.En && now - ffInputs.lastEnUpdateTime > SIGNAL_TIMEOUT) {
+          if (
+            ffInputs &&
+            ffInputs.En &&
+            now - ffInputs.lastEnUpdateTime > SIGNAL_TIMEOUT
+          ) {
             // Mark the enable signal as inactive
-            setActiveFlipFlopInputs(prev => ({
+            setActiveFlipFlopInputs((prev) => ({
               ...prev,
               [ff.id]: {
                 ...prev[ff.id],
-                En: false
-              }
+                En: false,
+              },
             }));
-            
+
             // Also update the flip-flop state
             newStates[index] = {
               ...newStates[index],
-              hasEn: false
+              hasEn: false,
             };
-            
+
             changed = true;
           }
         });
-        
+
         return changed ? newStates : prev;
       });
     }, 200);
-    
+
     return () => clearInterval(resetInterval);
   }, [runningSimulation, activeFlipFlopInputs]);
 
@@ -1298,16 +1399,16 @@ export default function SimulationCanvas({
       setActiveOutputs({});
       return;
     }
-    
+
     // Check every 500ms for output signals that have timed out
     const resetOutputsInterval = setInterval(() => {
       const now = performance.now();
       const OUTPUT_SIGNAL_TIMEOUT = 500; // Output stays active for 500ms
-      
-      setActiveOutputs(prev => {
+
+      setActiveOutputs((prev) => {
         const newActiveOutputs = { ...prev };
         let changed = false;
-        
+
         // Check each active output
         Object.entries(prev).forEach(([id, timestamp]) => {
           if (now - timestamp > OUTPUT_SIGNAL_TIMEOUT) {
@@ -1316,11 +1417,11 @@ export default function SimulationCanvas({
             changed = true;
           }
         });
-        
+
         return changed ? newActiveOutputs : prev;
       });
     }, 200);
-    
+
     return () => clearInterval(resetOutputsInterval);
   }, [runningSimulation]);
 
