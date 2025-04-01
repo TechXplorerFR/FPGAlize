@@ -64,8 +64,8 @@ cd Scripts
 
 1. **Pull and run the container** (no need to build manually):
    ```bash
-   docker pull ghcr.io/techxplorerfr/test-actions/myapp:latest
-   docker run -p 4173:4173 ghcr.io/techxplorerfr/test-actions/myapp:latest
+   docker pull ghcr.io/techxplorerfr/fpgalize:latest
+   docker run -p 4173:4173 ghcr.io/techxplorerfr/fpgalize:latest
    ```
 
 2. **Access FPGAlize** at `http://localhost:4173`.
