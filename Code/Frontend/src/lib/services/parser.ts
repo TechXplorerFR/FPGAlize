@@ -1,4 +1,10 @@
-import { IConnection, IElement, IElementInput, IElementOutput, type IDataStructure } from "@/lib/types/types";
+import {
+  IConnection,
+  IElement,
+  IElementInput,
+  IElementOutput,
+  type IDataStructure,
+} from "@/lib/types/types";
 import * as v_parser from "@/lib/services/v-parser";
 import * as sdf_parser from "@/lib/services/sdf-parser";
 import { getFileContent } from "@/lib/utils";
@@ -16,45 +22,6 @@ function checkFileExtension(
   expectedExtension: string
 ): boolean {
   return fileName.split(".").pop()?.toLowerCase() === expectedExtension;
-}
-
-/**
- * Parses both Verilog and SDF files and merges them into a single JSON object.
- * This function combines the parsing of both Verilog (.v) and SDF (.sdf) files,
- * and merges their results into a single structure that includes both elements
- * and connections.
- * @param {string} verilogPath - Path to the Verilog (.v) file.
- * @param {string} sdfPath - Path to the SDF file.
- * @returns {Promise<string>} - JSON string containing merged elements and connections from both files.
- */
-export async function getJsonObjectFromParsing(
-  verilogFile: File,
-  sdfFile: File
-): Promise<IDataStructure | string> {
-  // Check if provided files have the correct extensions
-  if (
-    !checkFileExtension(verilogFile.name, "v") ||
-    !checkFileExtension(sdfFile.name, "sdf")
-  ) {
-    return "Provided files are not valid .v and .sdf files.";
-  }
-
-  // Parse Verilog and SDF files
-  const verilogData: IDataStructure = await v_parser.getJsonObjectFromV(
-    verilogFile
-  );
-  const sdfData: IDataStructure = await sdf_parser.getJsonObjectFromSdf(
-    sdfFile
-  );
-
-  // Merge the parsed data from both files
-  const mergedData: IDataStructure = {
-    elements: [...verilogData.elements, ...sdfData.elements],
-    connections: [...verilogData.connections, ...sdfData.connections],
-  };
-
-  // Return the merged data as a formatted JSON string
-  return mergedData;
 }
 
 /**
@@ -105,7 +72,10 @@ export async function parseFilesForBrowser(
   }
 }
 
-function mergeElements(verilogElements: IElement[], sdfElements: IElement[]): IElement[] {
+function mergeElements(
+  verilogElements: IElement[],
+  sdfElements: IElement[]
+): IElement[] {
   const merged: IElement[] = [];
 
   verilogElements.forEach((verilogElem) => {
@@ -117,8 +87,14 @@ function mergeElements(verilogElements: IElement[], sdfElements: IElement[]): IE
     if (existingElem) {
       existingElem.inputs = existingElem.inputs.concat(sdfElem.inputs);
       existingElem.outputs = existingElem.outputs.concat(sdfElem.outputs);
-      existingElem.internal_delay = Math.max(existingElem.internal_delay, sdfElem.internal_delay);
-      existingElem.setup_time = Math.max(existingElem.setup_time, sdfElem.setup_time);
+      existingElem.internal_delay = Math.max(
+        existingElem.internal_delay,
+        sdfElem.internal_delay
+      );
+      existingElem.setup_time = Math.max(
+        existingElem.setup_time,
+        sdfElem.setup_time
+      );
     } else {
       merged.push({ ...sdfElem });
     }
@@ -127,7 +103,10 @@ function mergeElements(verilogElements: IElement[], sdfElements: IElement[]): IE
   return merged;
 }
 
-function mergeConnections(verilogConnections: IConnection[], sdfConnections: IConnection[]): IConnection[] {
+function mergeConnections(
+  verilogConnections: IConnection[],
+  sdfConnections: IConnection[]
+): IConnection[] {
   const merged: IConnection[] = [];
 
   verilogConnections.forEach((verilogConn) => {
@@ -155,16 +134,20 @@ function finalizeElements(elements: IElement[]): IElement[] {
       name: cleanedName,
       type: cleanType(cleanedName, elem.type, elem.inputs),
       inputs: cleanInputs(elem.inputs),
-      outputs: cleanOutputs(elem.outputs)
+      outputs: cleanOutputs(elem.outputs),
     };
   });
 }
 
 function cleanName(name: string): string {
-  return name.replace(/\\/g, ''); // Remove unwanted escape characters
+  return name.replace(/\\/g, ""); // Remove unwanted escape characters
 }
 
-function cleanType(name: string, type: string, inputs: IElementInput[]): string {
+function cleanType(
+  name: string,
+  type: string,
+  inputs: IElementInput[]
+): string {
   // Handle clock signal explicitly
   if (name === "clk") {
     return "clk";
@@ -192,25 +175,25 @@ function cleanType(name: string, type: string, inputs: IElementInput[]): string 
 }
 
 function cleanInputs(inputs: IElementInput[]): IElementInput[] {
-  return inputs.map(input => {
+  return inputs.map((input) => {
     if (!input.wireName) {
       throw new Error("WireName must be defined for all inputs.");
     }
     return {
       ...input,
-      inputName: input.inputName
+      inputName: input.inputName,
     };
   });
 }
 
 function cleanOutputs(outputs: IElementOutput[]): IElementOutput[] {
-  return outputs.map(output => {
+  return outputs.map((output) => {
     if (!output.wireName) {
       throw new Error("WireName must be defined for all outputs.");
     }
     return {
       ...output,
-      outputName: output.outputName
+      outputName: output.outputName,
     };
   });
 }
@@ -219,7 +202,7 @@ function finalizeConnections(connections: IConnection[]): IConnection[] {
   return connections.map((conn, index) => ({
     ...conn,
     id: index, // Ensures unique IDs
-    color: "#000000" // Default wire color
+    color: "#000000", // Default wire color
   }));
 }
 
