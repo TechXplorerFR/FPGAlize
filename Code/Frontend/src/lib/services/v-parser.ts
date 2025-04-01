@@ -16,7 +16,6 @@ export function parseVerilogContent(content: string): IDataStructure {
   // Initialize the result objects
   const elements: IElement[] = [];
   const connections: IConnection[] = [];
-  const wireMap: Map<string, number> = new Map(); // Maps wire names to their connection IDs
 
   let elementIdCounter = 0;
   let connectionIdCounter = 0;
@@ -38,18 +37,6 @@ export function parseVerilogContent(content: string): IDataStructure {
   let inputMatch;
   while ((inputMatch = inputPortRegex.exec(portDefinition)) !== null) {
     const portName = inputMatch[1];
-    const wireName = `wire_${connectionIdCounter + 1}`;
-
-    // Create a connection for this wire
-    connections.push({
-      id: ++connectionIdCounter,
-      name: wireName,
-      type: "wire",
-      color: "#000000",
-      time: 0,
-    });
-
-    wireMap.set(portName, connectionIdCounter);
 
     // Create an element for this input port
     elements.push({
@@ -59,7 +46,7 @@ export function parseVerilogContent(content: string): IDataStructure {
       inputs: [],
       outputs: [
         {
-          wireName,
+          wireName: `${portName}_output_0_0`, // Use actual wire name instead of placeholder
           outputName: portName === "clk" ? "CLK" : null,
         },
       ],
@@ -73,18 +60,6 @@ export function parseVerilogContent(content: string): IDataStructure {
   let outputMatch;
   while ((outputMatch = outputPortRegex.exec(portDefinition)) !== null) {
     const portName = outputMatch[1];
-    const wireName = `wire_${connectionIdCounter + 1}`;
-
-    // Create a connection for this wire
-    connections.push({
-      id: ++connectionIdCounter,
-      name: wireName,
-      type: "wire",
-      color: "#000000",
-      time: 0,
-    });
-
-    wireMap.set(portName, connectionIdCounter);
 
     // Create an element for this output port
     elements.push({
@@ -93,7 +68,7 @@ export function parseVerilogContent(content: string): IDataStructure {
       type: "module_output",
       inputs: [
         {
-          wireName,
+          wireName: `${portName}_input_0_0`, // Use actual wire name instead of placeholder
           inputName: null,
         },
       ],
@@ -105,28 +80,10 @@ export function parseVerilogContent(content: string): IDataStructure {
     });
   }
 
-  // Parse wire declarations
-  const wireRegex = /wire\s+\\(\w+)\s*;/g;
-  let wireMatch;
-
-  while ((wireMatch = wireRegex.exec(content)) !== null) {
-    const wireName = wireMatch[1];
-    if (!wireMap.has(wireName)) {
-      connections.push({
-        id: ++connectionIdCounter,
-        name: `wire_${connectionIdCounter}`,
-        type: "wire",
-        color: "#000000",
-        time: 0,
-      });
-      wireMap.set(wireName, connectionIdCounter);
-    }
-  }
-
   // Parse DFF instances specifically
   const dffRegex = /DFF\s+#\([\s\S]*?\)\s*\\(\w+)\s*\(([\s\S]*?)\);/g;
   let dffMatch;
-  let hasEnableGate: boolean = false;
+  
 
   while ((dffMatch = dffRegex.exec(content)) !== null) {
     const cellName = dffMatch[1];
@@ -134,6 +91,7 @@ export function parseVerilogContent(content: string): IDataStructure {
 
     const inputs: IElementInput[] = [];
     const outputs: IElementOutput[] = [];
+    let hasEnableGate: boolean = false;
 
     // Parse input and output port connections
     const portRegex = /\.(\w+)\s*\(\s*\\([^)]+)\s*\)/g;
@@ -143,41 +101,26 @@ export function parseVerilogContent(content: string): IDataStructure {
       const portName = portMatch[1];
       const wireName = portMatch[2];
 
-      // Create a connection for this wire if it doesn't exist
-      if (!wireMap.has(wireName)) {
-        connections.push({
-          id: ++connectionIdCounter,
-          name: `wire_${connectionIdCounter}`,
-          type: "wire",
-          color: "#000000",
-          time: 0,
-        });
-        wireMap.set(wireName, connectionIdCounter);
-      }
-
-      const wireId = wireMap.get(wireName);
-      const connectionWireName = `wire_${wireId}`;
-
       // For DFF, map the ports appropriately
       if (portName === "Q") {
         outputs.push({
-          wireName: connectionWireName,
+          wireName: wireName, // Use actual wire name instead of placeholder
           outputName: "Q",
         });
       } else if (portName === "D") {
         inputs.push({
-          wireName: connectionWireName,
+          wireName: wireName, // Use actual wire name instead of placeholder
           inputName: "D",
         });
       } else if (portName === "enable") {
         inputs.push({
-          wireName: connectionWireName,
+          wireName: wireName, // Use actual wire name instead of placeholder
           inputName: "enable",
         });
         hasEnableGate = true;
       } else if (portName === "clock") {
         inputs.push({
-          wireName: connectionWireName,
+          wireName: wireName, // Use actual wire name instead of placeholder
           inputName: "CLK",
         });
       }
@@ -221,30 +164,15 @@ export function parseVerilogContent(content: string): IDataStructure {
       const portName = portMatch[1];
       const wireName = portMatch[2];
 
-      // Create a connection for this wire if it doesn't exist
-      if (!wireMap.has(wireName)) {
-        connections.push({
-          id: ++connectionIdCounter,
-          name: `wire_${connectionIdCounter}`,
-          type: "wire",
-          color: "#000000",
-          time: 0,
-        });
-        wireMap.set(wireName, connectionIdCounter);
-      }
-
-      const wireId = wireMap.get(wireName);
-      const connectionWireName = `wire_${wireId}`;
-
       // Determine if this is an input or output port based on typical port names
       if (portName === "Q" || portName.startsWith("Y")) {
         outputs.push({
-          wireName: connectionWireName,
+          wireName: wireName, // Use actual wire name instead of placeholder
           outputName: portName,
         });
       } else {
         inputs.push({
-          wireName: connectionWireName,
+          wireName: wireName, // Use actual wire name instead of placeholder
           inputName: portName,
         });
       }
@@ -264,34 +192,46 @@ export function parseVerilogContent(content: string): IDataStructure {
     });
   }
 
-  // Add enable element if needed (similar to the example)
-  if (!elements.some((el) => el.name === "enable")) {
-    const wireName = `wire_${connectionIdCounter + 1}`;
+  // Parse interconnect instances to create connections
+  const interconnectRegex = /fpga_interconnect\s+\\([^(]+)\s*\(\s*\.datain\(\\([^)]+)\s*\),\s*\.dataout\(\\([^)]+)\s*\)\s*\);/g;
+  let interconnectMatch;
 
+  while ((interconnectMatch = interconnectRegex.exec(content)) !== null) {
+    const connectionName = interconnectMatch[1].split("segment_")[1].trim();
+    const sourceName = interconnectMatch[2];
+    const destinationName = interconnectMatch[3];
+    
+    // Create a connection with source and destination information
     connections.push({
-      id: ++connectionIdCounter,
-      name: wireName,
+      id: connectionIdCounter++,
+      name: connectionName,
       type: "wire",
-      color: "#000000",
-      time: 0,
+      color: "#000000", // Default color
+      time: 0,         // Default time delay
+      source: sourceName,
+      destination: destinationName
     });
+  }
 
-    elements.push({
-      id: elementIdCounter++,
-      name: "enable",
-      type: "module_input",
-      inputs: [],
-      outputs: [
-        {
-          wireName,
-          outputName: null,
-        },
-      ],
-      internal_delay: 0,
-      setup_time: 0,
-      x: 50,
-      y: 100,
-    });
+  // Now link connections to elements by updating wireName fields
+  for (const connection of connections) {
+    // Find source element and update its output wireName
+    for (const element of elements) {
+      for (const output of element.outputs) {
+        if (output.wireName === connection.source) {
+          output.wireName = connection.name;
+        }
+      }
+    }
+
+    // Find destination element and update its input wireName
+    for (const element of elements) {
+      for (const input of element.inputs) {
+        if (input.wireName === connection.destination) {
+          input.wireName = connection.name;
+        }
+      }
+    }
   }
 
   console.log({

@@ -507,11 +507,11 @@ export default function SimulationCanvas({
     connections.forEach(connection => {
       // Find source and destination elements for this connection
       const sourceElement = elements.find(el => 
-        el.outputs && el.outputs.some(output => output.wireName === connection.name)
+        el.outputs && el.outputs.some(output => connection.name.includes(output.wireName))
       );
       
       const destElement = elements.find(el => 
-        el.inputs && el.inputs.some(input => input.wireName === connection.name)
+        el.inputs && el.inputs.some(input => connection.name.includes(input.wireName))
       );
 
       if (sourceElement && destElement) {

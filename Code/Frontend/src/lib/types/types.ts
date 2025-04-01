@@ -78,6 +78,8 @@ export type IElementOutput = {
  * @property {string} type - Type of the connection (e.g., wire).
  * @property {string} color - Color representation of the connection.
  * @property {number} time - Time delay associated with the connection.
+ * @property {string} [source] - Temporary field for source wire name.
+ * @property {string} [destination] - Temporary field for destination wire name.
  */
 export type IConnection = {
   id: number;
@@ -85,6 +87,8 @@ export type IConnection = {
   type: "wire";
   color: string;
   time: number;
+  source?: string; // Temporary field for source wire name
+  destination?: string; // Temporary field for destination wire name
 };
 
 /**
