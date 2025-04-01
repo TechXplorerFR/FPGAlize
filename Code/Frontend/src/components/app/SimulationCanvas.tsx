@@ -300,16 +300,19 @@ const getSignalOriginType = (
   };
 };
 
+// Modify the component props to include a callback for play state changes
 export default function SimulationCanvas({
   activeTabId,
   examples,
   playing,
   resetTriggered = false,
+  onPlayingChange
 }: {
   activeTabId: string;
   examples: Example[];
   playing: boolean;
   resetTriggered?: boolean;
+  onPlayingChange?: (isPlaying: boolean) => void;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -322,11 +325,21 @@ export default function SimulationCanvas({
 
   // Add a state variable for tracking if simulation is running
   const [runningSimulation, setRunningSimulation] = useState<boolean>(false);
+  
+  // Add a state variable to track if the simulation is paused (vs reset/stopped)
+  const [isPaused, setIsPaused] = useState<boolean>(false);
 
   // Synchronize runningSimulation with the playing prop
   useEffect(() => {
-    setRunningSimulation(playing);
-  }, [playing]);
+    if (playing) {
+      setRunningSimulation(true);
+      setIsPaused(false);
+    } else {
+      setRunningSimulation(false);
+      // If we were running and now we're not, we're paused (not stopped)
+      setIsPaused(runningSimulation);
+    }
+  }, [playing, runningSimulation]);
 
   const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = 100%
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -346,8 +359,9 @@ export default function SimulationCanvas({
 
   // Calculate the interval time based on formula 1/(frequency*10)
   const signalSpeed = useMemo(() => {
-    // Adjust speed to be consistent regardless of wire length
-    return 1 / clockFrequency; // Time in seconds for full wire traversal
+    // Ensure a minimum speed even at very low frequencies
+    // Use a reasonable range that works from 1Hz to 100Hz
+    return Math.max(0.2, Math.min(2, 1 / clockFrequency)); 
   }, [clockFrequency]);
 
   // Add state to track active signals on wires
@@ -709,23 +723,57 @@ export default function SimulationCanvas({
     }
   }, [redo]);
 
-  // Handle reset action
+  // Function to reset zoom
+  const resetZoom = useCallback(() => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  }, []);
+
+  // Update handleReset to use the callback to notify parent
   const handleReset = useCallback(() => {
-    const initialState = reset();
-    setElements(initialState.elements as IElement[]);
-    setConnections(initialState.connections);
-  }, [reset]);
+    if (runningSimulation) {
+      setRunningSimulation(false);
+    }
+    
+    // When resetting, we're not in a paused state
+    setIsPaused(false);
+    
+    // Always notify parent component
+    if (onPlayingChange) {
+      onPlayingChange(false);
+    }
+    
+    // Always clear all signals when resetting
+    setActiveSignals([]);
+    
+    // Reset flip-flop states
+    setFlipFlopStates((prev) =>
+      prev.map((ff) => ({
+        ...ff,
+        hasD: false,
+        hasEn: ff.type === "DFF_NE", // Keep always true for DFF_NE
+        outputValue: false,
+        lastClockTime: 0,
+      }))
+    );
+    
+    // Reset active inputs and outputs
+    setActiveInputs([]);
+    setActiveOutputs({});
+    
+    // Auto-arrange elements
+    const arrangedElements = arrangeElements(elements, connections);
+    setElements(arrangedElements);
+    setElementsModified(true);
+    
+    // Reset zoom and pan
+    resetZoom();
+  }, [runningSimulation, elements, connections, setElementsModified, resetZoom, onPlayingChange]);
 
   // Function to handle zoom from the action bar
   const handleZoomChange = (newZoomPercent: number) => {
     const newZoom = newZoomPercent / 100;
     setZoomLevel(newZoom);
-  };
-
-  // Function to reset zoom
-  const resetZoom = () => {
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
   };
 
   // Function to handle clock frequency change
@@ -1069,8 +1117,9 @@ export default function SimulationCanvas({
       ctx.fillText(el.name || `element-${el.id}`, x + size / 2, y + size + 5);
     });
 
-    // Draw signals as small black circles
-    if (runningSimulation) {
+    // Draw signals as small black circles - always draw signals if they exist
+    // Remove the conditional for drawing signals - always draw them if they exist
+    if (activeSignals.length > 0) {
       ctx.fillStyle = isDarkTheme ? "#ffffff" : "#000000";
 
       activeSignals.forEach((signal) => {
@@ -1128,6 +1177,7 @@ export default function SimulationCanvas({
     isDarkTheme,
     componentImages,
     runningSimulation,
+    isPaused, // Add isPaused as a dependency
     activeSignals,
     activeInputs,
     activeOutputs, // Add activeOutputs to dependencies
@@ -1160,9 +1210,14 @@ export default function SimulationCanvas({
 
   // Add effect to handle simulation running
   useEffect(() => {
-    if (!runningSimulation) {
-      // Clear all signals when simulation stops
+    // Only clear signals when completely stopping (reset), not when pausing
+    if (!runningSimulation && !isPaused) {
       setActiveSignals([]);
+      return;
+    }
+
+    // If paused, don't create or move signals, but keep existing ones visible
+    if (!runningSimulation) {
       return;
     }
 
@@ -1295,8 +1350,10 @@ export default function SimulationCanvas({
       setActiveSignals((prev) => {
         // Move each signal along its wire
         const updatedSignals = prev.map((signal) => {
-          // Calculate new position
-          const newPosition = signal.position + 0.01 / signalSpeed;
+          // Fixed increment to ensure signals always progress
+          // Scale the increment with signal speed but ensure a minimum movement
+          const speedIncrement = Math.max(0.01, 0.05 / signalSpeed);
+          const newPosition = signal.position + speedIncrement;
 
           // If signal just completed (crossed the 1.0 threshold), trigger the handleSignalArrival
           if (signal.position < 1.0 && newPosition >= 1.0) {
@@ -1321,6 +1378,7 @@ export default function SimulationCanvas({
     };
   }, [
     runningSimulation,
+    isPaused, // Add isPaused as a dependency
     elements,
     connections,
     clockFrequency,
@@ -1332,7 +1390,7 @@ export default function SimulationCanvas({
 
   // Add an effect to track and reset enable signals
   useEffect(() => {
-    if (!runningSimulation) return;
+    if (!runningSimulation && !isPaused) return;
 
     // Check every 200ms for flip-flops that haven't received an enable signal recently
     const resetInterval = setInterval(() => {
@@ -1381,13 +1439,18 @@ export default function SimulationCanvas({
     }, 200);
 
     return () => clearInterval(resetInterval);
-  }, [runningSimulation, activeFlipFlopInputs]);
+  }, [runningSimulation, isPaused, activeFlipFlopInputs]);
 
   // Add an effect to reset output signals after a timeout
   useEffect(() => {
-    if (!runningSimulation) {
-      // Clear all active outputs when simulation stops
+    // Only clear outputs when fully stopping, not when paused
+    if (!runningSimulation && !isPaused) {
       setActiveOutputs({});
+      return;
+    }
+
+    if (!runningSimulation) {
+      // If paused, exit early but keep output states
       return;
     }
 
@@ -1414,7 +1477,7 @@ export default function SimulationCanvas({
     }, 200);
 
     return () => clearInterval(resetOutputsInterval);
-  }, [runningSimulation]);
+  }, [runningSimulation, isPaused]);
 
   // Reset active outputs when simulation is reset
   useEffect(() => {
