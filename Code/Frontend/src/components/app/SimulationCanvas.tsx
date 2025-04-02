@@ -359,7 +359,7 @@ export default function SimulationCanvas({
   const signalSpeed = useMemo(() => {
     // Ensure a minimum speed even at very low frequencies
     // Use a reasonable range that works from 1Hz to 100Hz
-    return Math.max(0.2, Math.min(2, 1 / clockFrequency));
+    return Math.max(0.01, Math.min(4, 10 / clockFrequency));
   }, [clockFrequency]);
 
   // Add state to track active signals on wires
@@ -1021,10 +1021,11 @@ export default function SimulationCanvas({
     }
 
     // Draw connections with orthogonal paths
-    ctx.strokeStyle = isDarkTheme ? "white" : "black";
     ctx.lineWidth = 2 / zoomLevel; // Adjust line width based on zoom
-
+    
     connections.forEach((connection) => {
+        ctx.strokeStyle =  connection.color;
+
       // Find source and destination elements for this connection
       const sourceElement = elements.find(
         (el) =>
@@ -1202,6 +1203,8 @@ export default function SimulationCanvas({
     // Remove the conditional for drawing signals - always draw them if they exist
     if (activeSignals.length > 0) {
       ctx.fillStyle = isDarkTheme ? "#ffffff" : "#000000";
+      ctx.strokeStyle = isDarkTheme ? "white" : "black";
+      
 
       activeSignals.forEach((signal) => {
         if (signal.position < 1.0 && signal.points.length >= 2) {

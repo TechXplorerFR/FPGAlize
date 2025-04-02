@@ -321,7 +321,7 @@ function App() {
                     "id": 0,
                     "name": "wire_1",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#0000FF",
                     "time": 0,
                     "source": "D",
                     "destination": "DFF_Q1"
@@ -330,7 +330,7 @@ function App() {
                     "id": 1,
                     "name": "wire_2",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#FF0000",
                     "time": 0,
                     "source": "clk",
                     "destination": "DFF_Q1"
@@ -339,7 +339,7 @@ function App() {
                     "id": 2,
                     "name": "wire_3",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#FF0000",
                     "time": 0,
                     "source": "clk",
                     "destination": "DFF_Q2"
@@ -348,7 +348,7 @@ function App() {
                     "id": 3,
                     "name": "wire_4",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#FF0000",
                     "time": 0,
                     "source": "clk",
                     "destination": "DFF_Q3"
@@ -357,7 +357,7 @@ function App() {
                     "id": 4,
                     "name": "wire_5",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#FF0000",
                     "time": 0,
                     "source": "clk",
                     "destination": "DFF_Q4"
@@ -366,7 +366,7 @@ function App() {
                     "id": 5,
                     "name": "wire_6",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#FF0000",
                     "time": 0,
                     "source": "clk",
                     "destination": "DFF_Q5"
@@ -375,7 +375,7 @@ function App() {
                     "id": 6,
                     "name": "wire_7",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#00FF00",
                     "time": 0,
                     "source": "enable",
                     "destination": "DFF_Q1"
@@ -384,7 +384,7 @@ function App() {
                     "id": 7,
                     "name": "wire_8",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#00FF00",
                     "time": 0,
                     "source": "enable",
                     "destination": "DFF_Q2"
@@ -393,7 +393,7 @@ function App() {
                     "id": 8,
                     "name": "wire_9",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#00FF00",
                     "time": 0,
                     "source": "enable",
                     "destination": "DFF_Q3"
@@ -402,7 +402,7 @@ function App() {
                     "id": 9,
                     "name": "wire_10",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#00FF00",
                     "time": 0,
                     "source": "enable",
                     "destination": "DFF_Q4"
@@ -411,7 +411,7 @@ function App() {
                     "id": 10,
                     "name": "wire_11",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#00FF00",
                     "time": 0,
                     "source": "enable",
                     "destination": "DFF_Q5"
@@ -420,7 +420,7 @@ function App() {
                     "id": 11,
                     "name": "wire_12",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#0000FF",
                     "time": 0,
                     "source": "DFF_Q1",
                     "destination": "DFF_Q2"
@@ -429,7 +429,7 @@ function App() {
                     "id": 12,
                     "name": "wire_13",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#0000FF",
                     "time": 0,
                     "source": "DFF_Q2",
                     "destination": "DFF_Q3"
@@ -438,7 +438,7 @@ function App() {
                     "id": 13,
                     "name": "wire_14",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#0000FF",
                     "time": 0,
                     "source": "DFF_Q3",
                     "destination": "DFF_Q4"
@@ -447,7 +447,7 @@ function App() {
                     "id": 14,
                     "name": "wire_15",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#0000FF",
                     "time": 0,
                     "source": "DFF_Q4",
                     "destination": "DFF_Q5"
@@ -456,7 +456,7 @@ function App() {
                     "id": 15,
                     "name": "wire_16",
                     "type": "wire",
-                    "color": "#000000",
+                    "color": "#0000FF",
                     "time": 0,
                     "source": "DFF_Q5",
                     "destination": "Q"
