@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import AddExampleModal from "@/components/app/AddExampleModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Example as ExampleType, Tab } from "@/lib/types/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 interface ExamplesDrawerProps {
@@ -23,6 +23,7 @@ interface ExamplesDrawerProps {
   setTabs: React.Dispatch<React.SetStateAction<Tab[]>>;
   setActiveTabId?: (id: string) => void;
   setExamples: React.Dispatch<React.SetStateAction<ExampleType[]>>;
+  activeTabId?: string; // Added activeTabId prop
 }
 
 function ExamplesDrawer({
@@ -31,8 +32,16 @@ function ExamplesDrawer({
   setTabs,
   setActiveTabId,
   setExamples,
+  activeTabId,
 }: ExamplesDrawerProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true); // Set to true by default
+  
+  // Effect to open drawer when no example is selected
+  useEffect(() => {
+    if (!activeTabId) {
+      setIsOpen(true);
+    }
+  }, [activeTabId]);
 
   const handleExampleClick = (index: number) => {
     const example = examples[index];

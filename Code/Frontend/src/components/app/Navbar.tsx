@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
 import { Example } from "@/lib/types/types";
 import { toastMessage } from "@/lib/services/toast";
+import { ModeToggle } from "@/components/app/ModeToggle";
 
 interface NavbarProps {
   activeView: string;
@@ -66,12 +67,14 @@ export default function Navbar({
 
   return (
     <div className="flex items-center justify-between p-2 border-b w-full h-[7vh]">
+      {/* Mode Toggle */}
+      <ModeToggle />
       {/* Tab Selector */}
       <ToggleGroup
         type="single"
         value={activeView}
         onValueChange={(value) => value && setActiveView(value)}
-        className="rounded-lg p-1 ml-[30vw]"
+        className="rounded-lg p-1 ml-[15vw]"
       >
         <ToggleGroupItem value="Code" className="px-8 border">
           Code
