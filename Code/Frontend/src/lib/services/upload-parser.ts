@@ -1,6 +1,6 @@
-import { Example } from "@/lib/types/types";
-import { getFileContent } from "@/lib/utils";
-import { parseFilesForBrowser } from "@/lib/services/parser";
+import { Example, IDataStructure } from "@/lib/types/types";
+import { getFileContent, readFileContent } from "@/lib/utils";
+// import { parseFilesForBrowser } from "@/lib/services/parser";
 
 /**
  * Parses uploaded files into an Example object
@@ -19,11 +19,15 @@ export async function parseUploadedExample(
     const content = await getFileContent(originalVerilogFile);
     const lineCount = content ? content.split("\n").length : 0;
 
-    const jsonOutput = await parseFilesForBrowser(
-      postSynthesisVerilogFile,
-      postSynthesisSdfFile
-    );
+    // const jsonOutput = await parseFilesForBrowser(
+    //   postSynthesisVerilogFile,
+    //   postSynthesisSdfFile
+    // );
 
+    const basePath = `/data/samples/5ffs_VTR/5ffs_VTR.json`;
+    const jsonOutputFile = await readFileContent(basePath);
+    const jsonOutputString = await jsonOutputFile.text();
+    const jsonOutput: IDataStructure = JSON.parse(jsonOutputString);
 
     // Return the formatted example object
     return {
