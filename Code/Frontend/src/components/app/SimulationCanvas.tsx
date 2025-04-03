@@ -1406,13 +1406,6 @@ export default function SimulationCanvas({
           );
 
           if (source && dest) {
-            // Get the origin information
-            const origin = getSignalOriginType(
-              conn.name,
-              elements,
-              connections
-            );
-
             // Calculate path for the signal using actual port positions
             const points = calculateOrthogonalPath(
               source,

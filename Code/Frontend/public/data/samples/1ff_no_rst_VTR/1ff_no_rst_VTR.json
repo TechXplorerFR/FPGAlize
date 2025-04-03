@@ -51,7 +51,7 @@
         {
             "id": 3,
             "name": "DFF",
-            "type": "DFF",
+            "type": "DFF_NE",
             "inputs": [
                 {
                     "wireName": "wire_1",

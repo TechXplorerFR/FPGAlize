@@ -19,7 +19,7 @@ function updateWireNames(elements: IElement[], connections: IConnection[]): void
     // Update source wire name in elements
     for (const element of elements) {
       for (const output of element.outputs) {
-        if (output.wireName.trim() === source.trim()) {
+        if (output.wireName.trim() === source!.trim()) {
           output.wireName = name;
         }
       }
@@ -28,7 +28,7 @@ function updateWireNames(elements: IElement[], connections: IConnection[]): void
     // Update destination wire name in elements
     for (const element of elements) {
       for (const input of element.inputs) {
-        if (input.wireName.trim() === destination.trim()) {
+        if (input.wireName.trim() === destination!.trim()) {
           input.wireName = name;
         }
       }

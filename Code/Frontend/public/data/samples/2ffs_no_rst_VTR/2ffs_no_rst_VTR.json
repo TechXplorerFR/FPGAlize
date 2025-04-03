@@ -39,7 +39,7 @@
         {
             "id": 2,
             "name": "DFF1",
-            "type": "DFF",
+            "type": "DFF_NE",
             "inputs": [
                 {
                     "wireName": "wire_1",
@@ -64,7 +64,7 @@
         {
             "id": 3,
             "name": "DFF2",
-            "type": "DFF",
+            "type": "DFF_NE",
             "inputs": [
                 {
                     "wireName": "wire_4",
