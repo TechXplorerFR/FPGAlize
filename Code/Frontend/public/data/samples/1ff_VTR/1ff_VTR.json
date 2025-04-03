@@ -99,7 +99,7 @@
             "id": 0,
             "name": "wire_1",
             "type": "wire",
-            "color": "#000000",
+            "color": "#0000FF",
             "time": 0,
             "source": "D",
             "destination": "DFF"
@@ -108,7 +108,7 @@
             "id": 1,
             "name": "wire_2",
             "type": "wire",
-            "color": "#000000",
+            "color": "#FF0000",
             "time": 0,
             "source": "clk",
             "destination": "DFF"
@@ -117,7 +117,7 @@
             "id": 2,
             "name": "wire_3",
             "type": "wire",
-            "color": "#000000",
+            "color": "#00FF00",
             "time": 0,
             "source": "enable",
             "destination": "DFF"
@@ -126,7 +126,7 @@
             "id": 3,
             "name": "wire_4",
             "type": "wire",
-            "color": "#000000",
+            "color": "#0000FF",
             "time": 0,
             "source": "DFF",
             "destination": "Q"
