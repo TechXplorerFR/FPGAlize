@@ -1,0 +1,153 @@
+{
+    "elements": [
+        {
+            "id": 0,
+            "name": "D",
+            "type": "module_input",
+            "inputs": [],
+            "outputs": [
+                {
+                    "wireName": "wire_1",
+                    "outputName": "DFF1"
+                }
+            ],
+            "internal_delay": 0,
+            "setup_time": 0,
+            "x": 100,
+            "y": 100
+        },
+        {
+            "id": 1,
+            "name": "clk",
+            "type": "clk",
+            "inputs": [],
+            "outputs": [
+                {
+                    "wireName": "wire_2",
+                    "outputName": "DFF1"
+                },
+                {
+                    "wireName": "wire_3",
+                    "outputName": "DFF2"
+                }
+            ],
+            "internal_delay": 0,
+            "setup_time": 0,
+            "x": 100,
+            "y": 200
+        },
+        {
+            "id": 2,
+            "name": "DFF1",
+            "type": "DFF",
+            "inputs": [
+                {
+                    "wireName": "wire_1",
+                    "inputName": "D"
+                },
+                {
+                    "wireName": "wire_2",
+                    "inputName": "CLK"
+                }
+            ],
+            "outputs": [
+                {
+                    "wireName": "wire_4",
+                    "outputName": "DFF2"
+                }
+            ],
+            "internal_delay": 0,
+            "setup_time": 0,
+            "x": 100,
+            "y": 200
+        },
+        {
+            "id": 3,
+            "name": "DFF2",
+            "type": "DFF",
+            "inputs": [
+                {
+                    "wireName": "wire_4",
+                    "inputName": "DFF1"
+                },
+                {
+                    "wireName": "wire_3",
+                    "inputName": "CLK"
+                }
+            ],
+            "outputs": [
+                {
+                    "wireName": "wire_5",
+                    "outputName": "Q"
+                }
+            ],
+            "internal_delay": 0,
+            "setup_time": 0,
+            "x": 100,
+            "y": 200
+        },
+        {
+            "id": 4,
+            "name": "Q",
+            "type": "module_output",
+            "inputs": [
+                {
+                    "wireName": "wire_5",
+                    "inputName": "Q"
+                }
+            ],
+            "outputs": [],
+            "internal_delay": 0,
+            "setup_time": 0,
+            "x": 1000,
+            "y": 100
+        }
+    ],
+    "connections": [
+        {
+            "id": 0,
+            "name": "wire_1",
+            "type": "wire",
+            "color": "#000000",
+            "time": 0,
+            "source": "D",
+            "destination": "DFF1"
+        },
+        {
+            "id": 1,
+            "name": "wire_2",
+            "type": "wire",
+            "color": "#000000",
+            "time": 0,
+            "source": "clk",
+            "destination": "DFF1"
+        },
+        {
+            "id": 2,
+            "name": "wire_3",
+            "type": "wire",
+            "color": "#000000",
+            "time": 0,
+            "source": "clk",
+            "destination": "DFF2"
+        },
+        {
+            "id": 3,
+            "name": "wire_4",
+            "type": "wire",
+            "color": "#000000",
+            "time": 0,
+            "source": "DFF1",
+            "destination": "DFF2"
+        },
+        {
+            "id": 4,
+            "name": "wire_5",
+            "type": "wire",
+            "color": "#000000",
+            "time": 0,
+            "source": "DFF2",
+            "destination": "Q"
+        }
+    ]
+}
