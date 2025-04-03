@@ -7,6 +7,36 @@ import type {
 } from "@/lib/types/types";
 
 /**
+ * Updates wire names in elements based on connections.
+ * Ensures that all wireName fields in elements match the name of their associated connection.
+ * @param {IElement[]} elements - Array of elements.
+ * @param {IConnection[]} connections - Array of connections.
+ */
+function updateWireNames(elements: IElement[], connections: IConnection[]): void {
+  for (const connection of connections) {
+    const { source, destination, name } = connection;
+
+    // Update source wire name in elements
+    for (const element of elements) {
+      for (const output of element.outputs) {
+        if (output.wireName.trim() === source!.trim()) {
+          output.wireName = name;
+        }
+      }
+    }
+
+    // Update destination wire name in elements
+    for (const element of elements) {
+      for (const input of element.inputs) {
+        if (input.wireName.trim() === destination!.trim()) {
+          input.wireName = name;
+        }
+      }
+    }
+  }
+}
+
+/**
  * Browser-compatible function to parse Verilog content from a string.
  * This function processes the provided content string instead of reading from a file.
  * @param {string} content - String content of the Verilog file.
@@ -241,25 +271,7 @@ export function parseVerilogContent(content: string): IDataStructure {
   }
 
   // Now link connections to elements by updating wireName fields
-  for (const connection of connections) {
-    // Find source element and update its output wireName
-    for (const element of elements) {
-      for (const output of element.outputs) {
-        if (output.wireName === connection.source) {
-          output.wireName = connection.name;
-        }
-      }
-    }
-
-    // Find destination element and update its input wireName
-    for (const element of elements) {
-      for (const input of element.inputs) {
-        if (input.wireName === connection.destination) {
-          input.wireName = connection.name;
-        }
-      }
-    }
-  }
+  updateWireNames(elements, connections);
 
   console.log({
     elements,
