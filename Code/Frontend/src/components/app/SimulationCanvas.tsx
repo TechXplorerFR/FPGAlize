@@ -186,7 +186,7 @@ const arrangeElements = (
     .filter(
       (el) =>
         el.type === "module_input" ||
-        el.type === "clk" ||
+        el.type === "clk" || el.type === "enable" || el.type === "module_output" ||
         !el.inputs ||
         el.inputs.length === 0
     )
@@ -248,13 +248,35 @@ const arrangeElements = (
 
   // Step 3: Assign positions to elements based on their layer
   const HORIZONTAL_SPACING = 200; // Space between layers
-  const VERTICAL_SPACING = 100; // Space between elements in the same layer
+  const VERTICAL_SPACING = 125; // Space between elements in the same layer
 
   layers.forEach((layerIds, layerIndex) => {
-    const layerX = 100 + layerIndex * HORIZONTAL_SPACING;
+    let layerX : number = 0;
+    let layerY : number = 0;
+    layerX = 50 + layerIndex * HORIZONTAL_SPACING;
 
     layerIds.forEach((id, elementIndex) => {
-      const layerY = 100 + elementIndex * VERTICAL_SPACING;
+      switch (id) {
+        case 0:
+          layerY = 50 + elementIndex * VERTICAL_SPACING
+          break;
+        case 1:
+          layerY = 50 + (elementIndex+2.5) * VERTICAL_SPACING
+          layerX = 50 + layerIndex * HORIZONTAL_SPACING + 25;
+          break;
+        case 2:
+          layerY = 50 + (elementIndex+0.75) * VERTICAL_SPACING
+          layerX = 50 + layerIndex * HORIZONTAL_SPACING;
+          break;
+        case 3:
+          layerY = 50 + (elementIndex) * VERTICAL_SPACING
+          layerX = 50 + (layerIndex+5) * HORIZONTAL_SPACING;
+          break;
+        default:
+          layerY = 50 + elementIndex*0.85 * VERTICAL_SPACING;
+          layerX = 50 + (layerIndex*id/3) * HORIZONTAL_SPACING;
+          break;
+      }
 
       // Find the element and update its position
       const elementToUpdate = arrangedElements.find((el) => el.id === id);
@@ -594,11 +616,7 @@ export default function SimulationCanvas({
             // On posedge of clock:
             // For DFF: Only update output if enable is active
             // For DFF_NE: Always update output on clock edge (has no enable input)
-            if (destElement.name === "DFF_Q1") {
-              console.log(destElement.name + "hasD:" + ff.hasD);
-              console.log(destElement.name + "hasEn:" + ff.hasEn);
-            }
-            const isEnabled = true;
+            const isEnabled = ff.hasEn;
 
             if (isEnabled) {
               // Only when enabled, update output value to the current D input value
@@ -1541,7 +1559,7 @@ export default function SimulationCanvas({
     // Check every 500ms for output signals that have timed out
     const resetOutputsInterval = setInterval(() => {
       const now = performance.now();
-      const OUTPUT_SIGNAL_TIMEOUT = 2000; // Output stays active for 500ms
+      const OUTPUT_SIGNAL_TIMEOUT = Math.max(200, 2400 / clockFrequency); // Output stays active for 500ms
 
       setActiveOutputs((prev) => {
         const newActiveOutputs = { ...prev };
