@@ -4,9 +4,9 @@ import ExamplesDrawer from "./components/app/ExamplesDrawer";
 import Navbar from "./components/app/Navbar";
 import TabsBar from "./components/app/TabsBar";
 import { countFileLines, readFileContent } from "@/lib/utils";
-import type { Example, IDataStructure, Tab } from "@/lib/types/types";
+import type { Example, Tab } from "@/lib/types/types";
 import { Toaster } from "@/components/ui/sonner";
-// import { parseFilesForBrowser } from "@/lib/services/parser";
+import { parseFilesForBrowser } from "@/lib/services/parser";
 import { toastMessage } from "@/lib/services/toast";
 
 function App() {
@@ -54,25 +54,20 @@ function App() {
             originalVerilogFile,
             postSynthesisVerilogFile,
             postSynthesisSdfFile,
-            jsonOutputFile,
           ] = await Promise.all([
             readFileContent(`${basePath}/${name}.v`),
             readFileContent(`${basePath}/PS_${name}.v`),
             readFileContent(`${basePath}/PS_${name}.sdf`),
-            readFileContent(`${basePath}/${name}.json`),
           ]);
 
           // Count lines
           const lineCount = await countFileLines(originalVerilogFile);
 
           // Parse the post-synthesis files to get the JSON output
-          // const jsonOutput = await parseFilesForBrowser(
-          //   postSynthesisVerilogFile,
-          //   postSynthesisSdfFile
-          // );
-
-          const jsonOutputString = await jsonOutputFile.text();
-          const jsonOutput: IDataStructure = JSON.parse(jsonOutputString);
+          const jsonOutput = await parseFilesForBrowser(
+            postSynthesisVerilogFile,
+            postSynthesisSdfFile
+          );
 
           if (!jsonOutput) {
             toastMessage.warning(`Failed to parse example: ${name}`);
